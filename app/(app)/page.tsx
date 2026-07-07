@@ -1,45 +1,177 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { db } from '@/lib/firebase';
+import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
+import { Transaction } from '@/types';
+import Link from 'next/link';
+import { ArrowDownRight, ArrowUpRight, Wallet, Plus } from 'lucide-react';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { DEFAULT_CATEGORIES } from '@/lib/constants';
 
-export default function HomePage() {
+export default function DashboardPage() {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalBalance: 0, // This should ideally be a calculated running total, but we'll approximate for MVP
+    monthlyExpense: 0,
+    monthlyIncome: 0,
+    budget: 0 // Will be zero until budget settings are added
+  });
+  const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
+
+  const loadDashboardData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const now = new Date();
+      const monthStart = startOfMonth(now).getTime();
+      const monthEnd = endOfMonth(now).getTime();
+
+      // Load monthly transactions for stats
+      const qMonthly = query(
+        collection(db, 'users', user.uid, 'transactions'),
+        where('date', '>=', monthStart),
+        where('date', '<=', monthEnd)
+      );
+      const monthlySnap = await getDocs(qMonthly);
+
+      let expense = 0;
+      let income = 0;
+
+      monthlySnap.docs.forEach(doc => {
+        const data = doc.data() as Transaction;
+        if (data.type === 'expense') expense += data.baseAmount;
+        if (data.type === 'income') income += data.baseAmount;
+      });
+
+      // Load 5 most recent transactions
+      const qRecent = query(
+        collection(db, 'users', user.uid, 'transactions'),
+        orderBy('date', 'desc'),
+        limit(5)
+      );
+      const recentSnap = await getDocs(qRecent);
+      const recent = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+
+      setStats({
+        totalBalance: income - expense, // Simplified
+        monthlyExpense: expense,
+        monthlyIncome: income,
+        budget: 0
+      });
+      setRecentTxs(recent);
+
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Welcome back, {user?.displayName || 'User'}
-          </p>
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex gap-2">
+           <Link
+             href="/invoices/scan"
+             className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+           >
+             <Wallet className="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
+           </Link>
+           <Link
+             href="/transactions/new"
+             className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+           >
+             <Plus className="h-5 w-5" />
+           </Link>
         </div>
       </header>
-      
-      {/* Overview Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Balance</h3>
-          <div className="mt-2 text-3xl font-bold">$0.00</div>
+
+      {/* Hero Card */}
+      <div className="rounded-3xl bg-zinc-900 p-6 text-white shadow-xl dark:bg-zinc-800 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10">
+           <Wallet className="w-32 h-32" />
         </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Monthly Expenses</h3>
-          <div className="mt-2 text-3xl font-bold">$0.00</div>
-        </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Remaining Budget</h3>
-          <div className="mt-2 text-3xl font-bold">$0.00</div>
+        <div className="relative z-10">
+          <p className="text-sm font-medium text-zinc-400">Total Balance (Est.)</p>
+          <h2 className="mt-2 text-4xl font-bold tracking-tight">
+            {loading ? '...' : `NT$ ${stats.totalBalance.toLocaleString()}`}
+          </h2>
+
+          <div className="mt-8 flex items-center gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-400">
+                  <ArrowUpRight className="h-4 w-4" />
+                </div>
+                Income
+              </div>
+              <p className="mt-1 text-lg font-semibold">{loading ? '...' : stats.monthlyIncome.toLocaleString()}</p>
+            </div>
+            <div className="h-8 w-[1px] bg-zinc-700"></div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400">
+                  <ArrowDownRight className="h-4 w-4" />
+                </div>
+                Expense
+              </div>
+              <p className="mt-1 text-lg font-semibold">{loading ? '...' : stats.monthlyExpense.toLocaleString()}</p>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Quick Actions or Budgets can go here */}
+
       {/* Recent Transactions */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold">Recent Transactions</h2>
-        <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="p-8 text-center text-zinc-500 dark:text-zinc-400">
-            No transactions yet. Start tracking!
-          </div>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Recent Transactions</h3>
+          <Link href="/transactions" className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">
+            See all
+          </Link>
         </div>
+
+        {loading ? (
+          <div className="text-center py-8 text-sm text-zinc-500">Loading...</div>
+        ) : recentTxs.length === 0 ? (
+           <div className="text-center py-8 text-sm text-zinc-500 bg-white rounded-xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
+             No recent transactions.
+           </div>
+        ) : (
+          <div className="space-y-3">
+            {recentTxs.map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                    tx.type === 'expense' ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                  }`}>
+                    {tx.type === 'expense' ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">{DEFAULT_CATEGORIES.find(c => c.id === tx.categoryId)?.name || 'Custom Category'}</div>
+                    <div className="text-xs text-zinc-500">{format(new Date(tx.date), 'MMM d')}</div>
+                  </div>
+                </div>
+                <div className={`font-medium ${
+                  tx.type === 'expense' ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
+                }`}>
+                  {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString()} {tx.currency}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
