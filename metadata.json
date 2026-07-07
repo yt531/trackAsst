@@ -1,0 +1,6 @@
+{
+  "name": "FinTrack",
+  "description": "Cross-platform personal finance app with offline support, cloud sync, and e-invoice scanning.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

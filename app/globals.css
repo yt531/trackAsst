@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@keyframes scan {
+  0%, 100% { top: 0; }
+  50% { top: 100%; }
+}
