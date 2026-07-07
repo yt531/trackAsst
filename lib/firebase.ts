@@ -11,16 +11,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID as string);
-const googleProvider = new GoogleAuthProvider();
+let app: any, auth: any, db: any, googleProvider: any;
 
-// Enable offline persistence
-if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db).catch((err) => {
-    console.error('Failed to enable offline persistence:', err);
-  });
+if (firebaseConfig.apiKey) {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  auth = getAuth(app);
+  db = getFirestore(app, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID as string);
+  googleProvider = new GoogleAuthProvider();
+
+  // Enable offline persistence
+  if (typeof window !== 'undefined') {
+    enableIndexedDbPersistence(db).catch((err) => {
+      console.error('Failed to enable offline persistence:', err);
+    });
+  }
+} else {
+  console.warn("Firebase API Key is missing. Firebase features will not work.");
 }
 
 export { app, auth, db, googleProvider };

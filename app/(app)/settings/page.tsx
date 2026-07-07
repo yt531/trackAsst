@@ -3,6 +3,7 @@
 import { PaymentMethodsManager } from '@/components/settings/PaymentMethodsManager';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { DataExportImport } from '@/components/settings/DataExportImport';
+import { FirebaseTest } from '@/components/settings/FirebaseTest';
 import { Fingerprint } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -50,6 +51,9 @@ export default function SettingsPage() {
         <DataExportImport />
       </section>
 
+      <section>
+        <FirebaseTest />
+      </section>
     </div>
   );
 }
