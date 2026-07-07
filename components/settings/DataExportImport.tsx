@@ -18,7 +18,7 @@ export function DataExportImport() {
       const snap = await getDocs(q);
 
       const rows = [
-        ['Date', 'Type', 'Amount', 'Currency', 'BaseAmountTWD', 'Category', 'PaymentMethod', 'Notes'].join(',')
+        ['日期', '類型', '金額', '幣別', '基準金額(TWD)', '分類', '支付方式', '備註'].join(',')
       ];
 
       snap.docs.forEach(doc => {
@@ -38,7 +38,7 @@ export function DataExportImport() {
       document.body.removeChild(link);
     } catch (e) {
       console.error(e);
-      alert('Export failed');
+      alert('匯出失敗');
     } finally {
       setIsExporting(false);
     }
@@ -46,13 +46,13 @@ export function DataExportImport() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Data Management</h2>
+      <h2 className="text-lg font-semibold">資料管理</h2>
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 space-y-4">
 
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-medium">Export Data (CSV)</div>
-            <div className="text-sm text-zinc-500">Download all your transactions as a CSV file.</div>
+            <div className="font-medium">匯出資料 (CSV)</div>
+            <div className="text-sm text-zinc-500">將您所有的交易紀錄下載為 CSV 檔案。</div>
           </div>
           <button
             onClick={handleExport}
@@ -60,23 +60,23 @@ export function DataExportImport() {
             className="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            Export
+            匯出
           </button>
         </div>
 
         <div className="border-t border-zinc-200 dark:border-zinc-800 my-2"></div>
 
-        <div className="flex items-center justify-between opacity-50 cursor-not-allowed" title="Coming in future update">
+        <div className="flex items-center justify-between opacity-50 cursor-not-allowed" title="未來更新中提供">
           <div>
-            <div className="font-medium">Import Data (CSV)</div>
-            <div className="text-sm text-zinc-500">Import transactions from a CSV file.</div>
+            <div className="font-medium">匯入資料 (CSV)</div>
+            <div className="text-sm text-zinc-500">從 CSV 檔案匯入交易紀錄。</div>
           </div>
           <button
             disabled
             className="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium dark:bg-zinc-800"
           >
             <Upload className="h-4 w-4" />
-            Import
+            匯入
           </button>
         </div>
 

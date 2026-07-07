@@ -46,9 +46,9 @@ export default function InvoicesPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Invoice Passbook</h1>
+          <h1 className="text-2xl font-bold tracking-tight">發票存摺</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Manage your electronic invoices.
+            管理您的電子發票。
           </p>
         </div>
         <Link
@@ -56,7 +56,7 @@ export default function InvoicesPage() {
           className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           <ScanLine className="h-4 w-4" />
-          <span className="hidden sm:inline">Scan</span>
+          <span className="hidden sm:inline">掃描發票</span>
         </Link>
       </header>
 
@@ -71,7 +71,7 @@ export default function InvoicesPage() {
           }`}
         >
           <Cloud className="h-4 w-4" />
-          Cloud Invoices
+          雲端發票
         </button>
         <button
           onClick={() => setActiveTab('paper')}
@@ -82,16 +82,16 @@ export default function InvoicesPage() {
           }`}
         >
           <FileText className="h-4 w-4" />
-          Paper (Scanned)
+          紙本掃描
         </button>
       </div>
 
       {activeTab === 'cloud' && (
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
           <Cloud className="mx-auto mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-700" />
-          <h3 className="text-lg font-medium">Coming Soon</h3>
+          <h3 className="text-lg font-medium">敬請期待</h3>
           <p className="mt-2 text-sm text-zinc-500">
-            Integration with the Ministry of Finance API for Cloud Invoices is planned for a future update.
+            未來將整合財政部電子發票 API 載入雲端發票。
           </p>
         </div>
       )}
@@ -99,19 +99,19 @@ export default function InvoicesPage() {
       {activeTab === 'paper' && (
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center text-sm text-zinc-500 py-8">Loading invoices...</div>
+            <div className="text-center text-sm text-zinc-500 py-8">載入發票中...</div>
           ) : filteredInvoices.length === 0 ? (
             <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
               <Receipt className="mx-auto mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-700" />
-              <h3 className="text-lg font-medium">No scanned invoices</h3>
+              <h3 className="text-lg font-medium">尚無紙本發票紀錄</h3>
               <p className="mt-2 text-sm text-zinc-500">
-                Scan your paper electronic invoices to keep track of them here.
+                掃描您的紙本電子發票以在此處追蹤它們。
               </p>
               <Link
                 href="/invoices/scan"
                 className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
               >
-                Scan an invoice now &rarr;
+                立即掃描發票 &rarr;
               </Link>
             </div>
           ) : (
@@ -126,9 +126,9 @@ export default function InvoicesPage() {
                     <div className="text-right">
                       <div className="font-medium text-blue-600 dark:text-blue-400">NT$ {inv.totalAmount}</div>
                       {inv.isLinkedToTransaction ? (
-                        <span className="text-[10px] uppercase tracking-wider text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">Recorded</span>
+                        <span className="text-[10px] uppercase tracking-wider text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">已記帳</span>
                       ) : (
-                        <Link href={`/transactions/new?invoiceId=${inv.id}`} className="text-[10px] uppercase tracking-wider text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 px-2 py-0.5 rounded-full">Record Now</Link>
+                        <Link href={`/transactions/new?invoiceId=${inv.id}`} className="text-[10px] uppercase tracking-wider text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 px-2 py-0.5 rounded-full">前往記帳</Link>
                       )}
                     </div>
                   </div>

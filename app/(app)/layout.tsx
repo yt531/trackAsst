@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/components/AuthProvider';
-import { Home, List, PieChart, ScanLine, WalletCards, Settings, LogOut } from 'lucide-react';
+import { Home, List, PieChart, ScanLine, WalletCards, Settings, LogOut, Target, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
@@ -12,7 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center">載入中...</div>;
   }
 
   if (!user) {
@@ -20,11 +20,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const tabs = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Transactions', href: '/transactions', icon: List },
-    { name: 'Scan', href: '/invoices/scan', icon: ScanLine, highlight: true },
-    { name: 'Invoices', href: '/invoices', icon: WalletCards },
-    { name: 'Reports', href: '/reports', icon: PieChart },
+    { name: '首頁', href: '/', icon: Home },
+    { name: '紀錄', href: '/transactions', icon: List },
+    { name: '發票', href: '/invoices', icon: WalletCards },
+    { name: '預算', href: '/budgets', icon: Wallet },
+    { name: '掃描', href: '/invoices/scan', icon: ScanLine, highlight: true },
+    { name: '存錢', href: '/saving-goals', icon: Target },
+    { name: '報表', href: '/reports', icon: PieChart },
   ];
 
   return (
@@ -77,14 +79,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
            <Link href="/settings" className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50">
              <Settings className="h-5 w-5" />
-             Settings
+             設定
            </Link>
            <button 
              onClick={() => signOut(auth)}
              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-red-600 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-red-400"
            >
              <LogOut className="h-5 w-5" />
-             Sign Out
+             登出
            </button>
         </div>
       </aside>

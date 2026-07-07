@@ -32,7 +32,7 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
           };
         }
       } catch (err) {
-        setError('Unable to access camera. Please check permissions.');
+        setError('無法存取相機，請檢查權限設定。');
       }
     };
 

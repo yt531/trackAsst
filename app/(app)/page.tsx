@@ -9,15 +9,16 @@ import Link from 'next/link';
 import { ArrowDownRight, ArrowUpRight, Wallet, Plus } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { getBudgetsByMonth } from '@/lib/budget';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalBalance: 0, // This should ideally be a calculated running total, but we'll approximate for MVP
+    totalBalance: 0,
     monthlyExpense: 0,
     monthlyIncome: 0,
-    budget: 0 // Will be zero until budget settings are added
+    budget: 0
   });
   const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
 
@@ -34,6 +35,7 @@ export default function DashboardPage() {
       const now = new Date();
       const monthStart = startOfMonth(now).getTime();
       const monthEnd = endOfMonth(now).getTime();
+      const monthStr = format(now, 'yyyy-MM');
 
       // Load monthly transactions for stats
       const qMonthly = query(
@@ -52,6 +54,11 @@ export default function DashboardPage() {
         if (data.type === 'income') income += data.baseAmount;
       });
 
+      // Load Budget
+      const budgets = await getBudgetsByMonth(user.uid, monthStr);
+      const totalBudget = budgets.find(b => !b.categoryId);
+      const budgetAmount = totalBudget ? totalBudget.amount : 0;
+
       // Load 5 most recent transactions
       const qRecent = query(
         collection(db, 'users', user.uid, 'transactions'),
@@ -65,7 +72,7 @@ export default function DashboardPage() {
         totalBalance: income - expense, // Simplified
         monthlyExpense: expense,
         monthlyIncome: income,
-        budget: 0
+        budget: budgetAmount
       });
       setRecentTxs(recent);
 
@@ -79,7 +86,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">儀表板</h1>
         <div className="flex gap-2">
            <Link
              href="/invoices/scan"
@@ -102,10 +109,11 @@ export default function DashboardPage() {
            <Wallet className="w-32 h-32" />
         </div>
         <div className="relative z-10">
-          <p className="text-sm font-medium text-zinc-400">Total Balance (Est.)</p>
+          <p className="text-sm font-medium text-zinc-400">當月總預算餘額</p>
           <h2 className="mt-2 text-4xl font-bold tracking-tight">
-            {loading ? '...' : `NT$ ${stats.totalBalance.toLocaleString()}`}
+            {loading ? '...' : `NT$ ${(stats.budget - stats.monthlyExpense).toLocaleString()}`}
           </h2>
+          <p className="mt-1 text-xs text-zinc-500">總預算: ${stats.budget.toLocaleString()}</p>
 
           <div className="mt-8 flex items-center gap-6">
             <div className="flex-1">
@@ -113,7 +121,7 @@ export default function DashboardPage() {
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-400">
                   <ArrowUpRight className="h-4 w-4" />
                 </div>
-                Income
+                收入
               </div>
               <p className="mt-1 text-lg font-semibold">{loading ? '...' : stats.monthlyIncome.toLocaleString()}</p>
             </div>
@@ -123,7 +131,7 @@ export default function DashboardPage() {
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400">
                   <ArrowDownRight className="h-4 w-4" />
                 </div>
-                Expense
+                支出
               </div>
               <p className="mt-1 text-lg font-semibold">{loading ? '...' : stats.monthlyExpense.toLocaleString()}</p>
             </div>
@@ -136,17 +144,17 @@ export default function DashboardPage() {
       {/* Recent Transactions */}
       <div>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Recent Transactions</h3>
+          <h3 className="text-lg font-semibold">近期交易</h3>
           <Link href="/transactions" className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">
-            See all
+            查看全部
           </Link>
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-sm text-zinc-500">Loading...</div>
+          <div className="text-center py-8 text-sm text-zinc-500">載入中...</div>
         ) : recentTxs.length === 0 ? (
            <div className="text-center py-8 text-sm text-zinc-500 bg-white rounded-xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
-             No recent transactions.
+             近期無交易紀錄。
            </div>
         ) : (
           <div className="space-y-3">
@@ -159,7 +167,7 @@ export default function DashboardPage() {
                     {tx.type === 'expense' ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                   </div>
                   <div>
-                    <div className="font-medium text-sm">{DEFAULT_CATEGORIES.find(c => c.id === tx.categoryId)?.name || 'Custom Category'}</div>
+                    <div className="font-medium text-sm">{DEFAULT_CATEGORIES.find(c => c.id === tx.categoryId)?.name || '自訂分類'}</div>
                     <div className="text-xs text-zinc-500">{format(new Date(tx.date), 'MMM d')}</div>
                   </div>
                 </div>

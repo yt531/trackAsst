@@ -16,7 +16,7 @@ export function AppearanceSettings() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Appearance</h2>
+      <h2 className="text-lg font-semibold">外觀</h2>
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
 
         <div className="flex gap-3">
@@ -29,7 +29,7 @@ export function AppearanceSettings() {
             }`}
           >
             <Sun className="h-6 w-6" />
-            <span className="text-sm font-medium">Light</span>
+            <span className="text-sm font-medium">淺色</span>
           </button>
 
           <button
@@ -41,7 +41,7 @@ export function AppearanceSettings() {
             }`}
           >
             <Moon className="h-6 w-6" />
-            <span className="text-sm font-medium">Dark</span>
+            <span className="text-sm font-medium">深色</span>
           </button>
 
           <button
@@ -53,7 +53,7 @@ export function AppearanceSettings() {
             }`}
           >
             <Monitor className="h-6 w-6" />
-            <span className="text-sm font-medium">System</span>
+            <span className="text-sm font-medium">跟隨系統</span>
           </button>
         </div>
 

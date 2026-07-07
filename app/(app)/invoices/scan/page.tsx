@@ -62,7 +62,7 @@ export default function InvoiceScanPage() {
       
     } catch (e) {
       console.error(e);
-      alert('Failed to save invoice');
+      alert('發票儲存失敗');
     } finally {
       setIsSaving(false);
     }
@@ -71,9 +71,9 @@ export default function InvoiceScanPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">Scan Invoice</h1>
+        <h1 className="text-2xl font-bold tracking-tight">掃描發票</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Scan the QR code on your electronic paper invoice.
+          掃描電子發票證明聯上的 QR 碼。
         </p>
       </header>
 
@@ -85,37 +85,37 @@ export default function InvoiceScanPage() {
             <div className="mb-4 rounded-full bg-green-100 p-3 dark:bg-green-900/30">
               <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-xl font-bold">Invoice Scanned</h2>
+            <h2 className="text-xl font-bold">掃描成功</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              We successfully read the invoice details.
+              已成功讀取發票資訊。
             </p>
             
             {invoiceDetails && (
               <div className="mt-6 w-full rounded-lg bg-zinc-50 p-4 text-left dark:bg-zinc-950">
                 <div className="grid grid-cols-2 gap-4 text-sm mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
                   <div>
-                    <div className="text-zinc-500">Invoice Number</div>
+                    <div className="text-zinc-500">發票號碼</div>
                     <div className="font-medium font-mono">{invoiceDetails.number}</div>
                   </div>
                   <div>
-                    <div className="text-zinc-500">Total Amount</div>
+                    <div className="text-zinc-500">總金額</div>
                     <div className="font-medium text-blue-600 dark:text-blue-400">
                       NT$ {invoiceDetails.totalAmount}
                     </div>
                   </div>
                   <div>
-                    <div className="text-zinc-500">Date (ROC)</div>
+                    <div className="text-zinc-500">發票日期</div>
                     <div className="font-medium">{invoiceDetails.dateStr}</div>
                   </div>
                   <div>
-                    <div className="text-zinc-500">Seller ID</div>
+                    <div className="text-zinc-500">賣方統編</div>
                     <div className="font-medium">{invoiceDetails.sellerId}</div>
                   </div>
                 </div>
 
                 {invoiceDetails.items.length > 0 && (
                    <div>
-                     <div className="text-zinc-500 mb-2 font-medium">Items</div>
+                     <div className="text-zinc-500 mb-2 font-medium">消費明細</div>
                      <ul className="space-y-2">
                        {invoiceDetails.items.map((item: any, idx: number) => (
                          <li key={idx} className="flex justify-between text-sm">
@@ -139,14 +139,14 @@ export default function InvoiceScanPage() {
                 disabled={isSaving}
                 className="flex-1 rounded-xl border border-zinc-200 px-4 py-3 font-medium hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800 disabled:opacity-50"
               >
-                Scan Another
+                繼續掃描
               </button>
               <button
                 onClick={handleSaveToPassbook}
                 disabled={isSaving}
                 className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {isSaving ? 'Saving...' : 'Save to Passbook'}
+                {isSaving ? '儲存中...' : '存入發票存摺'}
               </button>
             </div>
           </div>
@@ -158,16 +158,16 @@ export default function InvoiceScanPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
             <Receipt className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <h3 className="text-lg font-semibold">Record Transaction?</h3>
+          <h3 className="text-lg font-semibold">要記帳嗎？</h3>
           <p className="mt-2 text-sm text-zinc-500">
-            Invoice saved to passbook. Would you like to record this as an expense right now?
+            發票已存入存摺。您現在要將這筆發票記錄為支出嗎？
           </p>
           <div className="mt-6 flex flex-col gap-2">
             <button
               onClick={() => router.push(`/transactions/new?invoiceId=${savedInvoiceId}`)}
               className="rounded-lg bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Yes, record expense
+              是的，立即記帳
             </button>
             <button
               onClick={() => {
@@ -176,7 +176,7 @@ export default function InvoiceScanPage() {
               }}
               className="rounded-lg border border-zinc-200 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800"
             >
-              No, just go to passbook
+              不用，前往發票存摺
             </button>
           </div>
         </div>

@@ -62,10 +62,25 @@ export interface Invoice {
 }
 
 export interface Budget {
-  id: string;
+  id: string; // e.g., userId_month_categoryId
   userId: string;
   amount: number;
+  period: 'daily' | 'monthly';
   month: string; // e.g., '2024-05'
+  categoryId?: string; // Optional, if not provided it's the total budget
+}
+
+export interface SavingGoal {
+  id: string;
+  userId: string;
+  name: string;             // Name (e.g. Travel, First Pot of Gold)
+  targetAmount: number;     // Target amount
+  currentAmount: number;    // Current saved amount
+  targetDate: number;       // Target date (Unix timestamp)
+  reminderFrequency: 'daily' | 'weekly' | 'monthly' | 'none'; // Reminder frequency
+  isFixedAmount: boolean;   // Whether it is a regular fixed amount saving
+  fixedAmountValue?: number; // Regular fixed amount value
+  createdAt: number;
 }
 
 export interface UserSettings {

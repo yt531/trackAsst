@@ -28,6 +28,7 @@ export const COLLECTIONS = {
   PAYMENT_METHODS: 'paymentMethods',
   CATEGORIES: 'categories',
   BUDGETS: 'budgets',
+  SAVING_GOALS: 'savingGoals',
   SETTINGS: 'settings',
 };
 

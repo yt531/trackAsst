@@ -59,7 +59,7 @@ export default function TransactionsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user || !confirm('Are you sure you want to delete this transaction?')) return;
+    if (!user || !confirm('確定要刪除這筆交易紀錄嗎？')) return;
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'transactions', id));
       setTransactions(transactions.filter(t => t.id !== id));
@@ -80,9 +80,9 @@ export default function TransactionsPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
+          <h1 className="text-2xl font-bold tracking-tight">交易紀錄</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Your recent financial activity.
+            您最近的財務活動。
           </p>
         </div>
         <Link
@@ -90,23 +90,23 @@ export default function TransactionsPage() {
           className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Add</span>
+          <span className="hidden sm:inline">新增</span>
         </Link>
       </header>
 
       {loading ? (
-        <div className="text-center text-sm text-zinc-500 py-8">Loading transactions...</div>
+        <div className="text-center text-sm text-zinc-500 py-8">載入交易紀錄中...</div>
       ) : transactions.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
-          <p className="text-sm text-zinc-500 mb-4">No transactions found.</p>
-          <Link href="/transactions/new" className="text-blue-600 hover:underline">Add your first transaction</Link>
+          <p className="text-sm text-zinc-500 mb-4">找不到交易紀錄。</p>
+          <Link href="/transactions/new" className="text-blue-600 hover:underline">新增您的第一筆交易</Link>
         </div>
       ) : (
         <div className="space-y-8">
           {Object.entries(grouped).map(([dateStr, txs]) => (
             <div key={dateStr}>
               <h3 className="mb-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-                {format(new Date(dateStr), 'MMMM d, yyyy')}
+                {format(new Date(dateStr), 'yyyy年MM月dd日')}
               </h3>
               <div className="space-y-2">
                 {txs.map((tx) => {
@@ -122,10 +122,10 @@ export default function TransactionsPage() {
                           {isExpense ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                         </div>
                         <div>
-                          <div className="font-medium">{cat?.name || 'Unknown Category'}</div>
+                          <div className="font-medium">{cat?.name || '未知分類'}</div>
                           <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
-                            <span>{pm?.name || 'Unknown Payment'}</span>
-                            {tx.invoiceId && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded text-[10px]">Invoice</span>}
+                            <span>{pm?.name || '未知支付方式'}</span>
+                            {tx.invoiceId && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded text-[10px]">發票</span>}
                           </div>
                         </div>
                       </div>

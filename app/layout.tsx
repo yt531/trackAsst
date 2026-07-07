@@ -4,8 +4,8 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { ThemeProvider } from 'next-themes';
 
 export const metadata: Metadata = {
-  title: 'Finance App',
-  description: 'Cross-platform personal finance app with offline support',
+  title: 'FinTrack 記帳',
+  description: '支援離線使用的跨平台個人記帳應用程式',
   manifest: '/manifest.json', // Will be useful for PWA
 };
 

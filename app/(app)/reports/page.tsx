@@ -71,7 +71,7 @@ export default function ReportsPage() {
 
   const pieData = Object.entries(expensesByCategory)
     .map(([catId, amount]) => ({
-      name: categoriesMap[catId]?.name || 'Unknown',
+      name: categoriesMap[catId]?.name || '未知',
       value: amount,
     }))
     .sort((a, b) => b.value - a.value);
@@ -100,9 +100,9 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
+          <h1 className="text-2xl font-bold tracking-tight">報表</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Analytics and spending trends.
+            分析與支出趨勢。
           </p>
         </div>
 
@@ -111,7 +111,7 @@ export default function ReportsPage() {
             <ChevronLeft className="h-5 w-5" />
           </button>
           <span className="font-medium min-w-[120px] text-center">
-            {format(currentDate, 'MMMM yyyy')}
+            {format(currentDate, 'yyyy年MM月')}
           </span>
           <button
             onClick={handleNextMonth}
@@ -124,21 +124,21 @@ export default function ReportsPage() {
       </header>
 
       {loading ? (
-        <div className="text-center py-12 text-sm text-zinc-500">Loading reports...</div>
+        <div className="text-center py-12 text-sm text-zinc-500">載入報表中...</div>
       ) : totalExpense === 0 ? (
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
-          <p className="text-sm text-zinc-500">No expenses recorded for {format(currentDate, 'MMMM yyyy')}.</p>
+          <p className="text-sm text-zinc-500">{format(currentDate, 'yyyy年MM月')} 尚無支出紀錄。</p>
         </div>
       ) : (
         <div className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="text-sm text-zinc-500">Total Expenses</div>
+              <div className="text-sm text-zinc-500">總支出</div>
               <div className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">NT$ {totalExpense.toLocaleString()}</div>
             </div>
             <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="text-sm text-zinc-500">Daily Average</div>
+              <div className="text-sm text-zinc-500">日平均支出</div>
               <div className="text-2xl font-bold mt-1">NT$ {Math.round(totalExpense / daysInMonth.length).toLocaleString()}</div>
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function ReportsPage() {
 
             {/* Pie Chart */}
             <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
-              <h3 className="font-semibold mb-6">Expenses by Category</h3>
+              <h3 className="font-semibold mb-6">各分類支出</h3>
               <div className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -185,7 +185,7 @@ export default function ReportsPage() {
 
             {/* Bar Chart */}
             <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
-              <h3 className="font-semibold mb-6">Daily Spending</h3>
+              <h3 className="font-semibold mb-6">每日支出</h3>
               <div className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -194,8 +194,8 @@ export default function ReportsPage() {
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#71717a' }} tickFormatter={(val) => val === 0 ? '' : (val/1000 >= 1 ? `${val/1000}k` : val)} />
                     <RechartsTooltip
                       cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                      formatter={(value: any) => [`NT$ ${Number(value).toLocaleString()}`, 'Spent']}
-                      labelFormatter={(label) => `Day ${label}`}
+                      formatter={(value: any) => [`NT$ ${Number(value).toLocaleString()}`, '支出']}
+                      labelFormatter={(label) => `${label}日`}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
                     <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />

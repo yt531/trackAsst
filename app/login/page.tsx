@@ -18,7 +18,7 @@ export default function LoginPage() {
       await signInWithPopup(auth, googleProvider);
       router.push('/');
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      setError(err.message || '登入失敗');
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ export default function LoginPage() {
         </div>
         <h1 className="mb-2 text-2xl font-bold tracking-tight">FinTrack</h1>
         <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
-          Smart expense tracking with offline support and cloud sync.
+          支援離線與雲端同步的智慧記帳工具。
         </p>
 
         <button
@@ -61,7 +61,7 @@ export default function LoginPage() {
             />
             <path d="M1 1h22v22H1z" fill="none" />
           </svg>
-          {loading ? 'Signing in...' : 'Continue with Google'}
+          {loading ? '登入中...' : '使用 Google 帳號繼續'}
         </button>
 
         {error && (

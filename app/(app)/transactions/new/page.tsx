@@ -59,7 +59,7 @@ function NewTransactionForm() {
         setAmount(invData.totalAmount.toString());
         setDate(new Date(invData.date).toISOString().split('T')[0]);
         const itemsNotes = invData.items?.map(i => `${i.description} x${i.quantity}`).join(', ');
-        setNotes(`Invoice ${invData.id}${itemsNotes ? `\n${itemsNotes}` : ''}`);
+        setNotes(`發票 ${invData.id}${itemsNotes ? `\n${itemsNotes}` : ''}`);
       }
     }
   };
@@ -102,7 +102,7 @@ function NewTransactionForm() {
       router.refresh();
     } catch (error) {
       console.error('Error saving transaction', error);
-      alert('Failed to save transaction');
+      alert('儲存交易失敗');
     } finally {
       setIsSubmitting(false);
     }
@@ -111,13 +111,13 @@ function NewTransactionForm() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">New Transaction</h1>
+        <h1 className="text-2xl font-bold tracking-tight">新增交易</h1>
       </header>
 
       {linkedInvoice && (
         <div className="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
           <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-            Linked to Invoice: {linkedInvoice.id}
+            已連結發票：{linkedInvoice.id}
           </p>
         </div>
       )}
@@ -134,7 +134,7 @@ function NewTransactionForm() {
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
             }`}
           >
-            Expense
+            支出
           </button>
           <button
             type="button"
@@ -145,14 +145,14 @@ function NewTransactionForm() {
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
             }`}
           >
-            Income
+            收入
           </button>
         </div>
 
         {/* Amount & Currency */}
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium">Amount</label>
+            <label className="mb-1 block text-sm font-medium">金額</label>
             <input
               type="number"
               step="0.01"
@@ -164,7 +164,7 @@ function NewTransactionForm() {
             />
           </div>
           <div className="w-24">
-            <label className="mb-1 block text-sm font-medium">Currency</label>
+            <label className="mb-1 block text-sm font-medium">幣別</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
@@ -180,7 +180,7 @@ function NewTransactionForm() {
 
         {currency !== 'TWD' && (
           <div>
-            <label className="mb-1 block text-sm font-medium">Exchange Rate (to Base Currency)</label>
+            <label className="mb-1 block text-sm font-medium">匯率 (轉為基準貨幣)</label>
             <input
               type="number"
               step="0.000001"
@@ -198,14 +198,14 @@ function NewTransactionForm() {
         {/* Category & Payment Method */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Category</label>
+            <label className="mb-1 block text-sm font-medium">分類</label>
             <select
               required
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <option value="" disabled>Select Category</option>
+              <option value="" disabled>選擇分類</option>
               {categories.filter(c => c.type === type).map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -213,27 +213,27 @@ function NewTransactionForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Payment Method</label>
+            <label className="mb-1 block text-sm font-medium">支付方式</label>
             <select
               required
               value={paymentMethodId}
               onChange={(e) => setPaymentMethodId(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <option value="" disabled>Select Payment</option>
+              <option value="" disabled>選擇支付方式</option>
               {paymentMethods.map((pm) => (
                 <option key={pm.id} value={pm.id}>{pm.name}</option>
               ))}
             </select>
             {paymentMethods.length === 0 && (
-              <p className="mt-1 text-xs text-red-500">Please add a payment method in settings.</p>
+              <p className="mt-1 text-xs text-red-500">請在設定中新增支付方式。</p>
             )}
           </div>
         </div>
 
         {/* Date */}
         <div>
-          <label className="mb-1 block text-sm font-medium">Date</label>
+          <label className="mb-1 block text-sm font-medium">日期</label>
           <input
             type="date"
             required
@@ -245,13 +245,13 @@ function NewTransactionForm() {
 
         {/* Notes */}
         <div>
-          <label className="mb-1 block text-sm font-medium">Notes</label>
+          <label className="mb-1 block text-sm font-medium">備註</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Add some details..."
+            placeholder="新增一些詳細資訊..."
           />
         </div>
 
@@ -260,7 +260,7 @@ function NewTransactionForm() {
           disabled={isSubmitting || paymentMethods.length === 0}
           className="w-full rounded-xl bg-blue-600 p-4 text-center font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : 'Save Transaction'}
+          {isSubmitting ? '儲存中...' : '儲存交易'}
         </button>
       </form>
     </div>
@@ -269,7 +269,7 @@ function NewTransactionForm() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div>Loading form...</div>}>
+    <Suspense fallback={<div>載入表單中...</div>}>
       <NewTransactionForm />
     </Suspense>
   );

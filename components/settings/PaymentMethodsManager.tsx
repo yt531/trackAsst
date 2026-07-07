@@ -84,25 +84,25 @@ export function PaymentMethodsManager() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Payment Methods</h2>
+        <h2 className="text-lg font-semibold">支付方式</h2>
         <button
           onClick={() => setIsAdding(!isAdding)}
           className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400"
         >
           <Plus className="h-4 w-4" />
-          Add
+          新增
         </button>
       </div>
 
       {isAdding && (
         <form onSubmit={handleAdd} className="space-y-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
           <div>
-            <label className="mb-1 block text-sm font-medium">Type</label>
+            <label className="mb-1 block text-sm font-medium">類型</label>
             <div className="flex gap-2">
               {[
-                { id: 'bank', icon: Landmark, label: 'Bank' },
-                { id: 'epay', icon: Smartphone, label: 'E-Pay' },
-                { id: 'card', icon: CreditCard, label: 'Card' }
+                { id: 'bank', icon: Landmark, label: '銀行' },
+                { id: 'epay', icon: Smartphone, label: '電子支付' },
+                { id: 'card', icon: CreditCard, label: '票證/信用卡' }
               ].map((t) => (
                 <button
                   key={t.id}
@@ -125,13 +125,13 @@ export function PaymentMethodsManager() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Brand (Optional)</label>
+            <label className="mb-1 block text-sm font-medium">品牌 (選填)</label>
             <select
               value={brandId}
               onChange={(e) => setBrandId(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <option value="">Custom (No predefined icon)</option>
+              <option value="">自訂 (無預設圖示)</option>
               {getBrandList().map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -139,47 +139,47 @@ export function PaymentMethodsManager() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Name *</label>
+            <label className="mb-1 block text-sm font-medium">名稱 *</label>
             <input
               required
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. My Savings Account"
+              placeholder="例如：我的薪轉戶"
               className="w-full rounded-lg border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Notes</label>
+            <label className="mb-1 block text-sm font-medium">備註</label>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional"
+              placeholder="選填"
               className="w-full rounded-lg border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
           </div>
 
           <div className="flex gap-2">
             <button type="submit" className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700">
-              Save
+              儲存
             </button>
             <button
               type="button"
               onClick={() => setIsAdding(false)}
               className="flex-1 rounded-lg border border-zinc-300 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
             >
-              Cancel
+              取消
             </button>
           </div>
         </form>
       )}
 
       {loading ? (
-        <div className="text-sm text-zinc-500">Loading...</div>
+        <div className="text-sm text-zinc-500">載入中...</div>
       ) : methods.length === 0 ? (
-        <div className="text-sm text-zinc-500">No payment methods added yet.</div>
+        <div className="text-sm text-zinc-500">尚未新增支付方式。</div>
       ) : (
         <div className="space-y-2">
           {methods.map((method) => (
