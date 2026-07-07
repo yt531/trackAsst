@@ -1,20 +1,23 @@
 import type {Metadata} from 'next';
 import './globals.css'; // Global styles
 import { AuthProvider } from '@/components/AuthProvider';
+import { ThemeProvider } from 'next-themes';
 
 export const metadata: Metadata = {
-  title: 'My Google AI Studio App',
-  description: 'My Google AI Studio App',
+  title: 'Finance App',
+  description: 'Cross-platform personal finance app with offline support',
   manifest: '/manifest.json', // Will be useful for PWA
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en">
-      <body suppressHydrationWarning className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
