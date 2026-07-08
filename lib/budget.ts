@@ -29,7 +29,12 @@ export async function saveBudget(userId: string, budget: Omit<Budget, 'id'>): Pr
     id: budgetId,
   };
 
-  await setDoc(docRef, fullBudget);
+  const dataToSave = { ...fullBudget };
+  if (dataToSave.categoryId === undefined) {
+    delete dataToSave.categoryId;
+  }
+
+  await setDoc(docRef, dataToSave);
   return fullBudget;
 }
 

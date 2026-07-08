@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
 import { Transaction } from '@/types';
 import Link from 'next/link';
-import { ArrowDownRight, ArrowUpRight, Wallet, Plus } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Plus, ScanLine, ReceiptText } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { getBudgetsByMonth } from '@/lib/budget';
@@ -90,13 +90,15 @@ export default function DashboardPage() {
         <div className="flex gap-2">
            <Link
              href="/invoices/scan"
-             className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+             className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400"
+             title="掃描發票"
            >
-             <Wallet className="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
+             <ScanLine className="h-5 w-5" />
            </Link>
            <Link
              href="/transactions/new"
-             className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+             className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 shadow-sm"
+             title="新增交易"
            >
              <Plus className="h-5 w-5" />
            </Link>
@@ -105,8 +107,8 @@ export default function DashboardPage() {
 
       {/* Hero Card */}
       <div className="rounded-3xl bg-zinc-900 p-6 text-white shadow-xl dark:bg-zinc-800 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10">
-           <Wallet className="w-32 h-32" />
+        <div className="absolute -top-4 -right-4 p-8 opacity-5">
+           <ReceiptText className="w-40 h-40" />
         </div>
         <div className="relative z-10">
           <p className="text-sm font-medium text-zinc-400">當月總預算餘額</p>

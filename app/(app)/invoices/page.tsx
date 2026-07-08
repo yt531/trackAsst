@@ -3,36 +3,53 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
 import { Invoice } from '@/types';
 import Link from 'next/link';
-import { ScanLine, Receipt, Settings2, Cloud, FileText } from 'lucide-react';
-import { format } from 'date-fns';
+import { ScanLine, Receipt, Settings2, Cloud, FileText, ChevronLeft, ChevronRight, Calendar, ArrowDownRight, Hash } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 
 export default function InvoicesPage() {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'cloud' | 'paper'>('cloud');
+  
+  const [filterMode, setFilterMode] = useState<'month' | 'day'>('month');
+  const [filterDate, setFilterDate] = useState<Date>(new Date());
+  const [totals, setTotals] = useState({ expense: 0, count: 0 });
 
   useEffect(() => {
     if (user) {
       loadInvoices();
     }
-  }, [user]);
+  }, [user, filterMode, filterDate, activeTab]);
 
   const loadInvoices = async () => {
     if (!user) return;
     setLoading(true);
     try {
+      const start = filterMode === 'month' ? startOfMonth(filterDate).getTime() : startOfDay(filterDate).getTime();
+      const end = filterMode === 'month' ? endOfMonth(filterDate).getTime() : endOfDay(filterDate).getTime();
+
       const q = query(
         collection(db, 'users', user.uid, 'invoices'),
-        orderBy('date', 'desc'),
-        limit(50)
+        where('date', '>=', start),
+        where('date', '<=', end),
+        orderBy('date', 'desc')
       );
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invoice));
-      setInvoices(data);
+      
+      const filteredData = data.filter(inv => inv.type === activeTab);
+      
+      let exp = 0;
+      filteredData.forEach(inv => {
+        exp += inv.totalAmount;
+      });
+
+      setTotals({ expense: exp, count: filteredData.length });
+      setInvoices(filteredData);
     } catch (e) {
       console.error(e);
     } finally {
@@ -40,16 +57,19 @@ export default function InvoicesPage() {
     }
   };
 
-  const filteredInvoices = invoices.filter(inv => inv.type === activeTab);
+  const handlePrev = () => {
+    setFilterDate(prev => filterMode === 'month' ? subMonths(prev, 1) : subDays(prev, 1));
+  };
+
+  const handleNext = () => {
+    setFilterDate(prev => filterMode === 'month' ? addMonths(prev, 1) : addDays(prev, 1));
+  };
 
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">發票存摺</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            管理您的電子發票。
-          </p>
         </div>
         <Link
           href="/invoices/scan"
@@ -86,6 +106,49 @@ export default function InvoicesPage() {
         </button>
       </div>
 
+      {/* Filter and Stats Area */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+           {/* Mode Switcher */}
+           <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+             <button
+               onClick={() => setFilterMode('month')}
+               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+             >
+               按月
+             </button>
+             <button
+               onClick={() => setFilterMode('day')}
+               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+             >
+               按日
+             </button>
+           </div>
+           
+           {/* Date Selector */}
+           <div className="flex items-center gap-3">
+             <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
+             <div className="flex items-center gap-2 font-medium w-32 justify-center">
+               <Calendar className="w-4 h-4 text-zinc-400" />
+               {filterMode === 'month' ? format(filterDate, 'yyyy年MM月') : format(filterDate, 'MM月dd日')}
+             </div>
+             <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
+           </div>
+        </div>
+
+        {/* Totals */}
+        <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+          <div>
+            <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
+            <div className="text-lg font-semibold mt-1">NT$ {totals.expense.toLocaleString()}</div>
+          </div>
+          <div>
+             <div className="text-xs text-zinc-500 flex items-center gap-1"><Hash className="w-3 h-3 text-blue-500" /> 發票張數</div>
+            <div className="text-lg font-semibold mt-1">{totals.count} <span className="text-sm font-normal text-zinc-500">張</span></div>
+          </div>
+        </div>
+      </div>
+
       {activeTab === 'cloud' && (
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
           <Cloud className="mx-auto mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-700" />
@@ -99,11 +162,11 @@ export default function InvoicesPage() {
       {activeTab === 'paper' && (
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center text-sm text-zinc-500 py-8">載入發票中...</div>
-          ) : filteredInvoices.length === 0 ? (
+            <div className="text-center text-sm text-zinc-500 py-8">載入中...</div>
+          ) : invoices.length === 0 ? (
             <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
               <Receipt className="mx-auto mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-700" />
-              <h3 className="text-lg font-medium">尚無紙本發票紀錄</h3>
+              <h3 className="text-lg font-medium">此期間尚無發票紀錄</h3>
               <p className="mt-2 text-sm text-zinc-500">
                 掃描您的紙本電子發票以在此處追蹤它們。
               </p>
@@ -116,7 +179,7 @@ export default function InvoicesPage() {
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {filteredInvoices.map((inv) => (
+              {invoices.map((inv) => (
                 <div key={inv.id} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="flex items-start justify-between">
                     <div>

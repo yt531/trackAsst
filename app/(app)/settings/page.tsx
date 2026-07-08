@@ -1,10 +1,10 @@
 'use client';
 
-import { PaymentMethodsManager } from '@/components/settings/PaymentMethodsManager';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { DataExportImport } from '@/components/settings/DataExportImport';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { Fingerprint } from 'lucide-react';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   return (
@@ -25,7 +25,23 @@ export default function SettingsPage() {
       </section>
 
       <section>
-        <PaymentMethodsManager />
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">財務</h2>
+          <Link href="/settings/payment-methods" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <span className="text-xl">💳</span>
+              </div>
+              <div>
+                <div className="font-medium">支付方式管理</div>
+                <div className="text-sm text-zinc-500">新增或修改您的銀行帳戶、電子支付與信用卡</div>
+              </div>
+            </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
+        </div>
       </section>
 
       <section>

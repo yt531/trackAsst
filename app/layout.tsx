@@ -4,8 +4,8 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { ThemeProvider } from 'next-themes';
 
 export const metadata: Metadata = {
-  title: 'FinTrack 記帳',
-  description: '支援離線使用的跨平台個人記帳應用程式',
+  title: '輕鬆記 (FinTrack) - 輕鬆記、不忘記',
+  description: '簡單、無壓力的個人記帳與發票存摺應用程式',
   manifest: '/manifest.json', // Will be useful for PWA
 };
 
