@@ -1,11 +1,9 @@
 'use client';
 
 import { useAuth } from '@/components/AuthProvider';
-import { Settings, LogOut } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -37,15 +35,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return null; // Will redirect in AuthProvider
   }
 
-  const tabs = [
+  const mainTabs = [
     { name: '首頁', href: '/', emoji: '🏠' },
-    { name: '紀錄', href: '/transactions', emoji: '📝' },
     { name: '發票', href: '/invoices', emoji: '🧾' },
-    { name: '掃描', href: '/invoices/scan', emoji: '📷', highlight: true },
+    { name: '記帳', href: '/transactions/new', emoji: '➕', highlight: true },
+    { name: '紀錄', href: '/transactions', emoji: '📝' },
     { name: '預算', href: '/budgets', emoji: '💰' },
+  ];
+
+  const topTabs = [
     { name: '存錢', href: '/saving-goals', emoji: '🎯' },
     { name: '報表', href: '/reports', emoji: '📊' },
   ];
+
+  const allTabs = [...mainTabs, ...topTabs];
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950">
@@ -53,15 +56,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className={`fixed top-0 inset-x-0 z-50 flex h-14 items-center justify-between border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80 md:hidden transition-transform duration-300 ${isNavVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <span className="font-bold">輕鬆記</span>
         <div className="flex items-center gap-4">
-          <Link href="/settings" className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
+          {topTabs.map(tab => (
+             <Link key={tab.name} href={tab.href} className={`text-sm font-medium transition-colors ${pathname === tab.href ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'}`}>
+               {tab.name}
+             </Link>
+          ))}
+          <Link href="/settings" className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 ml-2">
             <Settings className="h-5 w-5" />
           </Link>
-          <button 
-            onClick={() => signOut(auth)}
-            className="text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
         </div>
       </header>
 
@@ -76,7 +78,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="text-xl font-bold">輕鬆記 (FinTrack)</span>
         </div>
         <nav className="flex-1 space-y-1 p-4">
-          {tabs.map((tab) => {
+          {allTabs.map((tab) => {
             const isActive = pathname === tab.href;
             return (
               <Link
@@ -99,19 +101,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
              <Settings className="h-5 w-5" />
              設定
            </Link>
-           <button 
-             onClick={() => signOut(auth)}
-             className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-red-600 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-red-400"
-           >
-             <LogOut className="h-5 w-5" />
-             登出
-           </button>
         </div>
       </aside>
 
       {/* Mobile Bottom Tab Bar */}
       <div className={`fixed inset-x-0 bottom-0 z-50 flex h-16 items-center justify-around border-t border-zinc-200 bg-white/90 px-2 backdrop-blur-lg dark:border-zinc-800 dark:bg-zinc-900/90 md:hidden transition-transform duration-300 ${isNavVisible ? 'translate-y-0' : 'translate-y-full'}`}>
-        {tabs.map((tab) => {
+        {mainTabs.map((tab) => {
           const isActive = pathname === tab.href;
           return (
             <Link

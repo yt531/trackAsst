@@ -1,14 +1,13 @@
 'use client';
 
-import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
-import { DataExportImport } from '@/components/settings/DataExportImport';
-import { NotificationSettings } from '@/components/settings/NotificationSettings';
-import { Fingerprint } from 'lucide-react';
+import { Fingerprint, User, Palette, LogOut, Tags, Bell, Shield, Database } from 'lucide-react';
 import Link from 'next/link';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">設定</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -17,16 +16,60 @@ export default function SettingsPage() {
       </header>
 
       <section>
-        <AppearanceSettings />
-      </section>
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">一般</h2>
+          
+          <Link href="/settings/account" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <User className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">帳號管理</div>
+                <div className="text-sm text-zinc-500">查看您的使用者資訊與登入方式</div>
+              </div>
+            </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
 
-      <section>
-        <NotificationSettings />
+          <Link href="/settings/appearance" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <Palette className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">外觀 (色彩模式)</div>
+                <div className="text-sm text-zinc-500">切換淺色、深色或跟隨系統設定</div>
+              </div>
+            </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
+
+          <Link href="/settings/notifications" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <Bell className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">通知與提醒管理</div>
+                <div className="text-sm text-zinc-500">管理應用程式的推播通知</div>
+              </div>
+            </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
+        </div>
       </section>
 
       <section>
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">財務</h2>
+          
           <Link href="/settings/payment-methods" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
@@ -41,36 +84,69 @@ export default function SettingsPage() {
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
           </Link>
+
+          <Link href="/settings/categories" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <Tags className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">交易分類管理</div>
+                <div className="text-sm text-zinc-500">新增或修改您的交易分類</div>
+              </div>
+            </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
         </div>
       </section>
 
       <section>
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">安全性</h2>
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex items-center justify-between opacity-50 cursor-not-allowed">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                  <Fingerprint className="h-5 w-5 text-zinc-500" />
-                </div>
-                <div>
-                  <div className="font-medium">生物辨識解鎖</div>
-                  <div className="text-sm text-zinc-500">需要 Face ID / Touch ID 才能開啟應用程式</div>
-                </div>
+          <h2 className="text-lg font-semibold">進階</h2>
+
+          <Link href="/settings/security" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <Shield className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
               </div>
-              <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-zinc-200 dark:bg-zinc-700">
-                 <span className="inline-block h-4 w-4 translate-x-1 rounded-full bg-white transition" />
+              <div>
+                <div className="font-medium">安全性管理</div>
+                <div className="text-sm text-zinc-500">管理應用程式的安全設定</div>
               </div>
             </div>
-            <p className="mt-3 text-xs text-zinc-400">注意：生物辨識需要 WebAuthn，將在未來的更新中提供。</p>
-          </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
+
+          <Link href="/settings/data" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <Database className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">資料管理</div>
+                <div className="text-sm text-zinc-500">匯出或匯入您的應用程式資料</div>
+              </div>
+            </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
         </div>
       </section>
 
-      <section>
-        <DataExportImport />
+      <section className="pt-4">
+        <button 
+          onClick={() => signOut(auth)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-4 font-medium text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors"
+        >
+          <LogOut className="h-5 w-5" />
+          登出
+        </button>
       </section>
-
     </div>
   );
 }

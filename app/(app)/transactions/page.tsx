@@ -1,37 +1,46 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { Transaction, Category, PaymentMethod } from '@/types';
 import Link from 'next/link';
-import { Plus, Trash2, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Plus, Trash2, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Calendar, Pencil } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { useSearchParams } from 'next/navigation';
 
-export default function TransactionsPage() {
+function TransactionsList() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Record<string, Category>>({});
   const [paymentMethods, setPaymentMethods] = useState<Record<string, PaymentMethod>>({});
   const [loading, setLoading] = useState(true);
   
-  const [filterMode, setFilterMode] = useState<'month' | 'day'>('month');
-  const [filterDate, setFilterDate] = useState<Date>(new Date());
+  const initialFilterMode = (searchParams.get('filterMode') as 'month' | 'day') || 'month';
+  const initialDateStr = searchParams.get('date');
+  const initialCategoryId = searchParams.get('categoryId') || null;
+
+  const [filterMode, setFilterMode] = useState<'month' | 'day'>(initialFilterMode);
+  const [filterDate, setFilterDate] = useState<Date>(initialDateStr ? new Date(initialDateStr) : new Date());
+  const [filterCategoryId, setFilterCategoryId] = useState<string | null>(initialCategoryId);
   const [totals, setTotals] = useState({ income: 0, expense: 0 });
 
   useEffect(() => {
     if (user) {
       loadData();
     }
-  }, [user, filterMode, filterDate]);
+  }, [user, filterMode, filterDate, filterCategoryId]);
 
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      // Load Categories (ideally cached, but for simplicity we reload or use state if already loaded)
+      // Load Categories
       if (Object.keys(categories).length === 0) {
         const catSnapshot = await getDocs(collection(db, 'users', user.uid, 'categories'));
         const customCats = catSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
@@ -43,8 +52,8 @@ export default function TransactionsPage() {
       // Load Payment Methods
       if (Object.keys(paymentMethods).length === 0) {
         const pmSnapshot = await getDocs(collection(db, 'users', user.uid, 'paymentMethods'));
-        const pmMap = pmSnapshot.docs.reduce((acc, doc) => {
-          acc[doc.id] = { id: doc.id, ...doc.data() } as PaymentMethod;
+        const pmMap = pmSnapshot.docs.reduce((acc, d) => {
+          acc[d.id] = { id: d.id, ...d.data() } as PaymentMethod;
           return acc;
         }, {} as Record<string, PaymentMethod>);
         setPaymentMethods(pmMap);
@@ -54,12 +63,17 @@ export default function TransactionsPage() {
       const start = filterMode === 'month' ? startOfMonth(filterDate).getTime() : startOfDay(filterDate).getTime();
       const end = filterMode === 'month' ? endOfMonth(filterDate).getTime() : endOfDay(filterDate).getTime();
 
-      const q = query(
+      let q = query(
         collection(db, 'users', user.uid, 'transactions'),
         where('date', '>=', start),
         where('date', '<=', end),
         orderBy('date', 'desc')
       );
+
+      if (filterCategoryId) {
+        q = query(q, where('categoryId', '==', filterCategoryId));
+      }
+
       const snapshot = await getDocs(q);
       const txs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Transaction));
       
@@ -116,6 +130,12 @@ export default function TransactionsPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">交易紀錄</h1>
+          {filterCategoryId && (
+            <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+              篩選分類: {categories[filterCategoryId]?.name || '未知分類'}
+              <button onClick={() => setFilterCategoryId(null)} className="ml-2 underline text-xs">清除篩選</button>
+            </p>
+          )}
         </div>
         <Link
           href="/transactions/new"
@@ -148,10 +168,12 @@ export default function TransactionsPage() {
            {/* Date Selector */}
            <div className="flex items-center gap-3">
              <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
-             <div className="flex items-center gap-2 font-medium w-32 justify-center">
-               <Calendar className="w-4 h-4 text-zinc-400" />
-               {filterMode === 'month' ? format(filterDate, 'yyyy年MM月') : format(filterDate, 'MM月dd日')}
-             </div>
+             <DatePicker
+               type={filterMode === 'month' ? 'month' : 'date'}
+               value={filterMode === 'month' ? format(filterDate, 'yyyy-MM') : format(filterDate, 'yyyy-MM-dd')}
+               onChange={(val) => setFilterDate(val ? new Date(val) : new Date())}
+               className="w-48"
+             />
              <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
            </div>
         </div>
@@ -199,7 +221,11 @@ export default function TransactionsPage() {
                         <div>
                           <div className="font-medium">{cat?.name || '未知分類'}</div>
                           <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
-                            <span>{pm?.name || '未知支付方式'}</span>
+                            <span>
+                              {tx.paymentMethodId === 'unset' 
+                                ? '未設定支付方式' 
+                                : (pm?.name || '未知支付方式')}
+                            </span>
                             {tx.invoiceId && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded text-[10px]">發票</span>}
                           </div>
                         </div>
@@ -215,12 +241,22 @@ export default function TransactionsPage() {
                              </div>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleDelete(tx.id)}
-                          className="text-zinc-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-2"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Link
+                            href={`/transactions/new?editId=${tx.id}`}
+                            className="text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 p-2"
+                            title="修改"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(tx.id)}
+                            className="text-zinc-400 hover:text-red-600 dark:hover:text-red-400 p-2"
+                            title="刪除"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -231,5 +267,13 @@ export default function TransactionsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500">載入中...</div>}>
+      <TransactionsList />
+    </Suspense>
   );
 }

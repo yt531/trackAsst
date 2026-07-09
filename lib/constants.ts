@@ -40,6 +40,7 @@ export const PREDEFINED_BANKS = [
 
 export const PREDEFINED_EPAYS = [
   { id: 'linepay', name: 'LINE Pay' },
+  { id: 'linepaymoney', name: 'LINE Pay Money' },
   { id: 'ipassmoney', name: 'iPass Money' }, // Clarified
   { id: 'jkopay', name: '街口支付' },
   { id: 'taiwanpay', name: '台灣 Pay' },

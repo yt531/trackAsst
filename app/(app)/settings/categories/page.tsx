@@ -1,0 +1,229 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import { db } from '@/lib/firebase';
+import { collection, query, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { Category } from '@/types';
+import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { useRouter } from 'next/navigation';
+
+export default function CategoriesPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  
+  const [customCategories, setCustomCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form State
+  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (user) loadCategories();
+  }, [user]);
+
+  const loadCategories = async () => {
+    if (!user) return;
+    try {
+      const q = query(collection(db, 'users', user.uid, 'categories'));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      setCustomCategories(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !name) return;
+    setIsSaving(true);
+    
+    try {
+      const newCat = {
+        name,
+        type,
+        icon: type === 'expense' ? 'shopping-bag' : 'plus-circle', // Default icon
+        isCustom: true,
+        order: customCategories.length
+      };
+      
+      const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), newCat);
+      setCustomCategories([...customCategories, { id: docRef.id, ...newCat }]);
+      setIsAdding(false);
+      setName('');
+    } catch (e) {
+      console.error(e);
+      alert('新增失敗');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!user || !confirm('確定要刪除此分類嗎？相關的交易紀錄不會被刪除，但可能會無法顯示正確分類名稱。')) return;
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'categories', id));
+      setCustomCategories(customCategories.filter(c => c.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('刪除失敗');
+    }
+  };
+
+  const allCategories = [...DEFAULT_CATEGORIES, ...customCategories];
+  const expenseCategories = allCategories.filter(c => c.type === 'expense');
+  const incomeCategories = allCategories.filter(c => c.type === 'income');
+
+  return (
+    <div className="space-y-6 pb-20">
+      <header className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button onClick={() => router.push('/settings')} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">交易分類管理</h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              管理您的收入與支出分類
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsAdding(!isAdding)}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">新增分類</span>
+        </button>
+      </header>
+
+      {isAdding && (
+        <form onSubmit={handleAdd} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div>
+            <label className="mb-1 block text-sm font-medium">類型</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setType('expense')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg border p-2 text-sm ${
+                  type === 'expense'
+                    ? 'border-red-600 bg-red-50 text-red-700 dark:border-red-500 dark:bg-red-900/20 dark:text-red-400'
+                    : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800'
+                }`}
+              >
+                <ArrowDownRight className="h-4 w-4" />
+                支出
+              </button>
+              <button
+                type="button"
+                onClick={() => setType('income')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg border p-2 text-sm ${
+                  type === 'income'
+                    ? 'border-green-600 bg-green-50 text-green-700 dark:border-green-500 dark:bg-green-900/20 dark:text-green-400'
+                    : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800'
+                }`}
+              >
+                <ArrowUpRight className="h-4 w-4" />
+                收入
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">分類名稱 *</label>
+            <input
+              required
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="例如：訂閱服務"
+              className="w-full rounded-lg border border-zinc-300 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsAdding(false)}
+              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSaving ? '儲存中...' : '儲存'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="text-sm text-zinc-500 text-center py-4">載入中...</div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* 支出分類 */}
+          <div>
+            <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
+              <ArrowDownRight className="h-5 w-5 text-red-500" />
+              支出分類
+            </h2>
+            <div className="space-y-2">
+              {expenseCategories.map((cat) => (
+                <div key={cat.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex items-center gap-3">
+                    <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
+                    {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
+                  </div>
+                  {cat.isCustom && (
+                    <button
+                      onClick={() => handleDelete(cat.id)}
+                      className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 收入分類 */}
+          <div>
+            <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
+              <ArrowUpRight className="h-5 w-5 text-green-500" />
+              收入分類
+            </h2>
+            <div className="space-y-2">
+              {incomeCategories.map((cat) => (
+                <div key={cat.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex items-center gap-3">
+                    <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
+                    {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
+                  </div>
+                  {cat.isCustom && (
+                    <button
+                      onClick={() => handleDelete(cat.id)}
+                      className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

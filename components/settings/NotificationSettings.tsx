@@ -28,8 +28,11 @@ export function NotificationSettings() {
 
       if (p === 'granted') {
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-        if (!vapidKey) {
-          console.error('VAPID key not found in env');
+        const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+        
+        if (!vapidKey || !apiKey) {
+          console.error('Firebase configuration (VAPID key or API key) not found in env.');
+          alert('Firebase 設定未正確載入，請重新啟動開發伺服器 (npm run dev) 以載入 .env 檔案。');
           return;
         }
 

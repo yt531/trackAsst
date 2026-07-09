@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
 import { PaymentMethod, PaymentMethodType } from '@/types';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Pencil } from 'lucide-react';
 import { PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,10 +13,9 @@ import { useRouter } from 'next/navigation';
 export default function PaymentMethodsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [originalMethods, setOriginalMethods] = useState<PaymentMethod[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Form State
@@ -35,7 +34,6 @@ export default function PaymentMethodsPage() {
       const q = query(collection(db, 'users', user.uid, 'paymentMethods'));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
-      setOriginalMethods(data);
       setMethods(data);
     } catch (e) {
       console.error(e);
@@ -44,51 +42,33 @@ export default function PaymentMethodsPage() {
     }
   };
 
-  const handleAddLocal = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
-    const newMethod: PaymentMethod = {
-      id: `temp-${Date.now()}`, // Temporary ID
-      type,
-      brandId,
-      name,
-      notes,
-      isDefault: methods.length === 0,
-    };
-    setMethods([...methods, newMethod]);
-    setIsAdding(false);
-    setName('');
-    setNotes('');
-    setBrandId('');
-  };
-
-  const handleDeleteLocal = (id: string) => {
-    setMethods(methods.filter(m => m.id !== id));
-  };
-
-  const hasChanges = JSON.stringify(originalMethods) !== JSON.stringify(methods);
-
-  const handleSave = async () => {
-    if (!user) return;
+    if (!name || !user) return;
     setIsSaving(true);
     try {
-      // Find deletions
-      const deleted = originalMethods.filter(om => !methods.find(m => m.id === om.id));
-      for (const d of deleted) {
-        await deleteDoc(doc(db, 'users', user.uid, 'paymentMethods', d.id));
+      const methodData = {
+        type,
+        brandId,
+        name,
+        notes,
+      };
+      
+      if (editingId && editingId !== 'new') {
+        await updateDoc(doc(db, 'users', user.uid, 'paymentMethods', editingId), methodData);
+      } else {
+        await addDoc(collection(db, 'users', user.uid, 'paymentMethods'), {
+          ...methodData,
+          isDefault: methods.length === 0,
+        });
       }
-
-      // Find additions (have 'temp-' prefix)
-      const added = methods.filter(m => m.id.startsWith('temp-'));
-      for (const a of added) {
-        const { id, ...data } = a; // omit temp id
-        await addDoc(collection(db, 'users', user.uid, 'paymentMethods'), data);
-      }
-
-      // Re-fetch to get real IDs
+      
       await loadMethods();
-      alert('儲存成功');
-      router.push('/settings');
+      setEditingId(null);
+      setName('');
+      setNotes('');
+      setBrandId('');
+      router.refresh();
     } catch (e) {
       console.error(e);
       alert('儲存失敗');
@@ -97,13 +77,33 @@ export default function PaymentMethodsPage() {
     }
   };
 
-  const handleCancel = () => {
-    if (hasChanges) {
-      if (confirm('尚有未儲存的修改，確定要放棄修改並返回嗎？')) {
-        router.push('/settings');
-      }
-    } else {
-      router.push('/settings');
+  const handleEdit = (method: PaymentMethod) => {
+    setEditingId(method.id);
+    setType(method.type);
+    setBrandId(method.brandId || '');
+    setName(method.name);
+    setNotes(method.notes || '');
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!user || !confirm('確定要刪除此支付方式嗎？這會將相關的支出紀錄設為「未設定支付方式」。')) return;
+    try {
+      // 1. Delete payment method
+      await deleteDoc(doc(db, 'users', user.uid, 'paymentMethods', id));
+      
+      // 2. Update transactions to 'unset'
+      const txQuery = query(collection(db, 'users', user.uid, 'transactions'), where('paymentMethodId', '==', id));
+      const txSnapshot = await getDocs(txQuery);
+      const updatePromises = txSnapshot.docs.map(txDoc => 
+        updateDoc(doc(db, 'users', user.uid, 'transactions', txDoc.id), { paymentMethodId: 'unset' })
+      );
+      await Promise.all(updatePromises);
+      
+      await loadMethods();
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      alert('刪除失敗');
     }
   };
 
@@ -119,9 +119,9 @@ export default function PaymentMethodsPage() {
   return (
     <div className="space-y-6">
       <header className="flex items-center gap-4">
-        <button onClick={handleCancel} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
+        <Link href="/settings" className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="w-6 h-6" />
-        </button>
+        </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">支付方式管理</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -133,7 +133,13 @@ export default function PaymentMethodsPage() {
       <div className="space-y-4 pb-20">
         <div className="flex justify-end">
           <button
-            onClick={() => setIsAdding(!isAdding)}
+            onClick={() => {
+              setEditingId('new');
+              setType('bank');
+              setBrandId('');
+              setName('');
+              setNotes('');
+            }}
             className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400"
           >
             <Plus className="h-4 w-4" />
@@ -141,8 +147,8 @@ export default function PaymentMethodsPage() {
           </button>
         </div>
 
-        {isAdding && (
-          <form onSubmit={handleAddLocal} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        {editingId && (
+          <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <div>
               <label className="mb-1 block text-sm font-medium">類型</label>
               <div className="flex gap-2">
@@ -216,15 +222,15 @@ export default function PaymentMethodsPage() {
             </div>
 
             <div className="flex gap-2">
-              <button type="submit" className="flex-1 rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
-                加入清單
+              <button type="submit" disabled={isSaving} className="flex-1 rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 disabled:opacity-50">
+                {isSaving ? '儲存中...' : '儲存'}
               </button>
               <button
                 type="button"
-                onClick={() => setIsAdding(false)}
+                onClick={() => setEditingId(null)}
                 className="flex-1 rounded-lg border border-zinc-300 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
               >
-                取消新增
+                取消
               </button>
             </div>
           </form>
@@ -239,8 +245,11 @@ export default function PaymentMethodsPage() {
         ) : (
           <div className="space-y-2">
             {methods.map((method) => (
-              <div key={method.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="flex items-center gap-3">
+              <div 
+                key={method.id} 
+                className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-700 transition-colors group"
+              >
+                <Link href={`/settings/payment-methods/${method.id}`} className="flex-1 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
                     {method.type === 'bank' && '🏦'}
                     {method.type === 'epay' && '📱'}
@@ -251,36 +260,31 @@ export default function PaymentMethodsPage() {
                     <div className="font-medium text-sm">{method.name}</div>
                     {method.notes && <div className="text-xs text-zinc-500">{method.notes}</div>}
                   </div>
+                </Link>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleEdit(method);
+                    }}
+                    className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <Pencil className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDelete(method.id);
+                    }}
+                    className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDeleteLocal(method.id)}
-                  className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
               </div>
             ))}
           </div>
         )}
-      </div>
-
-      {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-zinc-200 dark:bg-zinc-900/80 dark:border-zinc-800 md:pl-64 flex gap-3 z-50">
-        <button
-          onClick={handleCancel}
-          className="flex-1 rounded-xl border border-zinc-300 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800 transition-colors"
-        >
-          取消
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={!hasChanges || isSaving}
-          className={`flex-1 rounded-xl py-3 text-sm font-medium text-white transition-colors ${
-            hasChanges && !isSaving ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-400 cursor-not-allowed dark:bg-blue-800'
-          }`}
-        >
-          {isSaving ? '儲存中...' : '儲存變更'}
-        </button>
       </div>
     </div>
   );

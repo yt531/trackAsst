@@ -6,6 +6,7 @@ import { getSavingGoals, saveSavingGoal, updateSavingGoalAmount, deleteSavingGoa
 import type { SavingGoal } from '@/types';
 import { format } from 'date-fns';
 import { Target, Plus, Check, PlusCircle, Trash2, Bell } from 'lucide-react';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 export default function SavingGoalsPage() {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ export default function SavingGoalsPage() {
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [currentAmount, setCurrentAmount] = useState('0');
-  const [targetDate, setTargetDate] = useState('');
+  const [targetDate, setTargetDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [reminderFrequency, setReminderFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'none'>('none');
   const [isFixedAmount, setIsFixedAmount] = useState(false);
   const [fixedAmountValue, setFixedAmountValue] = useState('');
@@ -52,7 +53,7 @@ export default function SavingGoalsPage() {
     setName('');
     setTargetAmount('');
     setCurrentAmount('0');
-    setTargetDate('');
+    setTargetDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
     setReminderFrequency('none');
     setIsFixedAmount(false);
     setFixedAmountValue('');
@@ -63,7 +64,7 @@ export default function SavingGoalsPage() {
     setName(goal.name);
     setTargetAmount(goal.targetAmount.toString());
     setCurrentAmount(goal.currentAmount.toString());
-    setTargetDate(format(new Date(goal.targetDate), 'yyyy-MM-dd'));
+    setTargetDate(format(new Date(goal.targetDate), "yyyy-MM-dd'T'HH:mm"));
     setReminderFrequency(goal.reminderFrequency);
     setIsFixedAmount(goal.isFixedAmount);
     setFixedAmountValue(goal.fixedAmountValue?.toString() || '');
@@ -75,7 +76,7 @@ export default function SavingGoalsPage() {
     if (!user) return;
 
     try {
-      await saveSavingGoal(user.uid, {
+      const goalData: Omit<SavingGoal, 'id' | 'createdAt'> = {
         userId: user.uid,
         name,
         targetAmount: Number(targetAmount),
@@ -83,8 +84,13 @@ export default function SavingGoalsPage() {
         targetDate: new Date(targetDate).getTime(),
         reminderFrequency,
         isFixedAmount,
-        fixedAmountValue: isFixedAmount && fixedAmountValue ? Number(fixedAmountValue) : undefined,
-      }, editingGoal?.id);
+      };
+
+      if (isFixedAmount && fixedAmountValue) {
+        goalData.fixedAmountValue = Number(fixedAmountValue);
+      }
+
+      await saveSavingGoal(user.uid, goalData, editingGoal?.id);
 
       await loadGoals();
       resetForm();
@@ -185,12 +191,11 @@ export default function SavingGoalsPage() {
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">目標完成日</label>
-                <input
-                  type="date"
+                <DatePicker
+                  type="datetime-local"
                   required
                   value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
+                  onChange={(val) => setTargetDate(val)}
                 />
               </div>
 
