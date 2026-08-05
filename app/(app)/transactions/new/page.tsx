@@ -349,8 +349,7 @@ function TransactionForm() {
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="field-sizing-content w-full min-h-[80px] rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             placeholder="新增一些詳細資訊..."
           />
         </div>
@@ -393,7 +392,7 @@ function TransactionForm() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
               {tags.length === 0 ? (
                 <div className="text-center text-sm text-zinc-500 py-8">
                   目前沒有任何標籤。<br/>請至設定頁面新增標籤。

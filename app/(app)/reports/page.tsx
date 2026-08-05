@@ -10,7 +10,16 @@ import { startOfMonth, endOfMonth, format, subMonths, eachDayOfInterval } from '
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b'];
+const COLORS = [
+  'var(--color-chart-1)',
+  'var(--color-chart-2)',
+  'var(--color-chart-3)',
+  'var(--color-chart-4)',
+  'var(--color-chart-5)',
+  'var(--color-chart-6)',
+  'var(--color-chart-7)',
+  'var(--color-chart-8)'
+];
 
 export default function ReportsPage() {
   const { user } = useAuth();
@@ -130,7 +139,7 @@ export default function ReportsPage() {
           <p className="text-sm text-zinc-500">{format(currentDate, 'yyyy年MM月')} 尚無支出紀錄。</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="@container space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
@@ -144,7 +153,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Charts Row */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid @md:grid-cols-2 gap-6">
 
             {/* Pie Chart */}
             <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">

@@ -106,36 +106,36 @@ export default function DashboardPage() {
       </header>
 
       {/* Hero Card */}
-      <div className="rounded-3xl bg-zinc-900 p-6 text-white shadow-xl dark:bg-zinc-800 relative overflow-hidden">
-        <div className="absolute -top-4 -right-4 p-8 opacity-5">
+      <div className="rounded-3xl bg-white p-6 shadow-xl shadow-zinc-200/40 border border-zinc-100 dark:bg-zinc-800 dark:shadow-none dark:border-zinc-700 relative overflow-hidden">
+        <div className="absolute -top-4 -right-4 p-8 opacity-[0.03] text-zinc-900 dark:opacity-5 dark:text-white">
            <ReceiptText className="w-40 h-40" />
         </div>
         <div className="relative z-10">
-          <p className="text-sm font-medium text-zinc-400">當月總預算餘額</p>
-          <h2 className="mt-2 text-4xl font-bold tracking-tight">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">當月總預算餘額</p>
+          <h2 className="mt-2 text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
             {loading ? '...' : `NT$ ${(stats.budget - stats.monthlyExpense).toLocaleString()}`}
           </h2>
-          <p className="mt-1 text-xs text-zinc-500">總預算: ${stats.budget.toLocaleString()}</p>
+          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">總預算: ${stats.budget.toLocaleString()}</p>
 
-          <div className="mt-8 flex items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-sm text-zinc-400">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-400">
+          <div className="mt-8 flex items-center gap-4">
+            <div className="flex-1 rounded-2xl bg-green-50/50 p-4 border border-green-100/50 dark:bg-green-900/10 dark:border-green-900/20">
+              <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 font-medium">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/20">
                   <ArrowUpRight className="h-4 w-4" />
                 </div>
                 收入
               </div>
-              <p className="mt-1 text-lg font-semibold">{loading ? '...' : stats.monthlyIncome.toLocaleString()}</p>
+              <p className="mt-2 text-xl font-bold text-green-800 dark:text-green-400">{loading ? '...' : stats.monthlyIncome.toLocaleString()}</p>
             </div>
-            <div className="h-8 w-[1px] bg-zinc-700"></div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-sm text-zinc-400">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400">
+            
+            <div className="flex-1 rounded-2xl bg-red-50/50 p-4 border border-red-100/50 dark:bg-red-900/10 dark:border-red-900/20">
+              <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400 font-medium">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20">
                   <ArrowDownRight className="h-4 w-4" />
                 </div>
                 支出
               </div>
-              <p className="mt-1 text-lg font-semibold">{loading ? '...' : stats.monthlyExpense.toLocaleString()}</p>
+              <p className="mt-2 text-xl font-bold text-red-800 dark:text-red-400">{loading ? '...' : stats.monthlyExpense.toLocaleString()}</p>
             </div>
           </div>
         </div>

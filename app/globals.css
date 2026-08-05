@@ -1,6 +1,39 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@theme {
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+}
+
+:root {
+  --chart-1: var(--color-blue-500);
+  --chart-2: var(--color-emerald-500);
+  --chart-3: var(--color-amber-500);
+  --chart-4: var(--color-red-500);
+  --chart-5: var(--color-violet-500);
+  --chart-6: var(--color-pink-500);
+  --chart-7: var(--color-cyan-500);
+  --chart-8: var(--color-slate-500);
+}
+
+.dark {
+  --chart-1: var(--color-blue-400);
+  --chart-2: var(--color-emerald-400);
+  --chart-3: var(--color-amber-400);
+  --chart-4: var(--color-red-400);
+  --chart-5: var(--color-violet-400);
+  --chart-6: var(--color-pink-400);
+  --chart-7: var(--color-cyan-400);
+  --chart-8: var(--color-slate-400);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @keyframes scan {
