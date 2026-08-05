@@ -30,6 +30,7 @@ export const COLLECTIONS = {
   BUDGETS: 'budgets',
   SAVING_GOALS: 'savingGoals',
   SETTINGS: 'settings',
+  TAGS: 'tags',
 };
 
 // Generic Helper to get a Subcollection Reference (users/{userId}/{collectionName})

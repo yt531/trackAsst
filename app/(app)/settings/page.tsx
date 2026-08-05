@@ -99,6 +99,21 @@ export default function SettingsPage() {
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
           </Link>
+
+          <Link href="/settings/tags" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <Tags className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">標籤管理</div>
+                <div className="text-sm text-zinc-500">新增或修改您的交易標籤</div>
+              </div>
+            </div>
+            <div className="text-zinc-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </Link>
         </div>
       </section>
 

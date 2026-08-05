@@ -5,10 +5,11 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PaymentMethod, Category, Invoice, Transaction } from '@/types';
+import { PaymentMethod, Category, Invoice, Transaction, Tag } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
+import { Search, X, Plus } from 'lucide-react';
 
 function TransactionForm() {
   const { user } = useAuth();
@@ -25,9 +26,14 @@ function TransactionForm() {
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [notes, setNotes] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [linkedInvoice, setLinkedInvoice] = useState<Invoice | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -54,6 +60,18 @@ function TransactionForm() {
       const allCats = [...DEFAULT_CATEGORIES as Category[], ...customCats];
       setCategories(allCats);
 
+      // Load Tags
+      const tagSnapshot = await getDocs(collection(db, 'users', user.uid, 'tags'));
+      let userTags = tagSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Tag));
+      
+      userTags.sort((a, b) => {
+        const orderA = a.order ?? a.createdAt;
+        const orderB = b.order ?? b.createdAt;
+        return orderA - orderB;
+      });
+      
+      setTags(userTags);
+
       let defaultPmId = pms.find(p => p.isDefault)?.id || (pms.length > 0 ? pms[0].id : '');
       
       if (editId) {
@@ -69,6 +87,9 @@ function TransactionForm() {
           setPaymentMethodId(txData.paymentMethodId);
           setDate(format(new Date(txData.date), "yyyy-MM-dd'T'HH:mm"));
           setNotes(txData.notes || '');
+          if (txData.tagIds) {
+            setSelectedTags(txData.tagIds);
+          }
         }
       } else {
         // Set defaults for new transaction
@@ -116,6 +137,7 @@ function TransactionForm() {
         paymentMethodId,
         date: new Date(date).getTime(),
         notes,
+        tagIds: selectedTags,
         updatedAt: Date.now(),
       };
 
@@ -149,6 +171,10 @@ function TransactionForm() {
   if (loadingInitial) {
     return <div className="p-8 text-center text-sm text-zinc-500">載入中...</div>;
   }
+
+  const filteredTags = tags.filter((tag) => 
+    tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase())
+  );
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
@@ -263,6 +289,7 @@ function TransactionForm() {
               className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             >
               <option value="" disabled>選擇支付方式</option>
+              <option value="cash">現金</option>
               <option value="unset">未設定支付方式</option>
               {paymentMethods.map((pm) => (
                 <option key={pm.id} value={pm.id}>{pm.name}</option>
@@ -280,6 +307,40 @@ function TransactionForm() {
             value={date}
             onChange={(val) => setDate(val)}
           />
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">標籤</label>
+          <div className="flex flex-wrap gap-2">
+            {selectedTags.map((tagId) => {
+              const tag = tags.find(t => t.id === tagId);
+              if (!tag) return null;
+              return (
+                <div
+                  key={tag.id}
+                  className="flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                >
+                  {tag.name}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTags(selectedTags.filter(id => id !== tag.id))}
+                    className="ml-1 text-blue-400 hover:text-blue-600 dark:hover:text-blue-200"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setIsTagModalOpen(true)}
+              className="flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:text-zinc-300"
+            >
+              <Plus className="h-3 w-3" />
+              新增標籤
+            </button>
+          </div>
         </div>
 
         {/* Notes */}
@@ -302,6 +363,88 @@ function TransactionForm() {
           {isSubmitting ? '儲存中...' : (editId ? '儲存修改' : '儲存交易')}
         </button>
       </form>
+
+      {/* Tags Modal */}
+      {isTagModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
+            <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
+              <h2 className="text-lg font-bold">選擇標籤</h2>
+              <button
+                onClick={() => setIsTagModalOpen(false)}
+                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="h-4 w-4 text-zinc-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="搜尋標籤..."
+                  value={tagSearchQuery}
+                  onChange={(e) => setTagSearchQuery(e.target.value)}
+                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {tags.length === 0 ? (
+                <div className="text-center text-sm text-zinc-500 py-8">
+                  目前沒有任何標籤。<br/>請至設定頁面新增標籤。
+                </div>
+              ) : filteredTags.length === 0 ? (
+                <div className="text-center text-sm text-zinc-500 py-8">找不到符合的標籤。</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {filteredTags.map((tag) => {
+                    const isSelected = selectedTags.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedTags(selectedTags.filter((id) => id !== tag.id));
+                          } else {
+                            setSelectedTags([...selectedTags, tag.id]);
+                          }
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors ${
+                          isSelected
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <span className="font-medium text-sm">{tag.name}</span>
+                        {isSelected && (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t border-zinc-100 p-4 dark:border-zinc-800">
+              <button
+                onClick={() => setIsTagModalOpen(false)}
+                className="w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                完成
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

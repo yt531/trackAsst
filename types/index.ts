@@ -34,6 +34,7 @@ export interface Transaction {
   date: number; // Unix timestamp
   notes: string;
   invoiceId?: string; // Link to the scanned/imported invoice
+  tagIds?: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -89,4 +90,12 @@ export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
   promptToRecordAfterScan: boolean;
   biometricEnabled: boolean;
+}
+
+export interface Tag {
+  id: string;
+  userId: string;
+  name: string;
+  order?: number;
+  createdAt: number;
 }

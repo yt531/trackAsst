@@ -222,9 +222,11 @@ function TransactionsList() {
                           <div className="font-medium">{cat?.name || '未知分類'}</div>
                           <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
                             <span>
-                              {tx.paymentMethodId === 'unset' 
-                                ? '未設定支付方式' 
-                                : (pm?.name || '未知支付方式')}
+                              {tx.paymentMethodId === 'cash'
+                                ? '現金'
+                                : tx.paymentMethodId === 'unset' 
+                                  ? '未設定支付方式' 
+                                  : (pm?.name || '未知支付方式')}
                             </span>
                             {tx.invoiceId && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded text-[10px]">發票</span>}
                           </div>
