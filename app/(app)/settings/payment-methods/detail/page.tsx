@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, doc, getDoc, where } from 'firebase/firestore';
 import { Transaction, Category, PaymentMethod } from '@/types';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfYear, endOfYear, addMonths, subMonths, addDays, subDays, addYears, subYears } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
@@ -14,8 +14,8 @@ import { DatePicker } from '@/components/ui/DatePicker';
 
 function PaymentMethodDetail() {
   const { user } = useAuth();
-  const params = useParams();
-  const paymentMethodId = params.id as string;
+  const searchParams = useSearchParams();
+  const paymentMethodId = searchParams.get('id') as string;
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Record<string, Category>>({});
@@ -249,7 +249,7 @@ function PaymentMethodDetail() {
   );
 }
 
-export default function Page() {
+export default function PageClient() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500">載入中...</div>}>
       <PaymentMethodDetail />

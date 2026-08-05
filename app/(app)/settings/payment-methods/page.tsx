@@ -249,7 +249,7 @@ export default function PaymentMethodsPage() {
                 key={method.id} 
                 className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-700 transition-colors group"
               >
-                <Link href={`/settings/payment-methods/${method.id}`} className="flex-1 flex items-center gap-3">
+                <Link href={`/settings/payment-methods/detail?id=${method.id}`} className="flex-1 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
                     {method.type === 'bank' && '🏦'}
                     {method.type === 'epay' && '📱'}
