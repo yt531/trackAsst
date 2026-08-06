@@ -10,7 +10,7 @@ export interface Category {
   isDeleted?: boolean;
 }
 
-export type PaymentMethodType = 'bank' | 'epay' | 'card' | 'cash';
+export type PaymentMethodType = 'bank' | 'epay' | 'card' | 'cash' | 'unset';
 
 export interface PaymentMethod {
   id: string;
@@ -21,6 +21,7 @@ export interface PaymentMethod {
   notes?: string;
   isDefault?: boolean;
   order?: number;
+  isSystem?: boolean;
 }
 
 export interface Transaction {

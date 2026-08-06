@@ -53,6 +53,17 @@ function TransactionForm() {
       // Load Payment Methods
       const pmSnapshot = await getDocs(collection(db, 'users', user.uid, 'paymentMethods'));
       const pms = pmSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
+      
+      const hasCash = pms.find(m => m.id === 'cash');
+      const hasUnset = pms.find(m => m.id === 'unset');
+      
+      if (!hasCash) {
+        pms.push({ id: 'cash', type: 'cash', name: '現金', isSystem: true, order: -2 } as PaymentMethod);
+      }
+      if (!hasUnset) {
+        pms.push({ id: 'unset', type: 'unset', name: '未設定支付方式', isSystem: true, order: -1 } as PaymentMethod);
+      }
+      
       pms.sort((a, b) => (a.order || 0) - (b.order || 0));
       setPaymentMethods(pms);
 
@@ -291,8 +302,6 @@ function TransactionForm() {
               className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             >
               <option value="" disabled>選擇支付方式</option>
-              <option value="cash">現金</option>
-              <option value="unset">未設定支付方式</option>
               {paymentMethods.map((pm) => (
                 <option key={pm.id} value={pm.id}>{pm.name}</option>
               ))}

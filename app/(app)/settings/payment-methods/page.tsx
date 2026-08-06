@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc, where } from 'firebase/firestore';
 import { PaymentMethod, PaymentMethodType } from '@/types';
 import { Plus, Trash2, ArrowLeft, Pencil, GripVertical, Info } from 'lucide-react';
 import { PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
@@ -68,10 +68,12 @@ function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
             {method.type === 'epay' && '📱'}
             {method.type === 'card' && '💳'}
             {method.type === 'cash' && '💵'}
+            {method.type === 'unset' && '❓'}
           </div>
           <div>
             <div className="font-medium text-sm">{method.name}</div>
             {method.notes && <div className="text-xs text-zinc-500">{method.notes}</div>}
+            {method.isSystem && <div className="text-xs text-zinc-500">系統預設</div>}
           </div>
         </div>
       </div>
@@ -88,33 +90,6 @@ function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
   );
 }
 
-function SystemPaymentMethodItem({ method }: { method: { id: string; name: string; emoji: string } }) {
-  return (
-    <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex flex-1 items-center gap-3">
-        <div className="p-1 w-7" /> {/* Placeholder for drag handle to align with sortable items */}
-        <div className="flex flex-1 items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
-            {method.emoji}
-          </div>
-          <div>
-            <div className="font-medium text-sm">{method.name}</div>
-            <div className="text-xs text-zinc-500">系統預設</div>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Link
-          href={`/settings/payment-methods/detail?id=${method.id}`}
-          className="p-2 text-zinc-500 hover:text-blue-600 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
-          title="檢視"
-        >
-          <Info className="h-4 w-4" />
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 export default function PaymentMethodsPage() {
   const { user } = useAuth();
@@ -140,6 +115,17 @@ export default function PaymentMethodsPage() {
       const q = query(collection(db, 'users', user.uid, 'paymentMethods'));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
+      
+      const hasCash = data.find(m => m.id === 'cash');
+      const hasUnset = data.find(m => m.id === 'unset');
+      
+      if (!hasCash) {
+        data.push({ id: 'cash', type: 'cash', name: '現金', isSystem: true, order: -2 } as PaymentMethod);
+      }
+      if (!hasUnset) {
+        data.push({ id: 'unset', type: 'unset', name: '未設定支付方式', isSystem: true, order: -1 } as PaymentMethod);
+      }
+      
       data.sort((a, b) => (a.order || 0) - (b.order || 0));
       setMethods(data);
     } catch (e) {
@@ -247,9 +233,10 @@ export default function PaymentMethodsPage() {
         
         if (user) {
           Promise.all(
-            newItems.map((item, index) => 
-              updateDoc(doc(db, 'users', user.uid, 'paymentMethods', item.id), { order: index })
-            )
+            newItems.map((item, index) => {
+              const { id, ...rest } = item;
+              return setDoc(doc(db, 'users', user.uid, 'paymentMethods', id), { ...rest, order: index }, { merge: true });
+            })
           ).catch(console.error);
         }
 
@@ -382,9 +369,7 @@ export default function PaymentMethodsPage() {
           <div className="text-sm text-zinc-500 text-center py-4">載入中...</div>
         ) : (
           <div className="space-y-2">
-            <SystemPaymentMethodItem method={{ id: 'cash', name: '現金', emoji: '💵' }} />
-            <SystemPaymentMethodItem method={{ id: 'unset', name: '未設定支付方式', emoji: '❓' }} />
-            
+
             {methods.length === 0 ? (
               <div className="text-sm text-zinc-500 text-center py-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 mt-2">
                 尚未新增其他支付方式。
