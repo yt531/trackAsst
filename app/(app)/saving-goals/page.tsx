@@ -311,7 +311,7 @@ export default function SavingGoalsPage() {
             const isCompleted = goal.currentAmount >= goal.targetAmount;
             
             return (
-              <div key={goal.id} className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-zinc-700 dark:bg-zinc-950">
+              <div key={goal.id} className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800">
                 {isCompleted && (
                   <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
                     <Check className="h-5 w-5" />
@@ -352,7 +352,7 @@ export default function SavingGoalsPage() {
                 </div>
 
                 {/* Progress bar */}
-                <div className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <div className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
                   <div 
                     className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-green-500' : 'bg-blue-600 dark:bg-blue-500'}`}
                     style={{ width: `${percent}%` }}
@@ -378,7 +378,7 @@ export default function SavingGoalsPage() {
                       setAddAmountValue(goal.isFixedAmount && goal.fixedAmountValue ? goal.fixedAmountValue.toString() : '');
                       setAddAmountGoalId(goal.id);
                     }}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-100 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-100 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
                   >
                     <PlusCircle className="h-4 w-4" />
                     紀錄存錢
