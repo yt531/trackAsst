@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { ArrowDownRight, ArrowUpRight, Plus, ScanLine, ReceiptText } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { mergeCategories } from '@/lib/utils';
 import { getBudgetsByMonth } from '@/lib/budget';
 
 export default function DashboardPage() {
@@ -21,6 +22,7 @@ export default function DashboardPage() {
     budget: 0
   });
   const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (user) {
@@ -67,6 +69,13 @@ export default function DashboardPage() {
       );
       const recentSnap = await getDocs(qRecent);
       const recent = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+
+      // Load Categories
+      const catSnap = await getDocs(collection(db, 'users', user.uid, 'categories'));
+      const customCats = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allCats = mergeCategories(DEFAULT_CATEGORIES, customCats);
+      const catMap = allCats.reduce((acc: any, cat: any) => { acc[cat.id] = cat; return acc; }, {});
+      setCategoriesMap(catMap);
 
       setStats({
         totalBalance: income - expense, // Simplified
@@ -169,7 +178,7 @@ export default function DashboardPage() {
                     {tx.type === 'expense' ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                   </div>
                   <div>
-                    <div className="font-medium text-sm">{DEFAULT_CATEGORIES.find(c => c.id === tx.categoryId)?.name || '自訂分類'}</div>
+                    <div className="font-medium text-sm">{categoriesMap[tx.categoryId]?.name || '未分類'}</div>
                     <div className="text-xs text-zinc-500">{format(new Date(tx.date), 'MMM d')}</div>
                   </div>
                 </div>

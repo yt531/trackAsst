@@ -8,6 +8,7 @@ import { Transaction, Category } from '@/types';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
 import { startOfMonth, endOfMonth, format, subMonths, eachDayOfInterval } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { mergeCategories } from '@/lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const COLORS = [
@@ -42,7 +43,7 @@ export default function ReportsPage() {
       // Categories
       const catSnapshot = await getDocs(collection(db, 'users', user.uid, 'categories'));
       const customCats = catSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
-      const allCats = [...DEFAULT_CATEGORIES as Category[], ...customCats];
+      const allCats = mergeCategories(DEFAULT_CATEGORIES, customCats);
       const cMap = allCats.reduce((acc, cat) => { acc[cat.id] = cat; return acc; }, {} as Record<string, Category>);
       setCategoriesMap(cMap);
 

@@ -7,6 +7,7 @@ import { collection, addDoc, getDocs, doc, getDoc, updateDoc } from 'firebase/fi
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PaymentMethod, Category, Invoice, Transaction, Tag } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { mergeCategories } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
 import { Search, X, Plus } from 'lucide-react';
@@ -56,9 +57,9 @@ function TransactionForm() {
       setPaymentMethods(pms);
 
       // Load Custom Categories
-      const catSnapshot = await getDocs(collection(db, 'users', user.uid, 'categories'));
-      const customCats = catSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
-      const allCats = [...DEFAULT_CATEGORIES as Category[], ...customCats];
+      const catSnap = await getDocs(collection(db, 'users', user.uid, 'categories'));
+      const customCats = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      const allCats = mergeCategories(DEFAULT_CATEGORIES, customCats);
       setCategories(allCats);
 
       // Load Tags

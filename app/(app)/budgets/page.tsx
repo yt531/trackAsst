@@ -5,6 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { getBudgetsByMonth, saveBudget, deleteBudget } from '@/lib/budget';
 import type { Budget, Category } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { mergeCategories } from '@/lib/utils';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection } from '@/lib/db';
@@ -43,7 +44,7 @@ export default function BudgetsPage() {
         const catRef = getUserCollection(user.uid, COLLECTIONS.CATEGORIES);
         const catSnap = await getDocs(catRef);
         const customCats = catSnap.docs.map(doc => doc.data() as Category);
-        setCategories([...DEFAULT_CATEGORIES as Category[], ...customCats]);
+        setCategories(mergeCategories(DEFAULT_CATEGORIES as Category[], customCats));
       } catch (error) {
         console.error('Error fetching budgets:', error);
       } finally {

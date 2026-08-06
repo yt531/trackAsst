@@ -7,6 +7,7 @@ export interface Category {
   icon: string;
   isCustom: boolean;
   order: number;
+  isDeleted?: boolean;
 }
 
 export type PaymentMethodType = 'bank' | 'epay' | 'card' | 'cash';

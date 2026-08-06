@@ -5,9 +5,10 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Category } from '@/types';
-import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2 } from 'lucide-react';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
+import { mergeCategories } from '@/lib/utils';
 
 export default function CategoriesPage() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
   const [type, setType] = useState<'income' | 'expense'>('expense');
@@ -40,46 +42,91 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAddOrEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !name) return;
     setIsSaving(true);
     
     try {
-      const newCat = {
-        name,
-        type,
-        icon: type === 'expense' ? 'shopping-bag' : 'plus-circle', // Default icon
-        isCustom: true,
-        order: customCategories.length
-      };
+      if (editingId) {
+        // Editing existing category (custom or default)
+        const catToEdit = allCategories.find(c => c.id === editingId);
+        if (!catToEdit) return;
+        
+        const updatedCat = {
+          ...catToEdit,
+          name,
+          type,
+        };
+        
+        const { id, ...dataToSave } = updatedCat as any;
+        await import('firebase/firestore').then(({ setDoc, doc }) => 
+          setDoc(doc(db, 'users', user.uid, 'categories', editingId), dataToSave, { merge: true })
+        );
+        
+        setCustomCategories(prev => {
+          const exists = prev.some(c => c.id === editingId);
+          if (exists) {
+            return prev.map(c => c.id === editingId ? updatedCat as Category : c);
+          } else {
+            return [...prev, updatedCat as Category];
+          }
+        });
+      } else {
+        // Adding new custom category
+        const newCat = {
+          name,
+          type,
+          icon: type === 'expense' ? 'shopping-bag' : 'plus-circle',
+          isCustom: true,
+          order: customCategories.length
+        };
+        
+        const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), newCat);
+        setCustomCategories([...customCategories, { id: docRef.id, ...newCat }]);
+      }
       
-      const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), newCat);
-      setCustomCategories([...customCategories, { id: docRef.id, ...newCat }]);
       setIsAdding(false);
+      setEditingId(null);
       setName('');
     } catch (e) {
       console.error(e);
-      alert('新增失敗');
+      alert('儲存失敗');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleEditClick = (cat: Category) => {
+    setEditingId(cat.id);
+    setName(cat.name);
+    setType(cat.type);
+    setIsAdding(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id: string, isCustom: boolean) => {
     if (!user || !confirm('確定要刪除此分類嗎？相關的交易紀錄不會被刪除，但可能會無法顯示正確分類名稱。')) return;
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'categories', id));
-      setCustomCategories(customCategories.filter(c => c.id !== id));
+      if (isCustom) {
+        await deleteDoc(doc(db, 'users', user.uid, 'categories', id));
+        setCustomCategories(customCategories.filter(c => c.id !== id));
+      } else {
+        // For default categories, we mark as deleted
+        await import('firebase/firestore').then(({ setDoc, doc }) => 
+          setDoc(doc(db, 'users', user.uid, 'categories', id), { isDeleted: true }, { merge: true })
+        );
+        setCustomCategories([...customCategories, { id, isDeleted: true } as any]);
+      }
     } catch (e) {
       console.error(e);
       alert('刪除失敗');
     }
   };
 
-  const allCategories = [...DEFAULT_CATEGORIES, ...customCategories];
-  const expenseCategories = allCategories.filter(c => c.type === 'expense');
-  const incomeCategories = allCategories.filter(c => c.type === 'income');
+  const allCategories = mergeCategories(DEFAULT_CATEGORIES, customCategories);
+  const expenseCategories = allCategories.filter((c: any) => c.type === 'expense');
+  const incomeCategories = allCategories.filter((c: any) => c.type === 'income');
 
   return (
     <div className="space-y-6 pb-20">
@@ -96,7 +143,12 @@ export default function CategoriesPage() {
           </div>
         </div>
         <button
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => {
+            setEditingId(null);
+            setName('');
+            setType('expense');
+            setIsAdding(!isAdding);
+          }}
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
@@ -105,7 +157,7 @@ export default function CategoriesPage() {
       </header>
 
       {isAdding && (
-        <form onSubmit={handleAdd} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <form onSubmit={handleAddOrEdit} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div>
             <label className="mb-1 block text-sm font-medium">類型</label>
             <div className="flex gap-2">
@@ -151,7 +203,10 @@ export default function CategoriesPage() {
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setIsAdding(false)}
+              onClick={() => {
+                setIsAdding(false);
+                setEditingId(null);
+              }}
               className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               取消
@@ -184,14 +239,20 @@ export default function CategoriesPage() {
                     <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
                     {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
                   </div>
-                  {cat.isCustom && (
+                  <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleDelete(cat.id)}
+                      onClick={() => handleEditClick(cat)}
+                      className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(cat.id, cat.isCustom)}
                       className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -210,14 +271,20 @@ export default function CategoriesPage() {
                     <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
                     {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
                   </div>
-                  {cat.isCustom && (
+                  <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleDelete(cat.id)}
+                      onClick={() => handleEditClick(cat)}
+                      className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(cat.id, cat.isCustom)}
                       className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>

@@ -5,11 +5,12 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, doc, getDoc, where, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Transaction, Category, PaymentMethod, PaymentMethodType } from '@/types';
+import { DEFAULT_CATEGORIES, PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
+import { mergeCategories } from '@/lib/utils';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfYear, endOfYear, addMonths, subMonths, addDays, subDays, addYears, subYears } from 'date-fns';
-import { DEFAULT_CATEGORIES, PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 
 function PaymentMethodDetail() {
@@ -62,7 +63,7 @@ function PaymentMethodDetail() {
       if (Object.keys(categories).length === 0) {
         const catSnapshot = await getDocs(collection(db, 'users', user.uid, 'categories'));
         const customCats = catSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
-        const allCats = [...DEFAULT_CATEGORIES as Category[], ...customCats];
+        const allCats = mergeCategories(DEFAULT_CATEGORIES, customCats);
         const catMap = allCats.reduce((acc, cat) => { acc[cat.id] = cat; return acc; }, {} as Record<string, Category>);
         setCategories(catMap);
       }

@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Plus, Trash2, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Calendar, Pencil } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { mergeCategories } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useSearchParams } from 'next/navigation';
 
@@ -44,7 +45,7 @@ function TransactionsList() {
       if (Object.keys(categories).length === 0) {
         const catSnapshot = await getDocs(collection(db, 'users', user.uid, 'categories'));
         const customCats = catSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
-        const allCats = [...DEFAULT_CATEGORIES as Category[], ...customCats];
+        const allCats = mergeCategories(DEFAULT_CATEGORIES as Category[], customCats);
         const catMap = allCats.reduce((acc, cat) => { acc[cat.id] = cat; return acc; }, {} as Record<string, Category>);
         setCategories(catMap);
       }
