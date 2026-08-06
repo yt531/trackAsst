@@ -164,13 +164,13 @@ export default function DashboardPage() {
         {loading ? (
           <div className="text-center py-8 text-sm text-zinc-500">載入中...</div>
         ) : recentTxs.length === 0 ? (
-           <div className="text-center py-8 text-sm text-zinc-500 bg-white rounded-xl border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
+           <div className="text-center py-8 text-sm text-zinc-500 bg-white rounded-xl border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700">
              近期無交易紀錄。
            </div>
         ) : (
           <div className="space-y-3">
             {recentTxs.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+              <div key={tx.id} className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
                     tx.type === 'expense' ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
