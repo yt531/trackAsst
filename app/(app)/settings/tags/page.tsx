@@ -75,7 +75,7 @@ function SortableTagItem({
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab text-zinc-400 hover:text-zinc-600 active:cursor-grabbing dark:hover:text-zinc-300 touch-none"
+          className="cursor-grab text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 active:cursor-grabbing touch-none"
         >
           <GripVertical className="h-5 w-5" />
         </div>

@@ -65,7 +65,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, onEdit, onDel
     <div ref={setNodeRef} style={style} className="relative group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 transition-colors hover:border-blue-300 dark:hover:border-blue-800 flex">
       {/* Drag Handle */}
       <div 
-        className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-8 cursor-grab touch-none text-zinc-300 hover:text-zinc-500 dark:text-zinc-700 dark:hover:text-zinc-500 dark:text-zinc-400 rounded-l-xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
+        className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-8 cursor-grab touch-none text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 rounded-l-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
         {...attributes}
         {...listeners}
       >

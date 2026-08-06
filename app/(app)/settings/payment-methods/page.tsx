@@ -56,7 +56,7 @@ function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
     >
       <div className="flex flex-1 items-center gap-3">
         <button
-          className="cursor-grab p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 touch-none"
+          className="cursor-grab p-1 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 touch-none active:cursor-grabbing"
           {...attributes}
           {...listeners}
         >
