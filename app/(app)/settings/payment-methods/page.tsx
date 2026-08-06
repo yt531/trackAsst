@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
 import { PaymentMethod, PaymentMethodType } from '@/types';
-import { Plus, Trash2, ArrowLeft, Pencil, GripVertical } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Pencil, GripVertical, Info } from 'lucide-react';
 import { PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,11 +29,9 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface SortablePaymentMethodItemProps {
   method: PaymentMethod;
-  onEdit: (method: PaymentMethod) => void;
-  onDelete: (id: string) => void;
 }
 
-function SortablePaymentMethodItem({ method, onEdit, onDelete }: SortablePaymentMethodItemProps) {
+function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
   const {
     attributes,
     listeners,
@@ -64,7 +62,7 @@ function SortablePaymentMethodItem({ method, onEdit, onDelete }: SortablePayment
         >
           <GripVertical className="h-5 w-5" />
         </button>
-        <Link href={`/settings/payment-methods/detail?id=${method.id}`} className="flex flex-1 items-center gap-3">
+        <div className="flex flex-1 items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
             {method.type === 'bank' && '🏦'}
             {method.type === 'epay' && '📱'}
@@ -75,27 +73,16 @@ function SortablePaymentMethodItem({ method, onEdit, onDelete }: SortablePayment
             <div className="font-medium text-sm">{method.name}</div>
             {method.notes && <div className="text-xs text-zinc-500">{method.notes}</div>}
           </div>
-        </Link>
+        </div>
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            onEdit(method);
-          }}
-          className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+      <div className="flex items-center gap-2">
+        <Link
+          href={`/settings/payment-methods/detail?id=${method.id}`}
+          className="p-2 text-zinc-500 hover:text-blue-600 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+          title="檢視"
         >
-          <Pencil className="h-5 w-5" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            onDelete(method.id);
-          }}
-          className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-        >
-          <Trash2 className="h-5 w-5" />
-        </button>
+          <Info className="h-4 w-4" />
+        </Link>
       </div>
     </div>
   );
@@ -115,6 +102,15 @@ function SystemPaymentMethodItem({ method }: { method: { id: string; name: strin
             <div className="text-xs text-zinc-500">系統預設</div>
           </div>
         </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link
+          href={`/settings/payment-methods/detail?id=${method.id}`}
+          className="p-2 text-zinc-500 hover:text-blue-600 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+          title="檢視"
+        >
+          <Info className="h-4 w-4" />
+        </Link>
       </div>
     </div>
   );
@@ -407,8 +403,6 @@ export default function PaymentMethodsPage() {
                     <SortablePaymentMethodItem
                       key={method.id}
                       method={method}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
                     />
                   ))}
                 </SortableContext>
