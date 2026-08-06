@@ -5,10 +5,101 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
 import { PaymentMethod, PaymentMethodType } from '@/types';
-import { Plus, Trash2, ArrowLeft, Pencil } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Pencil, GripVertical } from 'lucide-react';
 import { PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortablePaymentMethodItemProps {
+  method: PaymentMethod;
+  onEdit: (method: PaymentMethod) => void;
+  onDelete: (id: string) => void;
+}
+
+function SortablePaymentMethodItem({ method, onEdit, onDelete }: SortablePaymentMethodItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: method.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 0,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-700 transition-colors group"
+    >
+      <div className="flex flex-1 items-center gap-3">
+        <button
+          className="cursor-grab p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-5 w-5" />
+        </button>
+        <Link href={`/settings/payment-methods/detail?id=${method.id}`} className="flex flex-1 items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
+            {method.type === 'bank' && '🏦'}
+            {method.type === 'epay' && '📱'}
+            {method.type === 'card' && '💳'}
+            {method.type === 'cash' && '💵'}
+          </div>
+          <div>
+            <div className="font-medium text-sm">{method.name}</div>
+            {method.notes && <div className="text-xs text-zinc-500">{method.notes}</div>}
+          </div>
+        </Link>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            onEdit(method);
+          }}
+          className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        >
+          <Pencil className="h-5 w-5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            onDelete(method.id);
+          }}
+          className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+        >
+          <Trash2 className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function PaymentMethodsPage() {
   const { user } = useAuth();
@@ -34,6 +125,7 @@ export default function PaymentMethodsPage() {
       const q = query(collection(db, 'users', user.uid, 'paymentMethods'));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
+      data.sort((a, b) => (a.order || 0) - (b.order || 0));
       setMethods(data);
     } catch (e) {
       console.error(e);
@@ -60,6 +152,7 @@ export default function PaymentMethodsPage() {
         await addDoc(collection(db, 'users', user.uid, 'paymentMethods'), {
           ...methodData,
           isDefault: methods.length === 0,
+          order: methods.length,
         });
       }
       
@@ -113,6 +206,40 @@ export default function PaymentMethodsPage() {
       case 'epay': return PREDEFINED_EPAYS;
       case 'card': return PREDEFINED_CARDS;
       default: return [];
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setMethods((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+        
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        
+        if (user) {
+          Promise.all(
+            newItems.map((item, index) => 
+              updateDoc(doc(db, 'users', user.uid, 'paymentMethods', item.id), { order: index })
+            )
+          ).catch(console.error);
+        }
+
+        return newItems;
+      });
     }
   };
 
@@ -244,45 +371,25 @@ export default function PaymentMethodsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {methods.map((method) => (
-              <div 
-                key={method.id} 
-                className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-700 transition-colors group"
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={methods}
+                strategy={verticalListSortingStrategy}
               >
-                <Link href={`/settings/payment-methods/detail?id=${method.id}`} className="flex-1 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
-                    {method.type === 'bank' && '🏦'}
-                    {method.type === 'epay' && '📱'}
-                    {method.type === 'card' && '💳'}
-                    {method.type === 'cash' && '💵'}
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">{method.name}</div>
-                    {method.notes && <div className="text-xs text-zinc-500">{method.notes}</div>}
-                  </div>
-                </Link>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleEdit(method);
-                    }}
-                    className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  >
-                    <Pencil className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleDelete(method.id);
-                    }}
-                    className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                {methods.map((method) => (
+                  <SortablePaymentMethodItem
+                    key={method.id}
+                    method={method}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         )}
       </div>

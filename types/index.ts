@@ -19,6 +19,7 @@ export interface PaymentMethod {
   customIconUrl?: string; // We won't use it for now as per requirements, but good to have
   notes?: string;
   isDefault?: boolean;
+  order?: number;
 }
 
 export interface Transaction {

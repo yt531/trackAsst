@@ -51,7 +51,8 @@ function TransactionForm() {
     try {
       // Load Payment Methods
       const pmSnapshot = await getDocs(collection(db, 'users', user.uid, 'paymentMethods'));
-      const pms = pmSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as PaymentMethod));
+      const pms = pmSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
+      pms.sort((a, b) => (a.order || 0) - (b.order || 0));
       setPaymentMethods(pms);
 
       // Load Custom Categories
