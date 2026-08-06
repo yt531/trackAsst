@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { getBudgetsByMonth, saveBudget, deleteBudget } from '@/lib/budget';
+import { getBudgetsByMonth, saveBudget, deleteBudget, updateBudgetOrders } from '@/lib/budget';
 import type { Budget, Category } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
@@ -10,9 +10,114 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection } from '@/lib/db';
 import { format } from 'date-fns';
-import { Plus, Wallet, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Wallet, Pencil, Trash2, GripVertical } from 'lucide-react';
 import Link from 'next/link';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { SearchableCategorySelect } from '@/components/ui/SearchableCategorySelect';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableBudgetCardProps {
+  budget: Budget;
+  categoryName: string;
+  selectedMonth: string;
+  onEdit: (budget: Budget) => void;
+  onDelete: (id: string) => void;
+}
+
+function SortableBudgetCard({ budget, categoryName, selectedMonth, onEdit, onDelete }: SortableBudgetCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: budget.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 0,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const filterMode = budget.period === 'daily' ? 'day' : 'month';
+  const catQuery = budget.categoryId ? `&categoryId=${budget.categoryId}` : '';
+  const txUrl = `/transactions?filterMode=${filterMode}&date=${selectedMonth}${catQuery}`;
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 transition-colors hover:border-blue-300 dark:hover:border-blue-800 flex">
+      {/* Drag Handle */}
+      <div 
+        className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-8 cursor-grab touch-none text-zinc-300 hover:text-zinc-500 dark:text-zinc-700 dark:hover:text-zinc-500 rounded-l-xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-5 w-5" />
+      </div>
+
+      <div className="flex-1 ml-4 relative">
+        {/* Actions (Edit / Delete) */}
+        <div className="absolute -top-1 -right-1 flex gap-1 z-10">
+          <button 
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(budget); }}
+            className="p-1.5 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+            title="修改預算"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button 
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(budget.id); }}
+            className="p-1.5 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+            title="刪除預算"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+
+        <Link href={txUrl} className="block w-full h-full pt-1 pr-16">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${!budget.categoryId ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                <Wallet className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {categoryName}
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {budget.period === 'monthly' ? '每月預算' : '每日預算'}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+            ${budget.amount.toLocaleString()}
+          </div>
+          <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+            點擊查看花費紀錄 →
+          </p>
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export default function BudgetsPage() {
   const { user } = useAuth();
@@ -30,6 +135,40 @@ export default function BudgetsPage() {
   const [categoryId, setCategoryId] = useState<string>(''); // empty means 'total'
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    
+    if (!user) return;
+
+    setBudgets((items) => {
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
+
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      
+      // Update order property
+      const updatedItems = newItems.map((item, idx) => ({ ...item, order: idx }));
+      
+      // Save to db in background
+      const updates = updatedItems.map(item => ({ id: item.id, order: item.order as number }));
+      updateBudgetOrders(user.uid, updates).catch(e => console.error("Error updating budget orders", e));
+
+      return updatedItems;
+    });
+  };
+
   useEffect(() => {
     if (!user) return;
     
@@ -38,12 +177,17 @@ export default function BudgetsPage() {
       try {
         // Fetch budgets
         const fetchedBudgets = await getBudgetsByMonth(user.uid, selectedMonth);
+        // Ensure order is preserved or initialized
+        fetchedBudgets.forEach((b, idx) => {
+          if (b.order === undefined) b.order = idx;
+        });
+        fetchedBudgets.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         setBudgets(fetchedBudgets);
 
         // Fetch custom categories
         const catRef = getUserCollection(user.uid, COLLECTIONS.CATEGORIES);
         const catSnap = await getDocs(catRef);
-        const customCats = catSnap.docs.map(doc => doc.data() as Category);
+        const customCats = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
         setCategories(mergeCategories(DEFAULT_CATEGORIES as Category[], customCats));
       } catch (error) {
         console.error('Error fetching budgets:', error);
@@ -75,18 +219,29 @@ export default function BudgetsPage() {
     if (!user || !amount) return;
 
     try {
+      let currentOrder = budgets.length;
+      if (editingBudgetId) {
+        const existing = budgets.find(b => b.id === editingBudgetId);
+        if (existing && existing.order !== undefined) {
+          currentOrder = existing.order;
+        }
+      }
+
       const newBudget = await saveBudget(user.uid, {
         userId: user.uid,
         amount: Number(amount),
         period,
         month: selectedMonth,
         categoryId: categoryId || undefined,
+        order: currentOrder,
       });
 
       setBudgets(prev => {
         // Remove existing if same category (or same ID if editing)
         const filtered = prev.filter(b => b.categoryId !== newBudget.categoryId);
-        return [...filtered, newBudget];
+        const newArray = [...filtered, newBudget];
+        newArray.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        return newArray;
       });
 
       setIsFormOpen(false);
@@ -147,19 +302,12 @@ export default function BudgetsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">預算類型</label>
-                <select
+                <SearchableCategorySelect
+                  categories={categories}
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  disabled={!!editingBudgetId} // Disable category change when editing
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 disabled:opacity-50"
-                >
-                  <option value="">總預算</option>
-                  <optgroup label="分類預算">
-                    {categories.filter(c => c.type === 'expense').map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </optgroup>
-                </select>
+                  onChange={(val) => setCategoryId(val)}
+                  disabled={!!editingBudgetId}
+                />
               </div>
               
               <div>
@@ -215,60 +363,22 @@ export default function BudgetsPage() {
           <p className="text-sm text-zinc-500">此月份尚無設定預算</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {budgets.map(budget => {
-            const filterMode = budget.period === 'daily' ? 'day' : 'month';
-            const catQuery = budget.categoryId ? `&categoryId=${budget.categoryId}` : '';
-            const txUrl = `/transactions?filterMode=${filterMode}&date=${selectedMonth}${catQuery}`;
-
-            return (
-              <div key={budget.id} className="relative group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 transition-colors hover:border-blue-300 dark:hover:border-blue-800">
-                
-                {/* Actions (Edit / Delete) */}
-                <div className="absolute top-4 right-4 flex gap-1 z-10">
-                  <button 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenForm(budget); }}
-                    className="p-1.5 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                    title="修改預算"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBudget(budget.id); }}
-                    className="p-1.5 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                    title="刪除預算"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <Link href={txUrl} className="block w-full h-full pt-1 pr-16">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-full ${!budget.categoryId ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                        <Wallet className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {getCategoryName(budget.categoryId)}
-                        </h3>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {budget.period === 'monthly' ? '每月預算' : '每日預算'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                    ${budget.amount.toLocaleString()}
-                  </div>
-                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    點擊查看花費紀錄 →
-                  </p>
-                </Link>
-              </div>
-            );
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="grid gap-4 md:grid-cols-2">
+            <SortableContext items={budgets.map(b => b.id)} strategy={rectSortingStrategy}>
+              {budgets.map(budget => (
+                <SortableBudgetCard
+                  key={budget.id}
+                  budget={budget}
+                  categoryName={getCategoryName(budget.categoryId)}
+                  selectedMonth={selectedMonth}
+                  onEdit={handleOpenForm}
+                  onDelete={handleDeleteBudget}
+                />
+              ))}
+            </SortableContext>
+          </div>
+        </DndContext>
       )}
     </div>
   );

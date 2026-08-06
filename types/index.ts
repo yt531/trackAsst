@@ -72,6 +72,7 @@ export interface Budget {
   period: 'daily' | 'monthly';
   month: string; // e.g., '2024-05'
   categoryId?: string; // Optional, if not provided it's the total budget
+  order?: number;
 }
 
 export interface SavingGoal {

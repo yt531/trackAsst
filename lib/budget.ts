@@ -6,6 +6,7 @@ import {
   query,
   where,
   deleteDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { COLLECTIONS, getUserCollection } from './db';
@@ -55,4 +56,18 @@ export async function getBudgetsByMonth(userId: string, month: string): Promise<
 export async function deleteBudget(userId: string, budgetId: string): Promise<void> {
   const docRef = doc(db, COLLECTIONS.USERS, userId, COLLECTIONS.BUDGETS, budgetId);
   await deleteDoc(docRef);
+}
+
+/**
+ * Update the order of multiple budgets.
+ */
+export async function updateBudgetOrders(userId: string, updates: { id: string, order: number }[]): Promise<void> {
+  const batch = writeBatch(db);
+  
+  updates.forEach(({ id, order }) => {
+    const docRef = doc(db, COLLECTIONS.USERS, userId, COLLECTIONS.BUDGETS, id);
+    batch.update(docRef, { order });
+  });
+
+  await batch.commit();
 }

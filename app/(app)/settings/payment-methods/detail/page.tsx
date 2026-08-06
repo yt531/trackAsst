@@ -308,9 +308,9 @@ function PaymentMethodDetail() {
 
       {/* Filter and Stats Area */}
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+         <div className="flex flex-col items-center justify-center gap-4 mb-4">
            {/* Mode Switcher */}
-           <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+           <div className="flex w-full sm:w-80 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
              <button
                onClick={() => setFilterMode('year')}
                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'year' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
@@ -332,7 +332,7 @@ function PaymentMethodDetail() {
            </div>
            
            {/* Date Selector */}
-           <div className="flex items-center gap-3">
+           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full">
              <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
              <DatePicker
                type={filterMode === 'year' ? 'year' : filterMode === 'month' ? 'month' : 'date'}
@@ -348,9 +348,16 @@ function PaymentMethodDetail() {
                    setFilterDate(new Date());
                  }
                }}
-               className="w-48"
+               className="w-32 sm:w-48"
+               showTodayButton={false}
              />
              <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
+             <button
+               onClick={() => setFilterDate(new Date())}
+               className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-[10px] text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+             >
+               {filterMode === 'year' ? '今年' : filterMode === 'month' ? '本月' : '今天'}
+             </button>
            </div>
         </div>
 

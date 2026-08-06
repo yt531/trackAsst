@@ -173,7 +173,7 @@ function TransactionsList() {
               type={filterMode === 'month' ? 'month' : 'date'}
               value={filterMode === 'month' ? format(filterDate, 'yyyy-MM') : format(filterDate, 'yyyy-MM-dd')}
               onChange={(val) => setFilterDate(val ? new Date(val) : new Date())}
-              className="w-48"
+              className="w-32 sm:w-48"
               showTodayButton={false}
             />
             <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>

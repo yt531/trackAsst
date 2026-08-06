@@ -8,6 +8,7 @@ import { Invoice } from '@/types';
 import Link from 'next/link';
 import { ScanLine, Receipt, Settings2, Cloud, FileText, ChevronLeft, ChevronRight, Calendar, ArrowDownRight, Hash } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 export default function InvoicesPage() {
   const { user } = useAuth();
@@ -126,13 +127,22 @@ export default function InvoicesPage() {
            </div>
            
            {/* Date Selector */}
-           <div className="flex items-center gap-3">
+           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full">
              <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
-             <div className="flex items-center gap-2 font-medium w-32 justify-center">
-               <Calendar className="w-4 h-4 text-zinc-400" />
-               {filterMode === 'month' ? format(filterDate, 'yyyy年MM月') : format(filterDate, 'MM月dd日')}
-             </div>
+             <DatePicker
+               type={filterMode === 'month' ? 'month' : 'date'}
+               value={filterMode === 'month' ? format(filterDate, 'yyyy-MM') : format(filterDate, 'yyyy-MM-dd')}
+               onChange={(val) => setFilterDate(val ? new Date(val) : new Date())}
+               className="w-32 sm:w-48"
+               showTodayButton={false}
+             />
              <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
+             <button
+               onClick={() => setFilterDate(new Date())}
+               className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-[10px] text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+             >
+               {filterMode === 'month' ? '本月' : '今天'}
+             </button>
            </div>
         </div>
 
