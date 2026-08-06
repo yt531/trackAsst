@@ -3,12 +3,87 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, getDocs, addDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Category } from '@/types';
-import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2, GripVertical } from 'lucide-react';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
 import { mergeCategories } from '@/lib/utils';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableCategoryItemProps {
+  cat: Category;
+  onEdit: (cat: Category) => void;
+  onDelete: (id: string, isCustom: boolean) => void;
+}
+
+function SortableCategoryItem({ cat, onEdit, onDelete }: SortableCategoryItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: cat.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 0,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-700 transition-colors group"
+    >
+      <div className="flex flex-1 items-center gap-3">
+        <button
+          className="cursor-grab p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-5 w-5" />
+        </button>
+        <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
+        {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onEdit(cat)}
+          className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        >
+          <Edit2 className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => onDelete(cat.id, cat.isCustom || false)}
+          className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function CategoriesPage() {
   const { user } = useAuth();
@@ -42,6 +117,17 @@ export default function CategoriesPage() {
     }
   };
 
+  const allCategories = mergeCategories(DEFAULT_CATEGORIES, customCategories);
+  
+  // Sort by order, using index as fallback if order is undefined
+  allCategories.forEach((cat: any, idx: number) => {
+    if (cat.order === undefined) cat.order = idx;
+  });
+  allCategories.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+
+  const expenseCategories = allCategories.filter((c: any) => c.type === 'expense');
+  const incomeCategories = allCategories.filter((c: any) => c.type === 'income');
+
   const handleAddOrEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !name) return;
@@ -50,7 +136,7 @@ export default function CategoriesPage() {
     try {
       if (editingId) {
         // Editing existing category (custom or default)
-        const catToEdit = allCategories.find(c => c.id === editingId);
+        const catToEdit = allCategories.find((c: any) => c.id === editingId);
         if (!catToEdit) return;
         
         const updatedCat = {
@@ -60,9 +146,7 @@ export default function CategoriesPage() {
         };
         
         const { id, ...dataToSave } = updatedCat as any;
-        await import('firebase/firestore').then(({ setDoc, doc }) => 
-          setDoc(doc(db, 'users', user.uid, 'categories', editingId), dataToSave, { merge: true })
-        );
+        await setDoc(doc(db, 'users', user.uid, 'categories', editingId), dataToSave, { merge: true });
         
         setCustomCategories(prev => {
           const exists = prev.some(c => c.id === editingId);
@@ -79,7 +163,7 @@ export default function CategoriesPage() {
           type,
           icon: type === 'expense' ? 'shopping-bag' : 'plus-circle',
           isCustom: true,
-          order: customCategories.length
+          order: type === 'expense' ? expenseCategories.length : incomeCategories.length
         };
         
         const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), newCat);
@@ -113,9 +197,7 @@ export default function CategoriesPage() {
         setCustomCategories(customCategories.filter(c => c.id !== id));
       } else {
         // For default categories, we mark as deleted
-        await import('firebase/firestore').then(({ setDoc, doc }) => 
-          setDoc(doc(db, 'users', user.uid, 'categories', id), { isDeleted: true }, { merge: true })
-        );
+        await setDoc(doc(db, 'users', user.uid, 'categories', id), { isDeleted: true }, { merge: true });
         setCustomCategories([...customCategories, { id, isDeleted: true } as any]);
       }
     } catch (e) {
@@ -124,9 +206,47 @@ export default function CategoriesPage() {
     }
   };
 
-  const allCategories = mergeCategories(DEFAULT_CATEGORIES, customCategories);
-  const expenseCategories = allCategories.filter((c: any) => c.type === 'expense');
-  const incomeCategories = allCategories.filter((c: any) => c.type === 'income');
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent, listType: 'expense' | 'income') => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const items = listType === 'expense' ? expenseCategories : incomeCategories;
+      const oldIndex = items.findIndex((item: any) => item.id === active.id);
+      const newIndex = items.findIndex((item: any) => item.id === over?.id);
+      
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      
+      const newCustomCats = [...customCategories];
+      
+      const promises = newItems.map(async (item: any, index: number) => {
+        const existingIdx = newCustomCats.findIndex(c => c.id === item.id);
+        
+        if (existingIdx >= 0) {
+          newCustomCats[existingIdx] = { ...newCustomCats[existingIdx], order: index };
+        } else {
+          newCustomCats.push({ ...item, order: index });
+        }
+
+        if (user) {
+          return setDoc(doc(db, 'users', user.uid, 'categories', item.id), { order: index }, { merge: true });
+        }
+      });
+      
+      setCustomCategories(newCustomCats);
+      await Promise.all(promises);
+    }
+  };
 
   return (
     <div className="space-y-6 pb-20">
@@ -233,28 +353,25 @@ export default function CategoriesPage() {
               支出分類
             </h2>
             <div className="space-y-2">
-              {expenseCategories.map((cat) => (
-                <div key={cat.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  <div className="flex items-center gap-3">
-                    <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
-                    {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleEditClick(cat)}
-                      className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(cat.id, cat.isCustom)}
-                      className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(e) => handleDragEnd(e, 'expense')}
+              >
+                <SortableContext
+                  items={expenseCategories}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {expenseCategories.map((cat: any) => (
+                    <SortableCategoryItem
+                      key={cat.id}
+                      cat={cat}
+                      onEdit={handleEditClick}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
 
@@ -265,28 +382,25 @@ export default function CategoriesPage() {
               收入分類
             </h2>
             <div className="space-y-2">
-              {incomeCategories.map((cat) => (
-                <div key={cat.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  <div className="flex items-center gap-3">
-                    <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
-                    {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleEditClick(cat)}
-                      className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(cat.id, cat.isCustom)}
-                      className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(e) => handleDragEnd(e, 'income')}
+              >
+                <SortableContext
+                  items={incomeCategories}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {incomeCategories.map((cat: any) => (
+                    <SortableCategoryItem
+                      key={cat.id}
+                      cat={cat}
+                      onEdit={handleEditClick}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
         </div>

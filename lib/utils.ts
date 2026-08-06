@@ -13,7 +13,7 @@ export function mergeCategories(defaultCats: any[], customCats: any[]): any[] {
     const custom = customMap.get(dc.id);
     if (custom) {
       if (!custom.isDeleted) {
-        merged.push(custom);
+        merged.push({ ...dc, ...custom });
       }
       customMap.delete(dc.id);
     } else {

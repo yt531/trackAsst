@@ -31,6 +31,12 @@ function TransactionForm() {
   
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
+  
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentSearchQuery, setPaymentSearchQuery] = useState('');
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
@@ -186,7 +192,15 @@ function TransactionForm() {
   }
 
   const filteredTags = tags.filter((tag) => 
-    tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase())
+    (tag.name || '').toLowerCase().includes((tagSearchQuery || '').toLowerCase())
+  );
+
+  const filteredCategories = categories.filter(c => c.type === type).filter((cat) =>
+    (cat.name || '').toLowerCase().includes((categorySearchQuery || '').toLowerCase())
+  );
+
+  const filteredPaymentMethods = paymentMethods.filter((pm) =>
+    (pm.name || '').toLowerCase().includes((paymentSearchQuery || '').toLowerCase())
   );
 
   return (
@@ -280,32 +294,30 @@ function TransactionForm() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium">分類</label>
-            <select
-              required
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            <button
+              type="button"
+              onClick={() => setIsCategoryModalOpen(true)}
+              className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white p-3 text-sm text-left dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <option value="" disabled>選擇分類</option>
-              {categories.filter(c => c.type === type).map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+              <span className={!categoryId ? "text-zinc-500" : "truncate"}>
+                {categoryId ? categories.find(c => c.id === categoryId)?.name || '未知分類' : '搜尋分類...'}
+              </span>
+              <Search className="h-4 w-4 shrink-0 text-zinc-400" />
+            </button>
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-medium">支付方式</label>
-            <select
-              required
-              value={paymentMethodId}
-              onChange={(e) => setPaymentMethodId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            <button
+              type="button"
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white p-3 text-sm text-left dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <option value="" disabled>選擇支付方式</option>
-              {paymentMethods.map((pm) => (
-                <option key={pm.id} value={pm.id}>{pm.name}</option>
-              ))}
-            </select>
+              <span className={!paymentMethodId ? "text-zinc-500" : "truncate"}>
+                {paymentMethodId ? paymentMethods.find(p => p.id === paymentMethodId)?.name || '未知支付方式' : '搜尋支付方式...'}
+              </span>
+              <Search className="h-4 w-4 shrink-0 text-zinc-400" />
+            </button>
           </div>
         </div>
 
@@ -451,6 +463,138 @@ function TransactionForm() {
               >
                 完成
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
+            <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
+              <h2 className="text-lg font-bold">選擇分類</h2>
+              <button
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="h-4 w-4 text-zinc-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="搜尋分類..."
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
+              {filteredCategories.length === 0 ? (
+                <div className="text-center text-sm text-zinc-500 py-8">找不到符合的分類。</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {filteredCategories.map((cat) => {
+                    const isSelected = categoryId === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setCategoryId(cat.id);
+                          setIsCategoryModalOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors ${
+                          isSelected
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <span className="font-medium text-sm">{cat.name}</span>
+                        {isSelected && (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Method Modal */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
+            <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
+              <h2 className="text-lg font-bold">選擇支付方式</h2>
+              <button
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="h-4 w-4 text-zinc-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="搜尋支付方式..."
+                  value={paymentSearchQuery}
+                  onChange={(e) => setPaymentSearchQuery(e.target.value)}
+                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
+              {filteredPaymentMethods.length === 0 ? (
+                <div className="text-center text-sm text-zinc-500 py-8">找不到符合的支付方式。</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {filteredPaymentMethods.map((pm) => {
+                    const isSelected = paymentMethodId === pm.id;
+                    return (
+                      <button
+                        key={pm.id}
+                        type="button"
+                        onClick={() => {
+                          setPaymentMethodId(pm.id);
+                          setIsPaymentModalOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors ${
+                          isSelected
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <span className="font-medium text-sm">{pm.name}</span>
+                        {isSelected && (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
