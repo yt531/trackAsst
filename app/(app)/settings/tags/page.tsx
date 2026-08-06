@@ -67,7 +67,7 @@ function SortableTagItem({
       className={`flex items-center justify-between rounded-xl border p-3 shadow-sm transition-colors ${
         isDragging
           ? 'border-blue-500 bg-blue-50 dark:border-blue-500 dark:bg-blue-900/30'
-          : 'border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'
+          : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800'
       }`}
     >
       <div className="flex flex-1 items-center gap-3">
@@ -305,7 +305,7 @@ export default function TagsPage() {
       </header>
 
       {isAdding && (
-        <form onSubmit={handleAdd} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <form onSubmit={handleAdd} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
           <div>
             <label className="mb-1 block text-sm font-medium">標籤名稱 *</label>
             <input
@@ -358,7 +358,7 @@ export default function TagsPage() {
                   placeholder="搜尋標籤..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
                 />
               </div>
             )}

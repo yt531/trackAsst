@@ -207,10 +207,10 @@ function PaymentMethodDetail() {
         </div>
         {paymentMethod && paymentMethod.id !== 'cash' && paymentMethod.id !== 'unset' && !isEditing && (
           <div className="flex items-center gap-2">
-            <button onClick={handleEdit} className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-white hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-900 dark:hover:bg-blue-900/30 rounded-full border border-zinc-200 dark:border-zinc-800 transition-colors shadow-sm" title="修改">
+            <button onClick={handleEdit} className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-white hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full border border-zinc-200 dark:border-zinc-700 transition-colors shadow-sm" title="修改">
               <Pencil className="h-4 w-4" />
             </button>
-            <button onClick={handleDelete} className="p-2 text-zinc-500 hover:text-red-600 dark:text-zinc-400 bg-white hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:bg-zinc-900 dark:hover:bg-red-900/30 rounded-full border border-zinc-200 dark:border-zinc-800 transition-colors shadow-sm" title="刪除">
+            <button onClick={handleDelete} className="p-2 text-zinc-500 hover:text-red-600 dark:text-zinc-400 bg-white hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:bg-zinc-800 dark:hover:bg-red-900/30 rounded-full border border-zinc-200 dark:border-zinc-700 transition-colors shadow-sm" title="刪除">
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -218,7 +218,7 @@ function PaymentMethodDetail() {
       </header>
 
       {isEditing && (
-        <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
           <div>
             <label className="mb-1 block text-sm font-medium">類型</label>
             <div className="flex gap-2">
@@ -307,7 +307,7 @@ function PaymentMethodDetail() {
       )}
 
       {/* Filter and Stats Area */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700">
          <div className="flex flex-col items-center justify-center gap-4 mb-4">
            {/* Mode Switcher */}
            <div className="flex w-full sm:w-80 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">

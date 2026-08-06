@@ -115,7 +115,7 @@ export function DataExportImport() {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">資料管理</h2>
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 space-y-4">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800 space-y-4">
 
         <div className="flex flex-col gap-4">
           <div>

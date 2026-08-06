@@ -17,7 +17,7 @@ export function AppearanceSettings() {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">外觀</h2>
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
 
         <div className="flex gap-3">
           <button

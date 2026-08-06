@@ -108,10 +108,10 @@ export default function InvoicesPage() {
       </div>
 
       {/* Filter and Stats Area */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700">
         <div className="flex flex-col items-center justify-center gap-4 mb-4">
            {/* Mode Switcher */}
-           <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+           <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
              <button
                onClick={() => setFilterMode('month')}
                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
@@ -190,7 +190,7 @@ export default function InvoicesPage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {invoices.map((inv) => (
-                <div key={inv.id} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div key={inv.id} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400">{format(new Date(inv.date), 'MMM d, yyyy')}</div>

@@ -88,7 +88,7 @@ export default function AppearancePage() {
         </div>
       </header>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => handleThemeSelect('light')}
@@ -132,7 +132,7 @@ export default function AppearancePage() {
       </div>
 
       {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-zinc-200 dark:bg-zinc-900/95 dark:border-zinc-800 md:pl-64 flex gap-3 z-[60]">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-zinc-200 dark:bg-zinc-800/95 dark:border-zinc-700 md:pl-64 flex gap-3 z-[60]">
         <button
           onClick={handleCancel}
           className="flex-1 rounded-xl border border-zinc-300 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800 transition-colors text-zinc-900 dark:text-zinc-100"

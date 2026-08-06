@@ -116,7 +116,7 @@ export default function ReportsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-4 rounded-xl bg-white p-1 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 w-fit">
+        <div className="flex items-center gap-4 rounded-xl bg-white p-1 shadow-sm border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 w-fit">
           <button onClick={handlePrevMonth} className="p-2 hover:bg-zinc-100 rounded-lg dark:hover:bg-zinc-800">
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -143,11 +143,11 @@ export default function ReportsPage() {
         <div className="@container space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800">
               <div className="text-sm text-zinc-500 dark:text-zinc-400">總支出</div>
               <div className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">NT$ {totalExpense.toLocaleString()}</div>
             </div>
-            <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800">
               <div className="text-sm text-zinc-500 dark:text-zinc-400">日平均支出</div>
               <div className="text-2xl font-bold mt-1">NT$ {Math.round(totalExpense / daysInMonth.length).toLocaleString()}</div>
             </div>
@@ -157,7 +157,7 @@ export default function ReportsPage() {
           <div className="grid @md:grid-cols-2 gap-6">
 
             {/* Pie Chart */}
-            <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800">
               <h3 className="font-semibold mb-6">各分類支出</h3>
               <div className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -194,7 +194,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Bar Chart */}
-            <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-xl bg-white p-6 shadow-sm border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800">
               <h3 className="font-semibold mb-6">每日支出</h3>
               <div className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">

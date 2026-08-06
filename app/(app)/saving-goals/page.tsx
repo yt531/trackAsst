@@ -150,7 +150,7 @@ export default function SavingGoalsPage() {
       </div>
 
       {isFormOpen && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
           <h2 className="mb-4 text-lg font-semibold">{editingGoal ? '編輯目標' : '新增存錢目標'}</h2>
           <form onSubmit={handleSaveGoal} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -311,7 +311,7 @@ export default function SavingGoalsPage() {
             const isCompleted = goal.currentAmount >= goal.targetAmount;
             
             return (
-              <div key={goal.id} className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
+              <div key={goal.id} className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-zinc-700 dark:bg-zinc-950">
                 {isCompleted && (
                   <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
                     <Check className="h-5 w-5" />

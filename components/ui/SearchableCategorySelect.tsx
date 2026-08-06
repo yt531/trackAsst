@@ -45,7 +45,7 @@ export function SearchableCategorySelect({ categories, value, onChange, disabled
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-zinc-200 bg-white py-1 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-zinc-200 bg-white py-1 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
           <div className="sticky top-0 bg-white px-2 pb-2 pt-1 dark:bg-zinc-950">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-400" />

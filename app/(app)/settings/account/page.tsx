@@ -35,7 +35,7 @@ export default function AccountPage() {
       </header>
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
           <div className="space-y-6">
             
             {/* Username */}

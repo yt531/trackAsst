@@ -52,7 +52,7 @@ function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-700 transition-colors group"
+      className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-blue-700 transition-colors group"
     >
       <div className="flex flex-1 items-center gap-3">
         <button
@@ -277,7 +277,7 @@ export default function PaymentMethodsPage() {
         </div>
 
         {editingId && (
-          <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
             <div>
               <label className="mb-1 block text-sm font-medium">類型</label>
               <div className="flex gap-2">
@@ -371,7 +371,7 @@ export default function PaymentMethodsPage() {
           <div className="space-y-2">
 
             {methods.length === 0 ? (
-              <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 mt-2">
+              <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-8 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 mt-2">
                 尚未新增其他支付方式。
               </div>
             ) : (
