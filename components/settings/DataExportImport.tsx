@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { Download, Upload } from 'lucide-react';
 import { Transaction } from '@/types';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 export function DataExportImport() {
   const { user } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const handleExport = async () => {
     if (!user) return;
@@ -17,25 +21,74 @@ export function DataExportImport() {
       const q = collection(db, 'users', user.uid, 'transactions');
       const snap = await getDocs(q);
 
-      const rows = [
-        ['日期', '類型', '金額', '幣別', '基準金額(TWD)', '分類', '支付方式', '備註'].join(',')
-      ];
+      let transactions = snap.docs.map(doc => doc.data() as Transaction);
 
-      snap.docs.forEach(doc => {
-        const d = doc.data() as Transaction;
-        const dateStr = format(new Date(d.date), 'yyyy-MM-dd HH:mm:ss');
-        const notes = d.notes ? `"${d.notes.replace(/"/g, '""')}"` : '';
-        rows.push([dateStr, d.type, d.amount, d.currency, d.baseAmount, d.categoryId, d.paymentMethodId, notes].join(','));
+      if (startDate) {
+        const startObj = new Date(`${startDate}T00:00:00`);
+        transactions = transactions.filter(t => new Date(t.date) >= startObj);
+      }
+      if (endDate) {
+        const endObj = new Date(`${endDate}T23:59:59`);
+        transactions = transactions.filter(t => new Date(t.date) <= endObj);
+      }
+
+      if (transactions.length === 0) {
+        alert('在此日期範圍內沒有交易紀錄');
+        setIsExporting(false);
+        return;
+      }
+
+      const years = new Set<string>();
+      const months = new Set<string>();
+      transactions.forEach(t => {
+        const d = new Date(t.date);
+        years.add(format(d, 'yyyy'));
+        months.add(format(d, 'MM'));
       });
 
-      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.join('\n'); // Add BOM for Excel
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `fintrack_export_${format(new Date(), 'yyyyMMdd')}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const wb = XLSX.utils.book_new();
+      const headers = ['日期', '類型', '金額', '幣別', '基準金額(TWD)', '分類', '支付方式', '備註'];
+
+      const addSheet = (sheetData: Transaction[], sheetName: string) => {
+        const ws = XLSX.utils.aoa_to_sheet([
+          headers,
+          ...sheetData.map(d => [
+            format(new Date(d.date), 'yyyy-MM-dd HH:mm:ss'),
+            d.type === 'expense' ? '支出' : d.type === 'income' ? '收入' : '轉帳',
+            d.amount,
+            d.currency,
+            d.baseAmount,
+            d.categoryId,
+            d.paymentMethodId,
+            d.notes || ''
+          ])
+        ]);
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      };
+
+      if (years.size > 1) {
+        Array.from(years).sort().forEach(year => {
+          const yearData = transactions.filter(t => format(new Date(t.date), 'yyyy') === year);
+          addSheet(yearData, `${year}年`);
+        });
+      } else if (months.size > 1) {
+        Array.from(months).sort().forEach(month => {
+          const monthData = transactions.filter(t => format(new Date(t.date), 'MM') === month);
+          const monthNum = parseInt(month, 10);
+          addSheet(monthData, `${monthNum}月`);
+        });
+      } else {
+        if (months.size === 1) {
+          const monthNum = parseInt(Array.from(months)[0], 10);
+          addSheet(transactions, `${monthNum}月`);
+        } else {
+          addSheet(transactions, `匯出資料`);
+        }
+      }
+
+      const exportName = `fintrack_export_${startDate ? startDate.replace(/-/g, '') : 'all'}_${endDate ? endDate.replace(/-/g, '') : 'all'}.xlsx`;
+      XLSX.writeFile(wb, exportName);
+
     } catch (e) {
       console.error(e);
       alert('匯出失敗');
@@ -49,27 +102,44 @@ export function DataExportImport() {
       <h2 className="text-lg font-semibold">資料管理</h2>
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 space-y-4">
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4">
           <div>
-            <div className="font-medium">匯出資料 (CSV)</div>
-            <div className="text-sm text-zinc-500">將您所有的交易紀錄下載為 CSV 檔案。</div>
+            <div className="font-medium">匯出資料 (Excel)</div>
+            <div className="text-sm text-zinc-500">將您的交易紀錄下載為 Excel 檔案。可選擇特定日期範圍，系統將自動分頁。</div>
           </div>
-          <button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" />
-            匯出
-          </button>
+          
+          <div className="flex flex-col gap-3 rounded-lg border border-zinc-100 bg-zinc-50/50 p-3 dark:border-zinc-800/50 dark:bg-zinc-800/20">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm text-zinc-500 shrink-0 w-12 text-right">開始：</span>
+                <DatePicker value={startDate} onChange={setStartDate} type="date" className="flex-1" />
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm text-zinc-500 shrink-0 w-12 text-right">結束：</span>
+                <DatePicker value={endDate} onChange={setEndDate} type="date" className="flex-1" />
+              </div>
+            </div>
+            
+            <div className="flex justify-end pt-2 border-t border-zinc-200/50 dark:border-zinc-700/50">
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting ? '匯出中...' : '匯出'}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="border-t border-zinc-200 dark:border-zinc-800 my-2"></div>
+        {/* 暫時隱藏匯入功能
+        <div className="border-t border-zinc-200 dark:border-zinc-800 my-4"></div>
 
         <div className="flex items-center justify-between opacity-50 cursor-not-allowed" title="未來更新中提供">
           <div>
-            <div className="font-medium">匯入資料 (CSV)</div>
-            <div className="text-sm text-zinc-500">從 CSV 檔案匯入交易紀錄。</div>
+            <div className="font-medium">匯入資料 (Excel/CSV)</div>
+            <div className="text-sm text-zinc-500">從檔案匯入交易紀錄。</div>
           </div>
           <button
             disabled
@@ -79,6 +149,7 @@ export function DataExportImport() {
             匯入
           </button>
         </div>
+        */}
 
       </div>
     </div>
