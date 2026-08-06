@@ -10,9 +10,10 @@ type DatePickerProps = {
   onChange: (val: string) => void;
   required?: boolean;
   className?: string;
+  showTodayButton?: boolean;
 };
 
-export function DatePicker({ type = 'date', value, onChange, required, className }: DatePickerProps) {
+export function DatePicker({ type = 'date', value, onChange, required, className, showTodayButton = true }: DatePickerProps) {
   const handleToday = () => {
     const now = new Date();
     if (type === 'year') {
@@ -61,13 +62,15 @@ export function DatePicker({ type = 'date', value, onChange, required, className
           className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       )}
-      <button
-        type="button"
-        onClick={handleToday}
-        className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
-      >
-        {type === 'year' ? '今年' : type === 'month' ? '本月' : '今天'}
-      </button>
+      {showTodayButton && (
+        <button
+          type="button"
+          onClick={handleToday}
+          className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+        >
+          {type === 'year' ? '今年' : type === 'month' ? '本月' : '今天'}
+        </button>
+      )}
     </div>
   );
 }

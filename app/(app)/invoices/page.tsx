@@ -108,9 +108,9 @@ export default function InvoicesPage() {
 
       {/* Filter and Stats Area */}
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div className="flex flex-col items-center justify-center gap-4 mb-4">
            {/* Mode Switcher */}
-           <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+           <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
              <button
                onClick={() => setFilterMode('month')}
                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
