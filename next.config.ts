@@ -1,6 +1,11 @@
 import type {NextConfig} from 'next';
 import withSerwistInit from "@serwist/next";
 
+let basePath = '';
+if (process.env.GITHUB_ACTIONS && process.env.GITHUB_REPOSITORY) {
+  basePath = `/${process.env.GITHUB_REPOSITORY.split('/')[1]}`;
+}
+
 const withSerwist = withSerwistInit({
   swSrc: "sw.ts",
   swDest: "public/sw.js",
@@ -28,6 +33,7 @@ const nextConfig: NextConfig = {
     ],
   },
   output: 'export',
+  basePath,
   transpilePackages: ['motion'],
   webpack: (config, {dev}) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.
