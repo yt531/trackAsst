@@ -76,7 +76,7 @@ export function SearchableCategorySelect({ categories, value, onChange, disabled
             
             {filteredCategories.length > 0 ? (
               <>
-                <div className="px-2 py-1.5 text-xs font-semibold text-zinc-500 mt-1">分類預算</div>
+                <div className="px-2 py-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-1">分類預算</div>
                 {filteredCategories.map(c => (
                   <button
                     key={c.id}
@@ -94,7 +94,7 @@ export function SearchableCategorySelect({ categories, value, onChange, disabled
                 ))}
               </>
             ) : (
-              <div className="px-2 py-3 text-center text-xs text-zinc-500">
+              <div className="px-2 py-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
                 找不到相關分類
               </div>
             )}

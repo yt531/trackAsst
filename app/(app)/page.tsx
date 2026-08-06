@@ -124,7 +124,7 @@ export default function DashboardPage() {
           <h2 className="mt-2 text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
             {loading ? '...' : `NT$ ${(stats.budget - stats.monthlyExpense).toLocaleString()}`}
           </h2>
-          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">總預算: ${stats.budget.toLocaleString()}</p>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">總預算: ${stats.budget.toLocaleString()}</p>
 
           <div className="mt-8 flex items-center gap-4">
             <div className="flex-1 rounded-2xl bg-green-50/50 p-4 border border-green-100/50 dark:bg-green-900/10 dark:border-green-900/20">
@@ -162,9 +162,9 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-sm text-zinc-500">載入中...</div>
+          <div className="text-center py-8 text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>
         ) : recentTxs.length === 0 ? (
-           <div className="text-center py-8 text-sm text-zinc-500 bg-white rounded-xl border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700">
+           <div className="text-center py-8 text-sm text-zinc-500 dark:text-zinc-400 bg-white rounded-xl border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700">
              近期無交易紀錄。
            </div>
         ) : (
@@ -179,7 +179,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div className="font-medium text-sm">{categoriesMap[tx.categoryId]?.name || '未分類'}</div>
-                    <div className="text-xs text-zinc-500">{format(new Date(tx.date), 'MM/dd')}</div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">{format(new Date(tx.date), 'MM/dd')}</div>
                   </div>
                 </div>
                 <div className={`font-medium ${

@@ -188,7 +188,7 @@ function TransactionForm() {
   };
 
   if (loadingInitial) {
-    return <div className="p-8 text-center text-sm text-zinc-500">載入中...</div>;
+    return <div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>;
   }
 
   const filteredTags = tags.filter((tag) => 
@@ -226,7 +226,7 @@ function TransactionForm() {
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
               type === 'expense'
                 ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'
             }`}
           >
             支出
@@ -237,7 +237,7 @@ function TransactionForm() {
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
               type === 'income'
                 ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'
             }`}
           >
             收入
@@ -284,7 +284,7 @@ function TransactionForm() {
               onChange={(e) => setExchangeRate(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
               {amount && exchangeRate ? `≈ ${(parseFloat(amount) * parseFloat(exchangeRate)).toFixed(2)} TWD` : ''}
             </p>
           </div>
@@ -299,7 +299,7 @@ function TransactionForm() {
               onClick={() => setIsCategoryModalOpen(true)}
               className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white p-3 text-sm text-left dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <span className={!categoryId ? "text-zinc-500" : "truncate"}>
+              <span className={!categoryId ? "text-zinc-500 dark:text-zinc-400" : "truncate"}>
                 {categoryId ? categories.find(c => c.id === categoryId)?.name || '未知分類' : '搜尋分類...'}
               </span>
               <Search className="h-4 w-4 shrink-0 text-zinc-400" />
@@ -313,7 +313,7 @@ function TransactionForm() {
               onClick={() => setIsPaymentModalOpen(true)}
               className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white p-3 text-sm text-left dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <span className={!paymentMethodId ? "text-zinc-500" : "truncate"}>
+              <span className={!paymentMethodId ? "text-zinc-500 dark:text-zinc-400" : "truncate"}>
                 {paymentMethodId ? paymentMethods.find(p => p.id === paymentMethodId)?.name || '未知支付方式' : '搜尋支付方式...'}
               </span>
               <Search className="h-4 w-4 shrink-0 text-zinc-400" />
@@ -358,7 +358,7 @@ function TransactionForm() {
             <button
               type="button"
               onClick={() => setIsTagModalOpen(true)}
-              className="flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:text-zinc-300"
+              className="flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-500 hover:border-zinc-400 dark:text-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:text-zinc-300"
             >
               <Plus className="h-3 w-3" />
               新增標籤
@@ -394,7 +394,7 @@ function TransactionForm() {
               <h2 className="text-lg font-bold">選擇標籤</h2>
               <button
                 onClick={() => setIsTagModalOpen(false)}
-                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -417,11 +417,11 @@ function TransactionForm() {
 
             <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
               {tags.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 py-8">
+                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">
                   目前沒有任何標籤。<br/>請至設定頁面新增標籤。
                 </div>
               ) : filteredTags.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 py-8">找不到符合的標籤。</div>
+                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">找不到符合的標籤。</div>
               ) : (
                 <div className="flex flex-col gap-1">
                   {filteredTags.map((tag) => {
@@ -476,7 +476,7 @@ function TransactionForm() {
               <h2 className="text-lg font-bold">選擇分類</h2>
               <button
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -499,7 +499,7 @@ function TransactionForm() {
 
             <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
               {filteredCategories.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 py-8">找不到符合的分類。</div>
+                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">找不到符合的分類。</div>
               ) : (
                 <div className="flex flex-col gap-1">
                   {filteredCategories.map((cat) => {
@@ -542,7 +542,7 @@ function TransactionForm() {
               <h2 className="text-lg font-bold">選擇支付方式</h2>
               <button
                 onClick={() => setIsPaymentModalOpen(false)}
-                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -565,7 +565,7 @@ function TransactionForm() {
 
             <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
               {filteredPaymentMethods.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 py-8">找不到符合的支付方式。</div>
+                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">找不到符合的支付方式。</div>
               ) : (
                 <div className="flex flex-col gap-1">
                   {filteredPaymentMethods.map((pm) => {
@@ -605,7 +605,7 @@ function TransactionForm() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500">載入表單中...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">載入表單中...</div>}>
       <TransactionForm />
     </Suspense>
   );

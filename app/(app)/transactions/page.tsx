@@ -154,13 +154,13 @@ function TransactionsList() {
           <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
             <button
               onClick={() => setFilterMode('month')}
-              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
             >
               按月
             </button>
             <button
               onClick={() => setFilterMode('day')}
-              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
             >
               按日
             </button>
@@ -189,21 +189,21 @@ function TransactionsList() {
         {/* Totals */}
         <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
           <div>
-            <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-green-500" /> 總收入</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-green-500" /> 總收入</div>
             <div className="text-lg font-semibold mt-1">NT$ {totals.income.toLocaleString()}</div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
             <div className="text-lg font-semibold mt-1">NT$ {totals.expense.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center text-sm text-zinc-500 py-8">載入中...</div>
+        <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">載入中...</div>
       ) : transactions.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
-          <p className="text-sm text-zinc-500 mb-4">此期間找不到交易紀錄。</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">此期間找不到交易紀錄。</p>
           <Link href="/transactions/new" className="text-blue-600 hover:underline">新增一筆交易</Link>
         </div>
       ) : (
@@ -226,7 +226,7 @@ function TransactionsList() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate" title={cat?.name || '未知分類'}>{cat?.name || '未知分類'}</div>
-                        <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-2">
                           <span className="truncate" title={tx.paymentMethodId === 'cash' ? '現金' : tx.paymentMethodId === 'unset' ? '未設定支付方式' : (pm?.name || '未知支付方式')}>
                             {tx.paymentMethodId === 'cash'
                               ? '現金'
@@ -242,7 +242,7 @@ function TransactionsList() {
                           }`}>
                           {isExpense ? '-' : '+'} {tx.amount.toLocaleString()} {tx.currency}
                           {tx.currency !== 'TWD' && (
-                            <div className="text-[10px] text-zinc-500">
+                            <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
                               (≈ {tx.baseAmount.toLocaleString()} TWD)
                             </div>
                           )}
@@ -250,14 +250,14 @@ function TransactionsList() {
                         <div className="flex items-center gap-1 shrink-0">
                           <Link
                             href={`/transactions/new?editId=${tx.id}`}
-                            className="p-2 text-zinc-500 hover:text-blue-600 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+                            className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
                             title="修改"
                           >
                             <Pencil className="h-4 w-4" />
                           </Link>
                           <button
                             onClick={() => handleDelete(tx.id)}
-                            className="p-2 text-zinc-500 hover:text-red-600 bg-zinc-100 hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:bg-zinc-800 dark:hover:bg-red-900/30 rounded-full transition-colors"
+                            className="p-2 text-zinc-500 hover:text-red-600 dark:text-zinc-400 bg-zinc-100 hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:bg-zinc-800 dark:hover:bg-red-900/30 rounded-full transition-colors"
                             title="刪除"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -278,7 +278,7 @@ function TransactionsList() {
 
 export default function TransactionsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500">載入中...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>}>
       <TransactionsList />
     </Suspense>
   );

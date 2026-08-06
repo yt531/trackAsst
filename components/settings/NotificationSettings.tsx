@@ -59,12 +59,12 @@ export function NotificationSettings() {
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${permission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800'}`}>
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${permission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-zinc-100 text-zinc-500 dark:text-zinc-400 dark:bg-zinc-800'}`}>
               <Bell className="h-5 w-5" />
             </div>
             <div>
               <div className="font-medium">推播通知 (Web Push)</div>
-              <div className="text-sm text-zinc-500">
+              <div className="text-sm text-zinc-500 dark:text-zinc-400">
                 {permission === 'granted' ? '已開啟通知' : permission === 'denied' ? '您已封鎖通知' : '開啟通知以接收存錢提醒'}
               </div>
             </div>

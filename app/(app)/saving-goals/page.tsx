@@ -297,11 +297,11 @@ export default function SavingGoalsPage() {
       )}
 
       {loading ? (
-        <div className="flex h-32 items-center justify-center text-sm text-zinc-500">載入中...</div>
+        <div className="flex h-32 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>
       ) : goals.length === 0 ? (
         <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
           <Target className="mb-2 h-10 w-10 text-zinc-400" />
-          <p className="text-zinc-500 font-medium">尚未建立存錢目標</p>
+          <p className="text-zinc-500 dark:text-zinc-400 font-medium">尚未建立存錢目標</p>
           <p className="text-xs text-zinc-400 mt-1">開始規劃您的第一個目標吧！</p>
         </div>
       ) : (

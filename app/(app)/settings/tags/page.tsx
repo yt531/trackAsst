@@ -101,7 +101,7 @@ function SortableTagItem({
             </button>
             <button
               onClick={() => setEditingId(null)}
-              className="text-sm font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
+              className="text-sm font-medium text-zinc-500 hover:text-zinc-70 dark:text-zinc-4000 dark:text-zinc-400"
             >
               取消
             </button>
@@ -338,7 +338,7 @@ export default function TagsPage() {
       )}
 
       {loading ? (
-        <div className="text-sm text-zinc-500 text-center py-4">載入中...</div>
+        <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">載入中...</div>
       ) : (
         <div className="grid gap-6">
           <div>
@@ -364,9 +364,9 @@ export default function TagsPage() {
             )}
 
             {tags.length === 0 ? (
-              <div className="text-sm text-zinc-500 py-4">目前沒有任何標籤。點擊上方「新增標籤」來建立。</div>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400 py-4">目前沒有任何標籤。點擊上方「新增標籤」來建立。</div>
             ) : filteredTags.length === 0 ? (
-              <div className="text-sm text-zinc-500 py-4">找不到符合的標籤。</div>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400 py-4">找不到符合的標籤。</div>
             ) : (
               <div className="max-w-xl">
                 <DndContext 

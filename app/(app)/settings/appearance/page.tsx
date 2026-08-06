@@ -126,7 +126,7 @@ export default function AppearancePage() {
             <span className="text-sm font-medium">跟隨系統</span>
           </button>
         </div>
-        <p className="mt-4 text-xs text-zinc-500 text-center">
+        <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400 text-center">
           選擇「跟隨系統」時，會根據您裝置的系統設定自動切換淺色或深色。
         </p>
       </div>

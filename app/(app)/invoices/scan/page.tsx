@@ -86,7 +86,7 @@ export default function InvoiceScanPage() {
               <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <h2 className="text-xl font-bold">掃描成功</h2>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               已成功讀取發票資訊。
             </p>
             
@@ -94,28 +94,28 @@ export default function InvoiceScanPage() {
               <div className="mt-6 w-full rounded-lg bg-zinc-50 p-4 text-left dark:bg-zinc-950">
                 <div className="grid grid-cols-2 gap-4 text-sm mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
                   <div>
-                    <div className="text-zinc-500">發票號碼</div>
+                    <div className="text-zinc-500 dark:text-zinc-400">發票號碼</div>
                     <div className="font-medium font-mono">{invoiceDetails.number}</div>
                   </div>
                   <div>
-                    <div className="text-zinc-500">總金額</div>
+                    <div className="text-zinc-500 dark:text-zinc-400">總金額</div>
                     <div className="font-medium text-blue-600 dark:text-blue-400">
                       NT$ {invoiceDetails.totalAmount}
                     </div>
                   </div>
                   <div>
-                    <div className="text-zinc-500">發票日期</div>
+                    <div className="text-zinc-500 dark:text-zinc-400">發票日期</div>
                     <div className="font-medium">{invoiceDetails.dateStr}</div>
                   </div>
                   <div>
-                    <div className="text-zinc-500">賣方統編</div>
+                    <div className="text-zinc-500 dark:text-zinc-400">賣方統編</div>
                     <div className="font-medium">{invoiceDetails.sellerId}</div>
                   </div>
                 </div>
 
                 {invoiceDetails.items.length > 0 && (
                    <div>
-                     <div className="text-zinc-500 mb-2 font-medium">消費明細</div>
+                     <div className="text-zinc-500 dark:text-zinc-400 mb-2 font-medium">消費明細</div>
                      <ul className="space-y-2">
                        {invoiceDetails.items.map((item: any, idx: number) => (
                          <li key={idx} className="flex justify-between text-sm">
@@ -159,7 +159,7 @@ export default function InvoiceScanPage() {
             <Receipt className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
           <h3 className="text-lg font-semibold">要記帳嗎？</h3>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             發票已存入存摺。您現在要將這筆發票記錄為支出嗎？
           </p>
           <div className="mt-6 flex flex-col gap-2">

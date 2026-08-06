@@ -120,17 +120,17 @@ export function DataExportImport() {
         <div className="flex flex-col gap-4">
           <div>
             <div className="font-medium">匯出資料 (Excel)</div>
-            <div className="text-sm text-zinc-500">將您的交易紀錄下載為 Excel 檔案。可選擇特定日期範圍，系統將自動分頁。</div>
+            <div className="text-sm text-zinc-500 dark:text-zinc-400">將您的交易紀錄下載為 Excel 檔案。可選擇特定日期範圍，系統將自動分頁。</div>
           </div>
           
           <div className="flex flex-col gap-3 rounded-lg border border-zinc-100 bg-zinc-50/50 p-3 dark:border-zinc-800/50 dark:bg-zinc-800/20">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm text-zinc-500 shrink-0 w-12 text-right">開始：</span>
+                <span className="text-sm text-zinc-500 dark:text-zinc-400 shrink-0 w-12 text-right">開始：</span>
                 <DatePicker value={startDate} onChange={setStartDate} type="date" className="flex-1" />
               </div>
               <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm text-zinc-500 shrink-0 w-12 text-right">結束：</span>
+                <span className="text-sm text-zinc-500 dark:text-zinc-400 shrink-0 w-12 text-right">結束：</span>
                 <DatePicker value={endDate} onChange={setEndDate} type="date" className="flex-1" />
               </div>
             </div>
@@ -154,7 +154,7 @@ export function DataExportImport() {
         <div className="flex items-center justify-between opacity-50 cursor-not-allowed" title="未來更新中提供">
           <div>
             <div className="font-medium">匯入資料 (Excel/CSV)</div>
-            <div className="text-sm text-zinc-500">從檔案匯入交易紀錄。</div>
+            <div className="text-sm text-zinc-500 dark:text-zinc-400">從檔案匯入交易紀錄。</div>
           </div>
           <button
             disabled

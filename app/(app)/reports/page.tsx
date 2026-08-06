@@ -134,21 +134,21 @@ export default function ReportsPage() {
       </header>
 
       {loading ? (
-        <div className="text-center py-12 text-sm text-zinc-500">載入報表中...</div>
+        <div className="text-center py-12 text-sm text-zinc-500 dark:text-zinc-400">載入報表中...</div>
       ) : totalExpense === 0 ? (
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
-          <p className="text-sm text-zinc-500">{format(currentDate, 'yyyy年MM月')} 尚無支出紀錄。</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">{format(currentDate, 'yyyy年MM月')} 尚無支出紀錄。</p>
         </div>
       ) : (
         <div className="@container space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="text-sm text-zinc-500">總支出</div>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400">總支出</div>
               <div className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">NT$ {totalExpense.toLocaleString()}</div>
             </div>
             <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="text-sm text-zinc-500">日平均支出</div>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400">日平均支出</div>
               <div className="text-2xl font-bold mt-1">NT$ {Math.round(totalExpense / daysInMonth.length).toLocaleString()}</div>
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function ReportsPage() {
                   <div key={entry.name} className="flex items-center text-xs">
                     <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
                     <span className="truncate flex-1">{entry.name}</span>
-                    <span className="font-medium text-zinc-500 ml-1">{Math.round((entry.value / totalExpense) * 100)}%</span>
+                    <span className="font-medium text-zinc-500 dark:text-zinc-400 ml-1">{Math.round((entry.value / totalExpense) * 100)}%</span>
                   </div>
                 ))}
               </div>

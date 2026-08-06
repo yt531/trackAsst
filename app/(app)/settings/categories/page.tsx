@@ -65,7 +65,7 @@ function SortableCategoryItem({ cat, onEdit, onDelete }: SortableCategoryItemPro
           <GripVertical className="h-5 w-5" />
         </button>
         <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
-        {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">系統預設</span>}
+        {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded">系統預設</span>}
       </div>
       <div className="flex items-center gap-1">
         <button
@@ -343,7 +343,7 @@ export default function CategoriesPage() {
       )}
 
       {loading ? (
-        <div className="text-sm text-zinc-500 text-center py-4">載入中...</div>
+        <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">載入中...</div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {/* 支出分類 */}

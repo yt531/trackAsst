@@ -25,11 +25,11 @@ export default function SecurityPage() {
           <div className="flex items-center justify-between opacity-50 cursor-not-allowed">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                <Fingerprint className="h-5 w-5 text-zinc-500" />
+                <Fingerprint className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
               </div>
               <div>
                 <div className="font-medium">生物辨識解鎖</div>
-                <div className="text-sm text-zinc-500">需要 Face ID / Touch ID 才能開啟應用程式</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">需要 Face ID / Touch ID 才能開啟應用程式</div>
               </div>
             </div>
             <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-zinc-200 dark:bg-zinc-700">

@@ -65,7 +65,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, onEdit, onDel
     <div ref={setNodeRef} style={style} className="relative group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 transition-colors hover:border-blue-300 dark:hover:border-blue-800 flex">
       {/* Drag Handle */}
       <div 
-        className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-8 cursor-grab touch-none text-zinc-300 hover:text-zinc-500 dark:text-zinc-700 dark:hover:text-zinc-500 rounded-l-xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
+        className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-8 cursor-grab touch-none text-zinc-300 hover:text-zinc-500 dark:text-zinc-700 dark:hover:text-zinc-500 dark:text-zinc-400 rounded-l-xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
         {...attributes}
         {...listeners}
       >
@@ -356,11 +356,11 @@ export default function BudgetsPage() {
       )}
 
       {loading ? (
-        <div className="flex h-32 items-center justify-center text-sm text-zinc-500">載入中...</div>
+        <div className="flex h-32 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>
       ) : budgets.length === 0 ? (
         <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
           <Wallet className="mb-2 h-8 w-8 text-zinc-400" />
-          <p className="text-sm text-zinc-500">此月份尚無設定預算</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">此月份尚無設定預算</p>
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

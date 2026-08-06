@@ -188,7 +188,7 @@ function PaymentMethodDetail() {
   }, {} as Record<string, Transaction[]>);
 
   if (!loading && !paymentMethod) {
-    return <div className="p-8 text-center text-sm text-zinc-500">找不到此支付方式</div>;
+    return <div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">找不到此支付方式</div>;
   }
 
   return (
@@ -207,10 +207,10 @@ function PaymentMethodDetail() {
         </div>
         {paymentMethod && paymentMethod.id !== 'cash' && paymentMethod.id !== 'unset' && !isEditing && (
           <div className="flex items-center gap-2">
-            <button onClick={handleEdit} className="p-2 text-zinc-500 hover:text-blue-600 bg-white hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-900 dark:hover:bg-blue-900/30 rounded-full border border-zinc-200 dark:border-zinc-800 transition-colors shadow-sm" title="修改">
+            <button onClick={handleEdit} className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-white hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-900 dark:hover:bg-blue-900/30 rounded-full border border-zinc-200 dark:border-zinc-800 transition-colors shadow-sm" title="修改">
               <Pencil className="h-4 w-4" />
             </button>
-            <button onClick={handleDelete} className="p-2 text-zinc-500 hover:text-red-600 bg-white hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:bg-zinc-900 dark:hover:bg-red-900/30 rounded-full border border-zinc-200 dark:border-zinc-800 transition-colors shadow-sm" title="刪除">
+            <button onClick={handleDelete} className="p-2 text-zinc-500 hover:text-red-600 dark:text-zinc-400 bg-white hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:bg-zinc-900 dark:hover:bg-red-900/30 rounded-full border border-zinc-200 dark:border-zinc-800 transition-colors shadow-sm" title="刪除">
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -313,19 +313,19 @@ function PaymentMethodDetail() {
            <div className="flex w-full sm:w-80 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
              <button
                onClick={() => setFilterMode('year')}
-               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'year' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'year' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
              >
                按年
              </button>
              <button
                onClick={() => setFilterMode('month')}
-               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
              >
                按月
              </button>
              <button
                onClick={() => setFilterMode('day')}
-               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
              >
                按日
              </button>
@@ -364,21 +364,21 @@ function PaymentMethodDetail() {
         {/* Totals */}
         <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
           <div>
-            <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-green-500" /> 總收入</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-green-500" /> 總收入</div>
             <div className="text-lg font-semibold mt-1">NT$ {totals.income.toLocaleString()}</div>
           </div>
           <div>
-             <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
+             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
             <div className="text-lg font-semibold mt-1">NT$ {totals.expense.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center text-sm text-zinc-500 py-8">載入中...</div>
+        <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">載入中...</div>
       ) : transactions.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
-          <p className="text-sm text-zinc-500">此期間找不到交易紀錄。</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">此期間找不到交易紀錄。</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -401,7 +401,7 @@ function PaymentMethodDetail() {
                         </div>
                         <div>
                           <div className="font-medium">{cat?.name || '未知分類'}</div>
-                          {tx.notes && <div className="text-xs text-zinc-500 mt-0.5">{tx.notes}</div>}
+                          {tx.notes && <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{tx.notes}</div>}
                         </div>
                       </div>
                       <div className={`text-right font-medium ${
@@ -409,7 +409,7 @@ function PaymentMethodDetail() {
                       }`}>
                         {isExpense ? '-' : '+'} {tx.amount.toLocaleString()} {tx.currency}
                         {tx.currency !== 'TWD' && (
-                           <div className="text-[10px] text-zinc-500">
+                           <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
                              (≈ {tx.baseAmount.toLocaleString()} TWD)
                            </div>
                         )}
@@ -428,7 +428,7 @@ function PaymentMethodDetail() {
 
 export default function PageClient() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500">載入中...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>}>
       <PaymentMethodDetail />
     </Suspense>
   );

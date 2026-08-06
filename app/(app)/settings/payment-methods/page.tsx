@@ -72,15 +72,15 @@ function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
           </div>
           <div>
             <div className="font-medium text-sm">{method.name}</div>
-            {method.notes && <div className="text-xs text-zinc-500">{method.notes}</div>}
-            {method.isSystem && <div className="text-xs text-zinc-500">系統預設</div>}
+            {method.notes && <div className="text-xs text-zinc-500 dark:text-zinc-400">{method.notes}</div>}
+            {method.isSystem && <div className="text-xs text-zinc-500 dark:text-zinc-400">系統預設</div>}
           </div>
         </div>
       </div>
       <div className="flex items-center gap-2">
         <Link
           href={`/settings/payment-methods/detail?id=${method.id}`}
-          className="p-2 text-zinc-500 hover:text-blue-600 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+          className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
           title="檢視"
         >
           <Info className="h-4 w-4" />
@@ -366,12 +366,12 @@ export default function PaymentMethodsPage() {
         )}
 
         {loading ? (
-          <div className="text-sm text-zinc-500 text-center py-4">載入中...</div>
+          <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">載入中...</div>
         ) : (
           <div className="space-y-2">
 
             {methods.length === 0 ? (
-              <div className="text-sm text-zinc-500 text-center py-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 mt-2">
+              <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 mt-2">
                 尚未新增其他支付方式。
               </div>
             ) : (

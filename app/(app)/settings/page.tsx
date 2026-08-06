@@ -26,7 +26,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">帳號管理</div>
-                <div className="text-sm text-zinc-500">查看您的使用者資訊與登入方式</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">查看您的使用者資訊與登入方式</div>
               </div>
             </div>
             <div className="text-zinc-400">
@@ -41,7 +41,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">外觀 (色彩模式)</div>
-                <div className="text-sm text-zinc-500">切換淺色、深色或跟隨系統設定</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">切換淺色、深色或跟隨系統設定</div>
               </div>
             </div>
             <div className="text-zinc-400">
@@ -56,7 +56,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">通知與提醒管理</div>
-                <div className="text-sm text-zinc-500">管理應用程式的推播通知</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">管理應用程式的推播通知</div>
               </div>
             </div>
             <div className="text-zinc-400">
@@ -77,7 +77,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">支付方式管理</div>
-                <div className="text-sm text-zinc-500">新增或修改您的銀行帳戶、電子支付與信用卡</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">新增或修改您的銀行帳戶、電子支付與信用卡</div>
               </div>
             </div>
             <div className="text-zinc-400">
@@ -92,7 +92,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">交易分類管理</div>
-                <div className="text-sm text-zinc-500">新增或修改您的交易分類</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">新增或修改您的交易分類</div>
               </div>
             </div>
             <div className="text-zinc-400">
@@ -107,7 +107,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">標籤管理</div>
-                <div className="text-sm text-zinc-500">新增或修改您的交易標籤</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">新增或修改您的交易標籤</div>
               </div>
             </div>
             <div className="text-zinc-400">
@@ -128,7 +128,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">安全性管理</div>
-                <div className="text-sm text-zinc-500">管理應用程式的安全設定</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">管理應用程式的安全設定</div>
               </div>
             </div>
             <div className="text-zinc-400">
@@ -143,7 +143,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="font-medium">資料管理</div>
-                <div className="text-sm text-zinc-500">匯出或匯入您的應用程式資料</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">匯出或匯入您的應用程式資料</div>
               </div>
             </div>
             <div className="text-zinc-400">

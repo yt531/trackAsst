@@ -88,7 +88,7 @@ export default function InvoicesPage() {
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-all ${
             activeTab === 'cloud'
               ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
-              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400 dark:hover:text-white'
           }`}
         >
           <Cloud className="h-4 w-4" />
@@ -99,7 +99,7 @@ export default function InvoicesPage() {
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-all ${
             activeTab === 'paper'
               ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
-              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400 dark:hover:text-white'
           }`}
         >
           <FileText className="h-4 w-4" />
@@ -114,13 +114,13 @@ export default function InvoicesPage() {
            <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
              <button
                onClick={() => setFilterMode('month')}
-               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
              >
                按月
              </button>
              <button
                onClick={() => setFilterMode('day')}
-               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
              >
                按日
              </button>
@@ -149,12 +149,12 @@ export default function InvoicesPage() {
         {/* Totals */}
         <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
           <div>
-            <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
             <div className="text-lg font-semibold mt-1">NT$ {totals.expense.toLocaleString()}</div>
           </div>
           <div>
-             <div className="text-xs text-zinc-500 flex items-center gap-1"><Hash className="w-3 h-3 text-blue-500" /> 發票張數</div>
-            <div className="text-lg font-semibold mt-1">{totals.count} <span className="text-sm font-normal text-zinc-500">張</span></div>
+             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><Hash className="w-3 h-3 text-blue-500" /> 發票張數</div>
+            <div className="text-lg font-semibold mt-1">{totals.count} <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400">張</span></div>
           </div>
         </div>
       </div>
@@ -163,7 +163,7 @@ export default function InvoicesPage() {
         <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
           <Cloud className="mx-auto mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-700" />
           <h3 className="text-lg font-medium">敬請期待</h3>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             未來將整合財政部電子發票 API 載入雲端發票。
           </p>
         </div>
@@ -172,12 +172,12 @@ export default function InvoicesPage() {
       {activeTab === 'paper' && (
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center text-sm text-zinc-500 py-8">載入中...</div>
+            <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">載入中...</div>
           ) : invoices.length === 0 ? (
             <div className="rounded-xl border border-zinc-200 border-dashed p-12 text-center dark:border-zinc-800">
               <Receipt className="mx-auto mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-700" />
               <h3 className="text-lg font-medium">此期間尚無發票紀錄</h3>
-              <p className="mt-2 text-sm text-zinc-500">
+              <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                 掃描您的紙本電子發票以在此處追蹤它們。
               </p>
               <Link
@@ -193,7 +193,7 @@ export default function InvoicesPage() {
                 <div key={inv.id} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-xs text-zinc-500">{format(new Date(inv.date), 'MMM d, yyyy')}</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">{format(new Date(inv.date), 'MMM d, yyyy')}</div>
                       <div className="font-mono text-sm font-medium mt-1">{inv.id}</div>
                     </div>
                     <div className="text-right">
@@ -207,7 +207,7 @@ export default function InvoicesPage() {
                   </div>
                   {inv.items && inv.items.length > 0 && (
                     <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                      <div className="text-xs text-zinc-500 truncate">
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
                         {inv.items.map(i => i.description).join(', ')}
                       </div>
                     </div>
