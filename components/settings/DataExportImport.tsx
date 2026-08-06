@@ -3,7 +3,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { Download, Upload } from 'lucide-react';
-import { Transaction } from '@/types';
+import { Transaction, Category, PaymentMethod } from '@/types';
+import { DEFAULT_CATEGORIES } from '@/lib/constants';
+import { mergeCategories } from '@/lib/utils';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -20,6 +22,19 @@ export function DataExportImport() {
     try {
       const q = collection(db, 'users', user.uid, 'transactions');
       const snap = await getDocs(q);
+
+      // 取得分類資料
+      const catSnap = await getDocs(collection(db, 'users', user.uid, 'categories'));
+      const customCats = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      const allCats = mergeCategories(DEFAULT_CATEGORIES, customCats);
+      const catMap = new Map(allCats.map(c => [c.id, c.name]));
+
+      // 取得支付方式資料
+      const pmSnapshot = await getDocs(collection(db, 'users', user.uid, 'paymentMethods'));
+      const pms = pmSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
+      const pmMap = new Map(pms.map(p => [p.id, p.name]));
+      pmMap.set('cash', '現金');
+      pmMap.set('unset', '未設定支付方式');
 
       let transactions = snap.docs.map(doc => doc.data() as Transaction);
 
@@ -53,13 +68,13 @@ export function DataExportImport() {
         const ws = XLSX.utils.aoa_to_sheet([
           headers,
           ...sheetData.map(d => [
-            format(new Date(d.date), 'yyyy-MM-dd HH:mm:ss'),
+            format(new Date(d.date), 'yyyy-MM-dd'),
             d.type === 'expense' ? '支出' : d.type === 'income' ? '收入' : '轉帳',
             d.amount,
             d.currency,
             d.baseAmount,
-            d.categoryId,
-            d.paymentMethodId,
+            catMap.get(d.categoryId) || d.categoryId,
+            pmMap.get(d.paymentMethodId) || d.paymentMethodId,
             d.notes || ''
           ])
         ]);
