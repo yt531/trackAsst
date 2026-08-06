@@ -217,7 +217,8 @@ function TransactionForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+        <form onSubmit={handleSubmit} className="space-y-4">
         {/* Type Toggle */}
         <div className="flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
           <button
@@ -385,6 +386,7 @@ function TransactionForm() {
           {isSubmitting ? '儲存中...' : (editId ? '儲存修改' : '儲存交易')}
         </button>
       </form>
+      </div>
 
       {/* Tags Modal */}
       {isTagModalOpen && (
