@@ -212,28 +212,26 @@ function TransactionsList() {
                   const pm = paymentMethods[tx.paymentMethodId];
                   const isExpense = tx.type === 'expense';
                   return (
-                    <div key={tx.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 group">
-                      <div className="flex items-center gap-4">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isExpense ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                          }`}>
-                          {isExpense ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
-                        </div>
-                        <div>
-                          <div className="font-medium">{cat?.name || '未知分類'}</div>
-                          <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
-                            <span>
-                              {tx.paymentMethodId === 'cash'
-                                ? '現金'
-                                : tx.paymentMethodId === 'unset'
-                                  ? '未設定支付方式'
-                                  : (pm?.name || '未知支付方式')}
-                            </span>
-                            {tx.invoiceId && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded text-[10px]">發票</span>}
-                          </div>
+                    <div key={tx.id} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 group">
+                      <div className={`shrink-0 flex h-10 w-10 items-center justify-center rounded-full ${isExpense ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                        }`}>
+                        {isExpense ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate" title={cat?.name || '未知分類'}>{cat?.name || '未知分類'}</div>
+                        <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
+                          <span className="truncate" title={tx.paymentMethodId === 'cash' ? '現金' : tx.paymentMethodId === 'unset' ? '未設定支付方式' : (pm?.name || '未知支付方式')}>
+                            {tx.paymentMethodId === 'cash'
+                              ? '現金'
+                              : tx.paymentMethodId === 'unset'
+                                ? '未設定支付方式'
+                                : (pm?.name || '未知支付方式')}
+                          </span>
+                          {tx.invoiceId && <span className="shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded text-[10px]">發票</span>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className={`text-right font-medium ${isExpense ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
+                      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                        <div className={`text-right font-medium whitespace-nowrap ${isExpense ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
                           }`}>
                           {isExpense ? '-' : '+'} {tx.amount.toLocaleString()} {tx.currency}
                           {tx.currency !== 'TWD' && (
@@ -242,7 +240,7 @@ function TransactionsList() {
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0">
                           <Link
                             href={`/transactions/new?editId=${tx.id}`}
                             className="p-2 text-zinc-500 hover:text-blue-600 bg-zinc-100 hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
