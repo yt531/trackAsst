@@ -1,8 +1,10 @@
 'use client';
 
 import { format } from 'date-fns';
-import Flatpickr from 'react-flatpickr';
+import dynamic from 'next/dynamic';
 import 'flatpickr/dist/flatpickr.min.css';
+
+const Flatpickr = dynamic(() => import('react-flatpickr'), { ssr: false });
 
 type DatePickerProps = {
   type?: 'date' | 'month' | 'datetime-local' | 'year';
