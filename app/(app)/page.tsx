@@ -179,7 +179,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div className="font-medium text-sm">{categoriesMap[tx.categoryId]?.name || '未分類'}</div>
-                    <div className="text-xs text-zinc-500">{format(new Date(tx.date), 'MMM d')}</div>
+                    <div className="text-xs text-zinc-500">{format(new Date(tx.date), 'MM/dd')}</div>
                   </div>
                 </div>
                 <div className={`font-medium ${
