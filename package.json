@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "firebase": "^12.15.0",
+    "flatpickr": "^4.6.13",
     "jsqr": "^1.4.0",
     "lucide-react": "^0.553.0",
     "motion": "^12.23.24",
@@ -29,6 +30,7 @@
     "postcss": "^8.5.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-flatpickr": "^4.0.11",
     "recharts": "^3.9.2",
     "tailwind-merge": "^3.3.1"
   },
@@ -38,6 +40,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-flatpickr": "^3.8.11",
     "eslint": "9.39.1",
     "eslint-config-next": "16.0.8",
     "firebase-tools": "^15.0.0",

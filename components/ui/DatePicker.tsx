@@ -1,4 +1,8 @@
+'use client';
+
 import { format } from 'date-fns';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
 
 type DatePickerProps = {
   type?: 'date' | 'month' | 'datetime-local' | 'year';
@@ -22,15 +26,39 @@ export function DatePicker({ type = 'date', value, onChange, required, className
     }
   };
 
+  const isFlatpickr = type === 'datetime-local' || type === 'date';
+
   return (
     <div className={`flex items-center gap-2 ${className || ''}`}>
-      <input
-        type={type === 'year' ? 'number' : type}
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-      />
+      {isFlatpickr ? (
+        <Flatpickr
+          value={value}
+          onChange={(dates) => {
+            if (dates.length > 0) {
+              if (type === 'datetime-local') {
+                onChange(format(dates[0], "yyyy-MM-dd'T'HH:mm"));
+              } else {
+                onChange(format(dates[0], 'yyyy-MM-dd'));
+              }
+            }
+          }}
+          options={{
+            enableTime: type === 'datetime-local',
+            time_24hr: true,
+            dateFormat: type === 'datetime-local' ? 'Y-m-d H:i' : 'Y-m-d',
+          }}
+          className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          required={required}
+        />
+      ) : (
+        <input
+          type={type === 'year' ? 'number' : type}
+          required={required}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        />
+      )}
       <button
         type="button"
         onClick={handleToday}
