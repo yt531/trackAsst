@@ -101,6 +101,25 @@ function SortablePaymentMethodItem({ method, onEdit, onDelete }: SortablePayment
   );
 }
 
+function SystemPaymentMethodItem({ method }: { method: { id: string; name: string; emoji: string } }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex flex-1 items-center gap-3">
+        <div className="p-1 w-7" /> {/* Placeholder for drag handle to align with sortable items */}
+        <div className="flex flex-1 items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
+            {method.emoji}
+          </div>
+          <div>
+            <div className="font-medium text-sm">{method.name}</div>
+            <div className="text-xs text-zinc-500">系統預設</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PaymentMethodsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -365,31 +384,36 @@ export default function PaymentMethodsPage() {
 
         {loading ? (
           <div className="text-sm text-zinc-500 text-center py-4">載入中...</div>
-        ) : methods.length === 0 ? (
-          <div className="text-sm text-zinc-500 text-center py-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-            尚未新增支付方式。
-          </div>
         ) : (
           <div className="space-y-2">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={methods}
-                strategy={verticalListSortingStrategy}
+            <SystemPaymentMethodItem method={{ id: 'cash', name: '現金', emoji: '💵' }} />
+            <SystemPaymentMethodItem method={{ id: 'unset', name: '未設定支付方式', emoji: '❓' }} />
+            
+            {methods.length === 0 ? (
+              <div className="text-sm text-zinc-500 text-center py-8 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 mt-2">
+                尚未新增其他支付方式。
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
               >
-                {methods.map((method) => (
-                  <SortablePaymentMethodItem
-                    key={method.id}
-                    method={method}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </SortableContext>
-            </DndContext>
+                <SortableContext
+                  items={methods}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {methods.map((method) => (
+                    <SortablePaymentMethodItem
+                      key={method.id}
+                      method={method}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
           </div>
         )}
       </div>
