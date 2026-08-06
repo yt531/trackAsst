@@ -43,9 +43,11 @@ export function DatePicker({ type = 'date', value, onChange, required, className
             }
           }}
           options={{
-            enableTime: type === 'datetime-local',
+            // enableTime: type === 'datetime-local',
+            enableTime: false, // 先註解時間選項，只保留日期
             time_24hr: true,
-            dateFormat: type === 'datetime-local' ? 'Y-m-d H:i' : 'Y-m-d',
+            // dateFormat: type === 'datetime-local' ? 'Y-m-d H:i' : 'Y-m-d',
+            dateFormat: 'Y-m-d',
           }}
           className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           required={required}

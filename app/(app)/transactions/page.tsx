@@ -15,12 +15,12 @@ import { useSearchParams } from 'next/navigation';
 function TransactionsList() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Record<string, Category>>({});
   const [paymentMethods, setPaymentMethods] = useState<Record<string, PaymentMethod>>({});
   const [loading, setLoading] = useState(true);
-  
+
   const initialFilterMode = (searchParams.get('filterMode') as 'month' | 'day') || 'month';
   const initialDateStr = searchParams.get('date');
   const initialCategoryId = searchParams.get('categoryId') || null;
@@ -76,7 +76,7 @@ function TransactionsList() {
 
       const snapshot = await getDocs(q);
       const txs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Transaction));
-      
+
       let inc = 0;
       let exp = 0;
       txs.forEach(t => {
@@ -99,10 +99,10 @@ function TransactionsList() {
       await deleteDoc(doc(db, 'users', user.uid, 'transactions', id));
       const deletedTx = transactions.find(t => t.id === id);
       if (deletedTx) {
-         setTotals(prev => ({
-           income: prev.income - (deletedTx.type === 'income' ? deletedTx.baseAmount : 0),
-           expense: prev.expense - (deletedTx.type === 'expense' ? deletedTx.baseAmount : 0),
-         }));
+        setTotals(prev => ({
+          income: prev.income - (deletedTx.type === 'income' ? deletedTx.baseAmount : 0),
+          expense: prev.expense - (deletedTx.type === 'expense' ? deletedTx.baseAmount : 0),
+        }));
       }
       setTransactions(transactions.filter(t => t.id !== id));
     } catch (e) {
@@ -149,33 +149,33 @@ function TransactionsList() {
       {/* Filter and Stats Area */}
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-           {/* Mode Switcher */}
-           <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
-             <button
-               onClick={() => setFilterMode('month')}
-               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
-             >
-               按月
-             </button>
-             <button
-               onClick={() => setFilterMode('day')}
-               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
-             >
-               按日
-             </button>
-           </div>
-           
-           {/* Date Selector */}
-           <div className="flex items-center gap-3">
-             <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
-             <DatePicker
-               type={filterMode === 'month' ? 'month' : 'date'}
-               value={filterMode === 'month' ? format(filterDate, 'yyyy-MM') : format(filterDate, 'yyyy-MM-dd')}
-               onChange={(val) => setFilterDate(val ? new Date(val) : new Date())}
-               className="w-48"
-             />
-             <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
-           </div>
+          {/* Mode Switcher */}
+          <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+            <button
+              onClick={() => setFilterMode('month')}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+            >
+              按月
+            </button>
+            <button
+              onClick={() => setFilterMode('day')}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'day' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+            >
+              按日
+            </button>
+          </div>
+
+          {/* Date Selector */}
+          <div className="flex items-center gap-3">
+            <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
+            <DatePicker
+              type={filterMode === 'month' ? 'month' : 'date'}
+              value={filterMode === 'month' ? format(filterDate, 'yyyy-MM') : format(filterDate, 'yyyy-MM-dd')}
+              onChange={(val) => setFilterDate(val ? new Date(val) : new Date())}
+              className="w-48"
+            />
+            <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
+          </div>
         </div>
 
         {/* Totals */}
@@ -185,7 +185,7 @@ function TransactionsList() {
             <div className="text-lg font-semibold mt-1">NT$ {totals.income.toLocaleString()}</div>
           </div>
           <div>
-             <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
+            <div className="text-xs text-zinc-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
             <div className="text-lg font-semibold mt-1">NT$ {totals.expense.toLocaleString()}</div>
           </div>
         </div>
@@ -213,9 +213,8 @@ function TransactionsList() {
                   return (
                     <div key={tx.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 group">
                       <div className="flex items-center gap-4">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                          isExpense ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                        }`}>
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isExpense ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                          }`}>
                           {isExpense ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                         </div>
                         <div>
@@ -224,8 +223,8 @@ function TransactionsList() {
                             <span>
                               {tx.paymentMethodId === 'cash'
                                 ? '現金'
-                                : tx.paymentMethodId === 'unset' 
-                                  ? '未設定支付方式' 
+                                : tx.paymentMethodId === 'unset'
+                                  ? '未設定支付方式'
                                   : (pm?.name || '未知支付方式')}
                             </span>
                             {tx.invoiceId && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded text-[10px]">發票</span>}
@@ -233,14 +232,13 @@ function TransactionsList() {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <div className={`text-right font-medium ${
-                          isExpense ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
-                        }`}>
+                        <div className={`text-right font-medium ${isExpense ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
+                          }`}>
                           {isExpense ? '-' : '+'} {tx.amount.toLocaleString()} {tx.currency}
                           {tx.currency !== 'TWD' && (
-                             <div className="text-[10px] text-zinc-500">
-                               (≈ {tx.baseAmount.toLocaleString()} TWD)
-                             </div>
+                            <div className="text-[10px] text-zinc-500">
+                              (≈ {tx.baseAmount.toLocaleString()} TWD)
+                            </div>
                           )}
                         </div>
                         <div className="flex items-center gap-1">
