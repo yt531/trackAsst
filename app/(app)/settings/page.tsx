@@ -156,7 +156,7 @@ export default function SettingsPage() {
       <section className="pt-4">
         <button 
           onClick={() => signOut(auth)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-4 font-medium text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-4 font-medium text-red-600 hover:bg-red-100 dark:bg-zinc-800 dark:text-red-400 dark:hover:bg-zinc-700/50 transition-colors"
         >
           <LogOut className="h-5 w-5" />
           登出
