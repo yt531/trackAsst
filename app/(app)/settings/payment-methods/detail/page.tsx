@@ -392,7 +392,7 @@ function PaymentMethodDetail() {
                   const cat = categories[tx.categoryId];
                   const isExpense = tx.type === 'expense';
                   return (
-                    <div key={tx.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div key={tx.id} className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
                           isExpense ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'

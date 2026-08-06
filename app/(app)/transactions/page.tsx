@@ -148,10 +148,10 @@ function TransactionsList() {
       </header>
 
       {/* Filter and Stats Area */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700">
         <div className="flex flex-col items-center justify-center gap-4 mb-4">
           {/* Mode Switcher */}
-          <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+          <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
             <button
               onClick={() => setFilterMode('month')}
               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
@@ -219,7 +219,7 @@ function TransactionsList() {
                   const pm = paymentMethods[tx.paymentMethodId];
                   const isExpense = tx.type === 'expense';
                   return (
-                    <div key={tx.id} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 group">
+                    <div key={tx.id} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group">
                       <div className={`shrink-0 flex h-10 w-10 items-center justify-center rounded-full ${isExpense ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
                         }`}>
                         {isExpense ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
