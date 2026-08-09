@@ -6,7 +6,6 @@ import { ThemeProvider } from 'next-themes';
 export const metadata: Metadata = {
   title: '輕鬆記 (FinTrack) - 輕鬆記、不忘記',
   description: '簡單、無壓力的個人記帳與發票存摺應用程式',
-  manifest: '/manifest.json', // Will be useful for PWA
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
