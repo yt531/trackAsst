@@ -17,6 +17,8 @@
     "@hookform/resolvers": "^5.2.1",
     "@serwist/next": "^9.5.11",
     "@serwist/sw": "^9.5.11",
+    "browserslist": "^4.28.8",
+    "caniuse-lite": "^1.0.30001809",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
