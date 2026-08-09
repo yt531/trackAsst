@@ -32,6 +32,15 @@ jobs:
 
       - name: Build with Next.js
         run: npm run build
+        env:
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "track-asst"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:909479175344:web:9792811ce5f2740e044775"
+          NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyDQlVfrNtVs3QfEx0VE9ffKPDL3KuOiG9M"
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "track-asst.firebaseapp.com"
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "track-asst.firebasestorage.app"
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "909479175344"
+          NEXT_PUBLIC_FIREBASE_DATABASE_ID: "ai-studio-97cbcf7a-650e-45dd-b6ad-bfe77c2f9bdb"
+          NEXT_PUBLIC_FIREBASE_VAPID_KEY: "BCxY_uiZRj6-Kp9pC5wWu14zydrXHE58d4ZIXur7-cH4hUe8cT9msJstiy--cUFYw3SbGui_po8lpO-E45j2OpY"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
