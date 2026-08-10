@@ -3,6 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Fingerprint, Lock, CheckCircle2 } from 'lucide-react';
 import { authenticateBiometric } from '@/lib/webauthn';
+import { auth, googleProvider } from '@/lib/firebase';
+import { signInWithPopup } from 'firebase/auth';
+import { setSecuritySettings } from '@/lib/db';
+import { deleteField } from 'firebase/firestore';
 
 interface UnlockScreenProps {
   onUnlock: (pin?: string) => void;
@@ -41,6 +45,35 @@ export default function UnlockScreen({
     } finally {
       setIsAuthenticating(false);
       isRequestPendingRef.current = false;
+    }
+  };
+
+  const handleForgotPin = async () => {
+    if (!auth.currentUser) {
+      alert('無法取得登入資訊，請重新整理頁面。');
+      return;
+    }
+    try {
+      setIsAuthenticating(true);
+      // Re-authenticate user to prove identity
+      await signInWithPopup(auth, googleProvider);
+      
+      // If success, clear PIN from Firebase
+      await setSecuritySettings(auth.currentUser.uid, {
+        pinHash: deleteField()
+      });
+
+      // Clear from local storage
+      localStorage.removeItem('pinHash');
+      localStorage.removeItem('lockScope'); // Also reset lock scope
+      
+      alert('已成功清除 PIN 碼，請重新設定。');
+      window.location.href = '/settings/security?setup=true';
+    } catch (e) {
+      console.error('Failed to reset PIN', e);
+      alert('驗證失敗，無法重設密碼');
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -89,6 +122,17 @@ export default function UnlockScreen({
         {error && (
           <p className="text-sm text-red-400">{error}</p>
         )}
+        
+        <div className="pt-2">
+          <button 
+            type="button"
+            onClick={handleForgotPin}
+            disabled={isAuthenticating}
+            className="text-sm text-zinc-400 hover:text-white transition-colors"
+          >
+            忘記 PIN 碼？
+          </button>
+        </div>
 
         {hasBiometric && biometricCredentialId && (
           <div className="pt-6">

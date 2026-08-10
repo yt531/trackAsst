@@ -42,4 +42,14 @@ export const getUserDoc = (userId: string, collectionName: string, docId: string
   return doc(db, COLLECTIONS.USERS, userId, collectionName, docId);
 };
 
-// ... More specific CRUD operations can be added here as needed later
+// Security Settings Helpers
+export const getSecuritySettings = async (userId: string) => {
+  const docRef = getUserDoc(userId, COLLECTIONS.SETTINGS, 'security');
+  const snap = await getDoc(docRef);
+  return snap.exists() ? snap.data() : null;
+};
+
+export const setSecuritySettings = async (userId: string, data: any) => {
+  const docRef = getUserDoc(userId, COLLECTIONS.SETTINGS, 'security');
+  await setDoc(docRef, data, { merge: true });
+};

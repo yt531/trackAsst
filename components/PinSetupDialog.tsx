@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { deriveKey } from '@/lib/crypto';
 import { useLock } from './LockProvider';
+import { auth } from '@/lib/firebase';
+import { setSecuritySettings } from '@/lib/db';
 
 interface PinSetupDialogProps {
   isOpen: boolean;
@@ -17,6 +19,15 @@ export default function PinSetupDialog({ isOpen, onClose, onSuccess }: PinSetupD
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { setHasPin, setLockScope } = useLock();
+
+  useEffect(() => {
+    if (isOpen) {
+      setPin('');
+      setConfirmPin('');
+      setStep(1);
+      setError('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -50,6 +61,12 @@ export default function PinSetupDialog({ isOpen, onClose, onSuccess }: PinSetupD
 
       localStorage.setItem('pinHash', JSON.stringify({ saltBase64, hashBase64 }));
       
+      if (auth.currentUser) {
+        await setSecuritySettings(auth.currentUser.uid, {
+          pinHash: { saltBase64, hashBase64 }
+        });
+      }
+
       setHasPin(true);
       if (localStorage.getItem('lockScope') === 'none' || !localStorage.getItem('lockScope')) {
          setLockScope('global'); // Default to global lock when first enabled

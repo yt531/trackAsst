@@ -2,13 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { Fingerprint, ArrowLeft, Key, Shield, Timer, ShieldAlert } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLock } from '@/components/LockProvider';
 import PinSetupDialog from '@/components/PinSetupDialog';
+import PinVerifyDialog from '@/components/PinVerifyDialog';
 import { isWebAuthnSupported, registerBiometric } from '@/lib/webauthn';
+import { auth, googleProvider } from '@/lib/firebase';
+import { signInWithPopup } from 'firebase/auth';
+import { setSecuritySettings } from '@/lib/db';
+import { deleteField } from 'firebase/firestore';
 
 export default function SecurityPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     lockScope, setLockScope,
     idleTimeout, setIdleTimeout,
@@ -18,12 +24,18 @@ export default function SecurityPage() {
   } = useLock();
 
   const [isPinSetupOpen, setIsPinSetupOpen] = useState(false);
+  const [isPinVerifyOpen, setIsPinVerifyOpen] = useState(false);
   const [supportWebAuthn, setSupportWebAuthn] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     isWebAuthnSupported().then(setSupportWebAuthn);
-  }, []);
+    if (searchParams.get('setup') === 'true') {
+      setIsPinSetupOpen(true);
+      // Clean up the URL to prevent reopening on reload
+      router.replace('/settings/security');
+    }
+  }, [searchParams, router]);
 
   const handleToggleLockScope = (scope: 'global' | 'sensitive' | 'none') => {
     if (scope !== 'none' && !hasPin) {
@@ -56,13 +68,49 @@ export default function SecurityPage() {
     }
   };
 
-  const handleDisablePin = () => {
-    if (confirm('確定要關閉安全鎖並移除 PIN 碼嗎？')) {
+  const handleDisablePinClick = () => {
+    setIsPinVerifyOpen(true);
+  };
+
+  const handleDisablePinConfirm = async () => {
+    setIsPinVerifyOpen(false);
+    localStorage.removeItem('pinHash');
+    setHasPin(false);
+    setLockScope('none');
+    setHasBiometric(false);
+    setBiometricCredentialId(null);
+    
+    if (auth.currentUser) {
+      try {
+        await setSecuritySettings(auth.currentUser.uid, {
+          pinHash: deleteField()
+        });
+      } catch (e) {
+        console.error('Failed to clear PIN from cloud', e);
+      }
+    }
+  };
+
+  const handleForgotPin = async () => {
+    if (!auth.currentUser) {
+      alert('無法取得登入資訊，請重新整理頁面。');
+      return;
+    }
+    try {
+      await signInWithPopup(auth, googleProvider);
+      
+      await setSecuritySettings(auth.currentUser.uid, {
+        pinHash: deleteField()
+      });
+
       localStorage.removeItem('pinHash');
-      setHasPin(false);
-      setLockScope('none');
-      setHasBiometric(false);
-      setBiometricCredentialId(null);
+      localStorage.removeItem('lockScope');
+      
+      alert('已成功清除 PIN 碼，請重新設定。');
+      setIsPinSetupOpen(true);
+    } catch (e) {
+      console.error('Failed to reset PIN', e);
+      alert('驗證失敗，無法重設密碼');
     }
   };
 
@@ -148,14 +196,36 @@ export default function SecurityPage() {
         </div>
 
         {hasPin && (
-          <div className="flex justify-end">
-            <button 
-              onClick={handleDisablePin}
-              className="text-sm text-red-500 hover:underline"
-            >
-              清除 PIN 碼並重設所有安全設定
-            </button>
-          </div>
+          <section className="space-y-4 pt-4">
+            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">PIN 碼管理</h2>
+            <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-700 dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
+              
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors" onClick={handleForgotPin}>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <Key className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium">重設 PIN 碼</div>
+                    <div className="text-sm text-zinc-500 dark:text-zinc-400">忘記密碼時，可透過 Google 驗證重設</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors" onClick={handleDisablePinClick}>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                    <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-red-600 dark:text-red-400">清除安全鎖設定</div>
+                    <div className="text-sm text-red-500/80 dark:text-red-400/80">移除 PIN 碼並關閉所有安全鎖</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
         )}
       </section>
 
@@ -220,6 +290,14 @@ export default function SecurityPage() {
           setIsPinSetupOpen(false);
           // 預設切換為全域
         }}
+      />
+
+      <PinVerifyDialog
+        isOpen={isPinVerifyOpen}
+        onClose={() => setIsPinVerifyOpen(false)}
+        onSuccess={handleDisablePinConfirm}
+        title="清除安全設定"
+        description="請輸入 PIN 碼以確認您要清除所有安全設定。"
       />
     </div>
   );

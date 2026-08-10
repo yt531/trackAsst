@@ -1,10 +1,13 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import UnlockScreen from './UnlockScreen';
 import { deriveKey } from '@/lib/crypto'; // We can use this to verify PIN later
+import { auth } from '@/lib/firebase';
+import { getSecuritySettings } from '@/lib/db';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Default sensitive paths if not global
 const SENSITIVE_PATHS = ['/settings', '/settings/security'];
@@ -44,7 +47,15 @@ export function LockProvider({ children }: { children: ReactNode }) {
   const [isLocked, setIsLocked] = useState(false);
   const [unlockError, setUnlockError] = useState('');
 
+  // Bulletproof unlock if PIN is removed
+  useEffect(() => {
+    if (!hasPin && isLocked) {
+      setIsLocked(false);
+    }
+  }, [hasPin, isLocked]);
+
   const pathname = usePathname();
+  const prevPathnameRef = useRef<string | null>(null);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -74,6 +85,43 @@ export function LockProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Sync PIN from Firebase on auth state change
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const settings = await getSecuritySettings(user.uid);
+          if (settings && settings.pinHash) {
+            const localPinHash = localStorage.getItem('pinHash');
+            const cloudPinHashStr = JSON.stringify(settings.pinHash);
+            
+            if (localPinHash !== cloudPinHashStr) {
+              localStorage.setItem('pinHash', cloudPinHashStr);
+              setHasPin(true);
+              
+              const currentScope = localStorage.getItem('lockScope');
+              if (!currentScope || currentScope === 'none') {
+                setLockScope('global');
+                setIsLocked(true);
+              } else if (currentScope === 'global') {
+                setIsLocked(true);
+              }
+            }
+          } else if (settings && !settings.pinHash) {
+             // Pin was removed in cloud
+             localStorage.removeItem('pinHash');
+             setHasPin(false);
+             setLockScope('none');
+             setIsLocked(false);
+          }
+        } catch (e) {
+          console.error('Failed to load security settings from cloud', e);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Sync settings to localStorage
   useEffect(() => {
     if (!isMounted) return;
@@ -89,11 +137,19 @@ export function LockProvider({ children }: { children: ReactNode }) {
   // Route change lock check for sensitive paths
   useEffect(() => {
     if (!isMounted || !hasPin) return;
+    
     if (lockScope === 'sensitive' && !isLocked) {
-      if (SENSITIVE_PATHS.some(p => pathname.startsWith(p))) {
+      const isSensitive = SENSITIVE_PATHS.some(p => pathname.startsWith(p));
+      const wasSensitive = prevPathnameRef.current 
+        ? SENSITIVE_PATHS.some(p => prevPathnameRef.current!.startsWith(p)) 
+        : false;
+
+      if (isSensitive && !wasSensitive) {
         setIsLocked(true);
       }
     }
+    
+    prevPathnameRef.current = pathname;
   }, [pathname, lockScope, isLocked, isMounted, hasPin]);
 
   // Idle timeout hook
