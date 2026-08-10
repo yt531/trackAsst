@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getSavingGoal, getSavingRecords, saveSavingGoal, deleteSavingGoal, updateSavingRecord, deleteSavingRecord } from '@/lib/savingGoals';
+import { getSavingGoal, getSavingRecords, saveSavingGoal, deleteSavingGoal, updateSavingRecord, deleteSavingRecord, updateSavingGoalAmount } from '@/lib/savingGoals';
 import type { SavingGoal, SavingRecord } from '@/types';
 import { format } from 'date-fns';
-import { ArrowLeft, Target, Trash2, Edit, Save, X } from 'lucide-react';
+import { ArrowLeft, Target, Trash2, Edit, Save, X, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Suspense } from 'react';
@@ -36,13 +36,19 @@ function SavingGoalDetailContent() {
   const [editRecordAmount, setEditRecordAmount] = useState('');
   const [editRecordNote, setEditRecordNote] = useState('');
 
+  // Add Record State
+  const [isAddRecordOpen, setIsAddRecordOpen] = useState(false);
+  const [addRecordAmount, setAddRecordAmount] = useState('');
+  const [addRecordDate, setAddRecordDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+  const [addRecordNote, setAddRecordNote] = useState('');
+
   useEffect(() => {
     if (!user || !goalId) return;
     loadData();
   }, [user, goalId]);
 
   const loadData = async () => {
-    if (!user) return;
+    if (!user || !goalId) return;
     setLoading(true);
     try {
       const g = await getSavingGoal(user.uid, goalId);
@@ -155,6 +161,34 @@ function SavingGoalDetailContent() {
     }
   };
 
+  const openAddRecordModal = () => {
+    if (!goal) return;
+    setAddRecordAmount(goal.isFixedAmount && goal.fixedAmountValue ? goal.fixedAmountValue.toString() : '');
+    setAddRecordDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+    setAddRecordNote('');
+    setIsAddRecordOpen(true);
+  };
+
+  const handleAddRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !goalId || !addRecordAmount) return;
+
+    try {
+      await updateSavingGoalAmount(
+        user.uid, 
+        goalId, 
+        Number(addRecordAmount), 
+        addRecordNote, 
+        new Date(addRecordDate).getTime()
+      );
+      setIsAddRecordOpen(false);
+      await loadData();
+    } catch (error) {
+      console.error(error);
+      alert('更新失敗');
+    }
+  };
+
   if (loading) {
     return <div className="flex h-32 items-center justify-center text-sm text-zinc-500">載入中...</div>;
   }
@@ -173,6 +207,10 @@ function SavingGoalDetailContent() {
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{goal.name}</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">存錢目標紀錄與設定</p>
         </div>
+        <button onClick={openAddRecordModal} className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 md:h-auto md:w-auto md:px-4 md:py-2 md:rounded-lg">
+          <PlusCircle className="h-5 w-5 md:mr-2" />
+          <span className="hidden md:inline font-medium">紀錄存錢</span>
+        </button>
         <button onClick={openEditForm} className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 md:h-auto md:w-auto md:px-4 md:py-2 md:rounded-lg">
           <Edit className="h-5 w-5 md:mr-2" />
           <span className="hidden md:inline font-medium">編輯</span>
@@ -231,6 +269,57 @@ function SavingGoalDetailContent() {
               <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">更新</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Add Record Modal */}
+      {isAddRecordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+            <h3 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white">紀錄存錢</h3>
+            <form onSubmit={handleAddRecord} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">存入時間</label>
+                <DatePicker type="datetime-local" required value={addRecordDate} onChange={(val) => setAddRecordDate(val)} />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">存入金額</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  autoFocus
+                  value={addRecordAmount}
+                  onChange={(e) => setAddRecordAmount(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">備註 (可選)</label>
+                <input
+                  type="text"
+                  value={addRecordNote}
+                  onChange={(e) => setAddRecordNote(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddRecordOpen(false)}
+                  className="flex-1 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  確認存入
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

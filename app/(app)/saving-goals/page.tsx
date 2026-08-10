@@ -28,13 +28,9 @@ import { CSS } from '@dnd-kit/utilities';
 
 function SortableGoalCard({ 
   goal, 
-  setAddAmountValue,
-  setAddAmountGoalId,
   isReminderDue
 }: { 
   goal: SavingGoal; 
-  setAddAmountValue: (val: string) => void;
-  setAddAmountGoalId: (id: string) => void;
   isReminderDue: (g: SavingGoal) => boolean;
 }) {
   const {
@@ -122,20 +118,6 @@ function SortableGoalCard({
         )}
       </div>
 
-      <div className="mt-auto pt-4">
-        {!isCompleted && (
-          <button
-            onClick={() => {
-              setAddAmountValue(goal.isFixedAmount && goal.fixedAmountValue ? goal.fixedAmountValue.toString() : '');
-              setAddAmountGoalId(goal.id);
-            }}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-100 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
-          >
-            <PlusCircle className="h-4 w-4" />
-            紀錄存錢
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -157,10 +139,6 @@ export default function SavingGoalsPage() {
   const [reminderFrequency, setReminderFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'none'>('none');
   const [isFixedAmount, setIsFixedAmount] = useState(false);
   const [fixedAmountValue, setFixedAmountValue] = useState('');
-
-  // Add Amount State
-  const [addAmountGoalId, setAddAmountGoalId] = useState<string | null>(null);
-  const [addAmountValue, setAddAmountValue] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -230,21 +208,6 @@ export default function SavingGoalsPage() {
     } catch (e) {
       console.error(e);
       alert('儲存失敗');
-    }
-  };
-
-  const handleAddAmount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !addAmountGoalId || !addAmountValue) return;
-
-    try {
-      await updateSavingGoalAmount(user.uid, addAmountGoalId, Number(addAmountValue));
-      await loadGoals();
-      setAddAmountGoalId(null);
-      setAddAmountValue('');
-    } catch (e) {
-      console.error(e);
-      alert('更新失敗');
     }
   };
 
@@ -426,44 +389,6 @@ export default function SavingGoalsPage() {
         </div>
       )}
 
-      {/* Add Amount Modal */}
-      {addAmountGoalId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
-            <h3 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white">紀錄存錢</h3>
-            <form onSubmit={handleAddAmount} className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">存入金額</label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  autoFocus
-                  value={addAmountValue}
-                  onChange={(e) => setAddAmountValue(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAddAmountGoalId(null)}
-                  className="flex-1 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  確認存入
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {loading ? (
         <div className="flex h-32 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>
       ) : goals.length === 0 ? (
@@ -487,8 +412,6 @@ export default function SavingGoalsPage() {
                 <SortableGoalCard
                   key={goal.id}
                   goal={goal}
-                  setAddAmountValue={setAddAmountValue}
-                  setAddAmountGoalId={setAddAmountGoalId}
                   isReminderDue={isReminderDue}
                 />
               ))}
