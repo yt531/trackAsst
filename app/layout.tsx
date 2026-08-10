@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css'; // Global styles
 import { AuthProvider } from '@/components/AuthProvider';
 import { ThemeProvider } from 'next-themes';
+import { LockProvider } from '@/components/LockProvider';
 
 export const metadata: Metadata = {
   title: '輕鬆記 (FinTrack) - 輕鬆記、不忘記',
@@ -14,7 +15,9 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <body suppressHydrationWarning className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            {children}
+            <LockProvider>
+              {children}
+            </LockProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
