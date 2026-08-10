@@ -16,7 +16,7 @@ const decoder = new TextDecoder();
 export async function deriveKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = await window.crypto.subtle.importKey(
     'raw',
-    encoder.encode(pin),
+    encoder.encode(pin) as BufferSource,
     'PBKDF2',
     false,
     ['deriveBits', 'deriveKey']
@@ -25,7 +25,7 @@ export async function deriveKey(pin: string, salt: Uint8Array): Promise<CryptoKe
   return window.crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: salt,
+      salt: salt as BufferSource,
       iterations: ENCRYPTION_ITERATIONS,
       hash: 'SHA-256',
     },
@@ -46,9 +46,9 @@ export async function encryptData(pin: string, data: string): Promise<string> {
   const key = await deriveKey(pin, salt);
 
   const ciphertext = await window.crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
+    { name: 'AES-GCM', iv: iv as BufferSource },
     key,
-    encoder.encode(data)
+    encoder.encode(data) as BufferSource
   );
 
   // 組合 salt + iv + ciphertext
@@ -83,9 +83,9 @@ export async function decryptData(pin: string, encryptedBase64: string): Promise
 
   try {
     const decrypted = await window.crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
+      { name: 'AES-GCM', iv: iv as BufferSource },
       key,
-      ciphertext
+      ciphertext as BufferSource
     );
     return decoder.decode(decrypted);
   } catch (error) {
