@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
 import { getMessaging, isSupported } from 'firebase/messaging';
 
 const firebaseConfig = {
@@ -16,18 +16,24 @@ if (!firebaseConfig.apiKey) {
   console.error("Firebase config is missing. Please ensure your .env file is loaded and restart the Next.js dev server.");
 }
 
-
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID as string);
-const googleProvider = new GoogleAuthProvider();
 
-// Enable offline persistence
-if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db).catch((err) => {
-    console.error('Failed to enable offline persistence:', err);
-  });
+let db: ReturnType<typeof getFirestore>;
+
+try {
+  if (typeof window !== 'undefined') {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache()
+    }, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID as string);
+  } else {
+    db = getFirestore(app, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID as string);
+  }
+} catch (e) {
+  db = getFirestore(app, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID as string);
 }
+
+const googleProvider = new GoogleAuthProvider();
 
 // Initialize Messaging only on client side
 let messaging: ReturnType<typeof getMessaging> | null = null;

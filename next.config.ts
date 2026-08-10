@@ -14,6 +14,7 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  trailingSlash: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
