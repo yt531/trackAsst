@@ -35,7 +35,7 @@ export interface Transaction {
   categoryId: string;
   paymentMethodId: string;
   date: number; // Unix timestamp
-  notes: string;
+  details: string;
   invoiceId?: string; // Link to the scanned/imported invoice
   tagIds?: string[];
   createdAt: number;
@@ -61,6 +61,7 @@ export interface Invoice {
   totalAmount: number;
   randomNumber: string; // 4-digit random code
   items: InvoiceItem[];
+  notes?: string; // User added remarks/notes for the invoice details
   isLinkedToTransaction: boolean;
   createdAt: number;
 }

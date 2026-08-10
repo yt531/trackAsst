@@ -62,7 +62,7 @@ export function DataExportImport() {
       });
 
       const wb = XLSX.utils.book_new();
-      const headers = ['日期', '類型', '金額', '幣別', '基準金額(TWD)', '分類', '支付方式', '備註'];
+      const headers = ['日期', '類型', '金額', '幣別', '基準金額(TWD)', '分類', '支付方式', '交易明細'];
 
       const addSheet = (sheetData: Transaction[], sheetName: string) => {
         const ws = XLSX.utils.aoa_to_sheet([
@@ -75,7 +75,7 @@ export function DataExportImport() {
             d.baseAmount,
             catMap.get(d.categoryId) || d.categoryId,
             pmMap.get(d.paymentMethodId) || d.paymentMethodId,
-            d.notes || ''
+            d.details || ''
           ])
         ]);
         XLSX.utils.book_append_sheet(wb, ws, sheetName);

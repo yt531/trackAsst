@@ -26,7 +26,7 @@ function TransactionForm() {
   const [categoryId, setCategoryId] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
-  const [notes, setNotes] = useState('');
+  const [details, setDetails] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -105,7 +105,7 @@ function TransactionForm() {
           setCategoryId(txData.categoryId);
           setPaymentMethodId(txData.paymentMethodId);
           setDate(format(new Date(txData.date), "yyyy-MM-dd'T'HH:mm"));
-          setNotes(txData.notes || '');
+          setDetails(txData.details || '');
           if (txData.tagIds) {
             setSelectedTags(txData.tagIds);
           }
@@ -123,8 +123,8 @@ function TransactionForm() {
             setLinkedInvoice(invData);
             setAmount(invData.totalAmount.toString());
             setDate(format(new Date(invData.date), "yyyy-MM-dd'T'HH:mm"));
-            const itemsNotes = invData.items?.map(i => `${i.description} x${i.quantity}`).join(', ');
-            setNotes(`發票 ${invoiceId}${itemsNotes ? `\n${itemsNotes}` : ''}`);
+            const itemsDetails = invData.items?.map(i => `${i.description} x${i.quantity}`).join(', ');
+            setDetails(`發票 ${invoiceId}${itemsDetails ? `\n${itemsDetails}` : ''}`);
           }
         }
       }
@@ -155,7 +155,7 @@ function TransactionForm() {
         categoryId,
         paymentMethodId,
         date: new Date(date).getTime(),
-        notes,
+        details,
         tagIds: selectedTags,
         updatedAt: Date.now(),
       };
@@ -367,12 +367,12 @@ function TransactionForm() {
           </div>
         </div>
 
-        {/* Notes */}
+        {/* Details */}
         <div>
-          <label className="mb-1 block text-sm font-medium">備註</label>
+          <label className="mb-1 block text-sm font-medium">交易明細</label>
           <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
             className="field-sizing-content w-full min-h-[80px] rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             placeholder="新增一些詳細資訊..."
           />

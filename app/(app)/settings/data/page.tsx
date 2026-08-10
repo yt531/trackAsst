@@ -1,6 +1,7 @@
 'use client';
 
 import { DataExportImport } from '@/components/settings/DataExportImport';
+import { DataMigration } from '@/components/settings/DataMigration';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -22,6 +23,7 @@ export default function DataManagementPage() {
       </header>
 
       <section>
+        <DataMigration />
         <DataExportImport />
       </section>
     </div>
