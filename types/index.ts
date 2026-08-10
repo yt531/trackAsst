@@ -107,6 +107,7 @@ export interface UserSettings {
   biometricEnabled: boolean;
   calendarSyncEnabled?: boolean;
   defaultPrivacyLevel?: number;
+  allowScreenshot?: boolean;
 }
 
 export interface Tag {

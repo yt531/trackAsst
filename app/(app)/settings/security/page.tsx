@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Fingerprint, ArrowLeft, Key, Shield, Timer, ShieldAlert } from 'lucide-react';
+import { Fingerprint, ArrowLeft, Key, Shield, Timer, ShieldAlert, Smartphone } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLock } from '@/components/LockProvider';
 import PinSetupDialog from '@/components/PinSetupDialog';
@@ -29,6 +29,7 @@ export default function SecurityPage() {
   const [supportWebAuthn, setSupportWebAuthn] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [defaultPrivacyLevel, setDefaultPrivacyLevel] = useState<number>(0);
+  const [allowScreenshot, setAllowScreenshot] = useState<boolean>(false);
 
   useEffect(() => {
     isWebAuthnSupported().then(setSupportWebAuthn);
@@ -38,11 +39,16 @@ export default function SecurityPage() {
       router.replace('/settings/security');
     }
     
-    // Load default privacy level
+    // Load default privacy level and screenshot setting
     if (auth.currentUser) {
       getUserSettings(auth.currentUser.uid).then(settings => {
-        if (settings && settings.defaultPrivacyLevel !== undefined) {
-          setDefaultPrivacyLevel(settings.defaultPrivacyLevel);
+        if (settings) {
+          if (settings.defaultPrivacyLevel !== undefined) {
+            setDefaultPrivacyLevel(settings.defaultPrivacyLevel);
+          }
+          if (settings.allowScreenshot !== undefined) {
+            setAllowScreenshot(settings.allowScreenshot);
+          }
         }
       });
     }
@@ -56,6 +62,19 @@ export default function SecurityPage() {
         localStorage.setItem('cachedDefaultPrivacyLevel', level.toString());
       } catch (e) {
         console.error('Failed to update privacy level', e);
+      }
+    }
+  };
+
+  const handleAllowScreenshotChange = async () => {
+    const newState = !allowScreenshot;
+    setAllowScreenshot(newState);
+    if (auth.currentUser) {
+      try {
+        await setUserSettings(auth.currentUser.uid, { allowScreenshot: newState });
+      } catch (e) {
+        console.error('Failed to update screenshot setting', e);
+        setAllowScreenshot(!newState); // revert on error
       }
     }
   };
@@ -180,6 +199,26 @@ export default function SecurityPage() {
               <option value={2}>😎 隱藏預算與收支</option>
               <option value={3}>🙈 隱藏所有金額</option>
             </select>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">應用程式權限</h2>
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+          <div className="flex items-center justify-between cursor-pointer" onClick={handleAllowScreenshotChange}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <Smartphone className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">允許系統截圖</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">開啟後允許在應用程式內截圖 (需原生 App 支援)</div>
+              </div>
+            </div>
+            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${allowScreenshot ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
+              <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${allowScreenshot ? 'translate-x-6' : 'translate-x-1'}`} />
+            </div>
           </div>
         </div>
       </section>
