@@ -198,52 +198,74 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        // Increase MAX_WIDTH to preserve detail for dense invoice QR codes.
-        // Downscaling 4K photos to 1200px causes bilinear blur which breaks jsQR.
-        const MAX_WIDTH = 3000;
-        let width = img.width;
-        let height = img.height;
-        if (width > MAX_WIDTH) {
-          height = Math.round((height * MAX_WIDTH) / width);
-          width = MAX_WIDTH;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
+        let foundAny = false;
+        
+        // Try multiple resolutions and image filters. 
+        // jsQR can fail due to scale, shadows, or low contrast in static photos.
+        const tryWidths = [img.width, 1600, 1000, 600];
+        const tryFilters = [
+          'none',
+          'grayscale(100%) contrast(120%)',
+          'grayscale(100%) contrast(150%) brightness(110%)'
+        ];
+        
+        for (let targetWidth of tryWidths) {
+          if (foundAny) break;
+          if (targetWidth > img.width && targetWidth !== tryWidths[0]) continue;
           
-          let foundAny = false;
-          // Find multiple QR codes in the uploaded image
-          for (let i = 0; i < 2; i++) {
-            const imageData = ctx.getImageData(0, 0, width, height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-              inversionAttempts: "attemptBoth",
-            });
+          for (let filter of tryFilters) {
+            if (foundAny) break;
             
-            if (code) {
-              foundAny = true;
-              onScan(code.data, true);
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > targetWidth) {
+              height = Math.round((height * targetWidth) / width);
+              width = targetWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            if (ctx) {
+              ctx.filter = filter;
+              ctx.drawImage(img, 0, 0, width, height);
+              ctx.filter = 'none'; // reset
               
-              // Mask out the found QR code
-              const { topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner } = code.location;
-              const minX = Math.min(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
-              const minY = Math.min(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
-              const maxX = Math.max(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
-              const maxY = Math.max(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
-              
-              ctx.fillStyle = "black";
-              ctx.fillRect(minX - 10, minY - 10, (maxX - minX) + 20, (maxY - minY) + 20);
-            } else {
-              break;
+              let codesFoundInThisScale = 0;
+              // Find multiple QR codes in the uploaded image
+              for (let i = 0; i < 2; i++) {
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                  inversionAttempts: "attemptBoth",
+                });
+                
+                if (code) {
+                  foundAny = true;
+                  codesFoundInThisScale++;
+                  onScan(code.data, true);
+                  
+                  // Mask out the found QR code
+                  const { topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner } = code.location;
+                  const minX = Math.min(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
+                  const minY = Math.min(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
+                  const maxX = Math.max(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
+                  const maxY = Math.max(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
+                  
+                  ctx.fillStyle = "black";
+                  ctx.fillRect(minX - 20, minY - 20, (maxX - minX) + 40, (maxY - minY) + 40);
+                } else {
+                  break;
+                }
+              }
             }
           }
-          
-          if (!foundAny) {
-            setError('無法從圖片中讀取 QR Code，請確認圖片清晰並包含發票左側的 QR Code。');
-          }
+        }
+        
+        if (!foundAny) {
+          setError('無法從圖片中讀取 QR Code，請確認圖片清晰並包含發票左側的 QR Code。');
         }
       };
       img.src = event.target?.result as string;
