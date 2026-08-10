@@ -106,6 +106,7 @@ export interface UserSettings {
   promptToRecordAfterScan: boolean;
   biometricEnabled: boolean;
   calendarSyncEnabled?: boolean;
+  defaultPrivacyLevel?: number;
 }
 
 export interface Tag {

@@ -9,8 +9,9 @@ import PinVerifyDialog from '@/components/PinVerifyDialog';
 import { isWebAuthnSupported, registerBiometric } from '@/lib/webauthn';
 import { auth, googleProvider } from '@/lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
-import { setSecuritySettings } from '@/lib/db';
+import { setSecuritySettings, getUserSettings, setUserSettings } from '@/lib/db';
 import { deleteField } from 'firebase/firestore';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function SecurityPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function SecurityPage() {
   const [isPinVerifyOpen, setIsPinVerifyOpen] = useState(false);
   const [supportWebAuthn, setSupportWebAuthn] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [defaultPrivacyLevel, setDefaultPrivacyLevel] = useState<number>(0);
 
   useEffect(() => {
     isWebAuthnSupported().then(setSupportWebAuthn);
@@ -35,7 +37,28 @@ export default function SecurityPage() {
       // Clean up the URL to prevent reopening on reload
       router.replace('/settings/security');
     }
+    
+    // Load default privacy level
+    if (auth.currentUser) {
+      getUserSettings(auth.currentUser.uid).then(settings => {
+        if (settings && settings.defaultPrivacyLevel !== undefined) {
+          setDefaultPrivacyLevel(settings.defaultPrivacyLevel);
+        }
+      });
+    }
   }, [searchParams, router]);
+
+  const handlePrivacyLevelChange = async (level: number) => {
+    setDefaultPrivacyLevel(level);
+    if (auth.currentUser) {
+      try {
+        await setUserSettings(auth.currentUser.uid, { defaultPrivacyLevel: level });
+        localStorage.setItem('cachedDefaultPrivacyLevel', level.toString());
+      } catch (e) {
+        console.error('Failed to update privacy level', e);
+      }
+    }
+  };
 
   const handleToggleLockScope = (scope: 'global' | 'sensitive' | 'none') => {
     if (scope !== 'none' && !hasPin) {
@@ -133,6 +156,33 @@ export default function SecurityPage() {
           {errorMsg}
         </div>
       )}
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">防窺模式預設等級</h2>
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <EyeOff className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+              </div>
+              <div>
+                <div className="font-medium">預設遮擋程度</div>
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">每次開啟程式時的防窺狀態</div>
+              </div>
+            </div>
+            <select 
+              value={defaultPrivacyLevel}
+              onChange={(e) => handlePrivacyLevelChange(Number(e.target.value))}
+              className="bg-zinc-100 dark:bg-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={0}>👀 顯示全部</option>
+              <option value={1}>🫣 隱藏預算</option>
+              <option value={2}>😎 隱藏預算與收支</option>
+              <option value={3}>🙈 隱藏所有金額</option>
+            </select>
+          </div>
+        </div>
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">安全鎖定範圍</h2>

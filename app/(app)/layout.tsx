@@ -5,12 +5,14 @@ import { Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { usePrivacy } from '@/components/PrivacyProvider';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const { privacyLevel, setPrivacyLevel } = usePrivacy();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,7 +63,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                {tab.name}
              </Link>
           ))}
-          <Link href="/settings" className="text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400 dark:hover:text-zinc-50 ml-2">
+          <select
+            value={privacyLevel}
+            onChange={(e) => setPrivacyLevel(Number(e.target.value))}
+            className="bg-transparent text-xl focus:outline-none appearance-none ml-2 cursor-pointer"
+            title="防窺模式"
+          >
+            <option value={0}>👀</option>
+            <option value={1}>🫣</option>
+            <option value={2}>😎</option>
+            <option value={3}>🙈</option>
+          </select>
+          <Link href="/settings" className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
             <Settings className="h-5 w-5" />
           </Link>
         </div>
@@ -96,7 +109,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2">
+           <select
+             value={privacyLevel}
+             onChange={(e) => setPrivacyLevel(Number(e.target.value))}
+             className="w-full bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 focus:outline-none cursor-pointer border border-transparent appearance-none"
+             title="切換防窺模式"
+           >
+             <option value={0}>👀 顯示全部</option>
+             <option value={1}>🫣 隱藏預算</option>
+             <option value={2}>😎 隱藏預算與收支</option>
+             <option value={3}>🙈 隱藏所有金額</option>
+           </select>
            <Link href="/settings" className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 hover:bg-zinc-50 dark:text-zinc-400 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50">
              <Settings className="h-5 w-5" />
              設定

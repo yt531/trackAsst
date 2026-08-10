@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { PrivacyText } from '@/components/PrivacyProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { Transaction, Category, PaymentMethod } from '@/types';
@@ -190,11 +191,11 @@ function TransactionsList() {
         <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
           <div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-green-500" /> 總收入</div>
-            <div className="text-lg font-semibold mt-1">NT$ {totals.income.toLocaleString()}</div>
+            <div className="text-lg font-semibold mt-1"><PrivacyText type="summary" text={`NT$ ${totals.income.toLocaleString()}`} /></div>
           </div>
           <div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
-            <div className="text-lg font-semibold mt-1">NT$ {totals.expense.toLocaleString()}</div>
+            <div className="text-lg font-semibold mt-1"><PrivacyText type="summary" text={`NT$ ${totals.expense.toLocaleString()}`} /></div>
           </div>
         </div>
       </div>
@@ -240,10 +241,10 @@ function TransactionsList() {
                       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                         <div className={`text-right font-medium whitespace-nowrap ${isExpense ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
                           }`}>
-                          {isExpense ? '-' : '+'} {tx.amount.toLocaleString()} {tx.currency}
+                          <PrivacyText text={`${isExpense ? '-' : '+'} ${tx.amount.toLocaleString()} ${tx.currency}`} />
                           {tx.currency !== 'TWD' && (
                             <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                              (≈ {tx.baseAmount.toLocaleString()} TWD)
+                              <PrivacyText text={`(≈ ${tx.baseAmount.toLocaleString()} TWD)`} />
                             </div>
                           )}
                         </div>

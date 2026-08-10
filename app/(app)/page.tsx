@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { PrivacyText } from '@/components/PrivacyProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
 import { Transaction } from '@/types';
@@ -121,10 +122,10 @@ export default function DashboardPage() {
         </div>
         <div className="relative z-10">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">當月總預算餘額</p>
-          <h2 className="mt-2 text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
-            {loading ? '...' : `NT$ ${(stats.budget - stats.monthlyExpense).toLocaleString()}`}
-          </h2>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">總預算: ${stats.budget.toLocaleString()}</p>
+            <div className="text-3xl font-bold mt-2 text-blue-900 dark:text-blue-100">
+              {loading ? '...' : <PrivacyText type="budget" text={`NT$ ${(stats.budget - stats.monthlyExpense).toLocaleString()}`} />}
+            </div>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">總預算: <PrivacyText type="budget" text={`$${stats.budget.toLocaleString()}`} /></p>
 
           <div className="mt-8 flex items-center gap-4">
             <div className="flex-1 rounded-2xl bg-green-50/50 p-4 border border-green-100/50 dark:bg-green-900/10 dark:border-green-900/20">
@@ -134,7 +135,9 @@ export default function DashboardPage() {
                 </div>
                 收入
               </div>
-              <p className="mt-2 text-xl font-bold text-green-800 dark:text-green-400">{loading ? '...' : stats.monthlyIncome.toLocaleString()}</p>
+              <p className="mt-2 text-xl font-bold text-green-800 dark:text-green-400">
+                {loading ? '...' : <PrivacyText type="summary" text={stats.monthlyIncome.toLocaleString()} />}
+              </p>
             </div>
             
             <div className="flex-1 rounded-2xl bg-red-50/50 p-4 border border-red-100/50 dark:bg-red-900/10 dark:border-red-900/20">
@@ -144,7 +147,9 @@ export default function DashboardPage() {
                 </div>
                 支出
               </div>
-              <p className="mt-2 text-xl font-bold text-red-800 dark:text-red-400">{loading ? '...' : stats.monthlyExpense.toLocaleString()}</p>
+              <p className="mt-2 text-xl font-bold text-red-800 dark:text-red-400">
+                {loading ? '...' : <PrivacyText type="summary" text={stats.monthlyExpense.toLocaleString()} />}
+              </p>
             </div>
           </div>
         </div>
@@ -182,10 +187,8 @@ export default function DashboardPage() {
                     <div className="text-xs text-zinc-500 dark:text-zinc-400">{format(new Date(tx.date), 'MM/dd')}</div>
                   </div>
                 </div>
-                <div className={`font-medium ${
-                  tx.type === 'expense' ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
-                }`}>
-                  {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString()} {tx.currency}
+                <div className={`text-right font-medium ${tx.type === 'expense' ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'}`}>
+                  <PrivacyText text={`${tx.type === 'expense' ? '-' : '+'}${tx.amount.toLocaleString()} ${tx.currency}`} />
                 </div>
               </div>
             ))}

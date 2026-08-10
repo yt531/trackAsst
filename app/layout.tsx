@@ -5,6 +5,8 @@ import { ThemeProvider } from 'next-themes';
 import { LockProvider } from '@/components/LockProvider';
 import { UserInteractionLock } from '@/components/UserInteractionLock';
 
+import { PrivacyProvider } from '@/components/PrivacyProvider';
+
 export const metadata: Metadata = {
   title: '輕鬆記 (FinTrack) - 輕鬆記、不忘記',
   description: '簡單、無壓力的個人記帳與發票存摺應用程式',
@@ -18,11 +20,14 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <LockProvider>
-              {children}
+              <PrivacyProvider>
+                {children}
+              </PrivacyProvider>
             </LockProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
+
     </html>
   );
 }
