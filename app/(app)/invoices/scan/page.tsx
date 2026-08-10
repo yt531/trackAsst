@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { QRScanner } from '@/components/QRScanner';
 import { Receipt, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { parseInvoiceQRCode, parseRightQRCode } from '@/lib/invoice';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';

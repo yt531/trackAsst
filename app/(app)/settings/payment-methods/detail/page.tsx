@@ -7,7 +7,7 @@ import { collection, query, getDocs, orderBy, doc, getDoc, where, updateDoc, del
 import { Transaction, Category, PaymentMethod, PaymentMethodType } from '@/types';
 import { DEFAULT_CATEGORIES, PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfYear, endOfYear, addMonths, subMonths, addDays, subDays, addYears, subYears } from 'date-fns';

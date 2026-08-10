@@ -6,7 +6,7 @@ import { PrivacyText } from '@/components/PrivacyProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { Transaction, Category, PaymentMethod } from '@/types';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { Plus, Trash2, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Calendar, Pencil } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';

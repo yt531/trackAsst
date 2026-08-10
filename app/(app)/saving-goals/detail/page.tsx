@@ -7,7 +7,7 @@ import { getSavingGoal, getSavingRecords, saveSavingGoal, deleteSavingGoal, upda
 import type { SavingGoal, SavingRecord } from '@/types';
 import { format } from 'date-fns';
 import { ArrowLeft, Target, Trash2, Edit, Save, X, PlusCircle } from 'lucide-react';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Suspense } from 'react';
 

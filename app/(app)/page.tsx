@@ -6,7 +6,7 @@ import { PrivacyText } from '@/components/PrivacyProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
 import { Transaction } from '@/types';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { ArrowDownRight, ArrowUpRight, Plus, ScanLine, ReceiptText } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';

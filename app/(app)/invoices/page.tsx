@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Invoice } from '@/types';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { ScanLine, Receipt, Settings2, Cloud, FileText, ChevronLeft, ChevronRight, Calendar, ArrowDownRight, Hash, Trash2, Edit2, Check, X } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 import { DatePicker } from '@/components/ui/DatePicker';

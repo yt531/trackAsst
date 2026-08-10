@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Camera, Bell, Image as ImageIcon, Calendar, AlertCircle, CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { auth } from '@/lib/firebase';
 import { getUserSettings, setUserSettings } from '@/lib/db';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';

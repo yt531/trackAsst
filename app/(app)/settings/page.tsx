@@ -1,7 +1,7 @@
 'use client';
 
 import { Fingerprint, User, Palette, LogOut, Tags, Bell, Shield, Database, Smartphone } from 'lucide-react';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 

@@ -11,7 +11,7 @@ import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection } from '@/lib/db';
 import { format } from 'date-fns';
 import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings } from 'lucide-react';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { SearchableCategorySelect } from '@/components/ui/SearchableCategorySelect';
 import {

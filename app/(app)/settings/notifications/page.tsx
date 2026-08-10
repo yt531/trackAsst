@@ -3,7 +3,7 @@
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 
 export default function NotificationsPage() {
   const router = useRouter();

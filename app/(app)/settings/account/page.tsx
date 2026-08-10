@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/AuthProvider';
 import { ArrowLeft, User as UserIcon, Mail, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useRouter } from 'next/navigation';
 
 export default function AccountPage() {

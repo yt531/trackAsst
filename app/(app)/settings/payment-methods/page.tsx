@@ -7,7 +7,7 @@ import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc, 
 import { PaymentMethod, PaymentMethodType } from '@/types';
 import { Plus, Trash2, ArrowLeft, Pencil, GripVertical, Info } from 'lucide-react';
 import { PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,

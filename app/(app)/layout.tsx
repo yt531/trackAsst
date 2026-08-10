@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/AuthProvider';
 import { Settings } from 'lucide-react';
-import Link from 'next/link';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { usePrivacy } from '@/components/PrivacyProvider';
