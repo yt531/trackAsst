@@ -129,13 +129,30 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
           
           if (context) {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-              inversionAttempts: "dontInvert",
-            });
             
-            if (code) {
-              onScan(code.data, false);
+            // Find multiple QR codes in the frame
+            for (let i = 0; i < 2; i++) {
+              const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+              const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+              });
+              
+              if (code) {
+                onScan(code.data, false);
+                
+                // Mask out the found QR code to find others in the same frame
+                const { topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner } = code.location;
+                const minX = Math.min(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
+                const minY = Math.min(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
+                const maxX = Math.max(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
+                const maxY = Math.max(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
+                
+                // Draw a black box over the found QR code with a little padding
+                context.fillStyle = "black";
+                context.fillRect(minX - 10, minY - 10, (maxX - minX) + 20, (maxY - minY) + 20);
+              } else {
+                break; // No more QR codes found
+              }
             }
           }
         }
@@ -196,15 +213,34 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const imageData = ctx.getImageData(0, 0, width, height);
           
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "attemptBoth",
-          });
+          let foundAny = false;
+          // Find multiple QR codes in the uploaded image
+          for (let i = 0; i < 2; i++) {
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: "attemptBoth",
+            });
+            
+            if (code) {
+              foundAny = true;
+              onScan(code.data, true);
+              
+              // Mask out the found QR code
+              const { topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner } = code.location;
+              const minX = Math.min(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
+              const minY = Math.min(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
+              const maxX = Math.max(topLeftCorner.x, topRightCorner.x, bottomLeftCorner.x, bottomRightCorner.x);
+              const maxY = Math.max(topLeftCorner.y, topRightCorner.y, bottomLeftCorner.y, bottomRightCorner.y);
+              
+              ctx.fillStyle = "black";
+              ctx.fillRect(minX - 10, minY - 10, (maxX - minX) + 20, (maxY - minY) + 20);
+            } else {
+              break;
+            }
+          }
           
-          if (code) {
-            onScan(code.data, true);
-          } else {
+          if (!foundAny) {
             setError('無法從圖片中讀取 QR Code，請確認圖片清晰並包含發票左側的 QR Code。');
           }
         }

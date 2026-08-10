@@ -124,7 +124,7 @@ function TransactionForm() {
             setAmount(invData.totalAmount.toString());
             setDate(format(new Date(invData.date), "yyyy-MM-dd'T'HH:mm"));
             const itemsNotes = invData.items?.map(i => `${i.description} x${i.quantity}`).join(', ');
-            setNotes(`發票 ${invData.id}${itemsNotes ? `\n${itemsNotes}` : ''}`);
+            setNotes(`發票 ${invoiceId}${itemsNotes ? `\n${itemsNotes}` : ''}`);
           }
         }
       }

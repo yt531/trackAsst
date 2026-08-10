@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { QRScanner } from '@/components/QRScanner';
 import { Receipt, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { parseInvoiceQRCode } from '@/lib/invoice';
+import { parseInvoiceQRCode, parseRightQRCode } from '@/lib/invoice';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
@@ -27,12 +27,45 @@ export default function InvoiceScanPage() {
   const handleScan = (data: string, isUpload?: boolean) => {
     if (!isActive) return;
     
+    const trimmedData = data.trim();
+    
+    // Check if it's the right-side QR Code
+    if (trimmedData.startsWith('**')) {
+      try {
+        const extraItems = parseRightQRCode(trimmedData);
+        if (invoiceDetails) {
+          // Merge items into existing invoice details
+          setInvoiceDetails((prev: any) => ({
+            ...prev,
+            items: [...prev.items, ...extraItems]
+          }));
+          setIsActive(false); // Done
+          setScanError(null);
+        } else {
+          setScanError('請先掃描發票左側的 QR 碼。');
+        }
+      } catch (e) {
+        console.warn('Right QR scan parsing failed:', e);
+        if (isUpload) setScanError('右側 QR 碼解析失敗。');
+      }
+      return;
+    }
+
+    // Otherwise, parse as left-side QR Code
     try {
-      const parsed = parseInvoiceQRCode(data);
-      setIsActive(false);
-      setScannedData(data);
+      const parsed = parseInvoiceQRCode(trimmedData);
+      setScannedData(trimmedData);
       setInvoiceDetails(parsed);
       setScanError(null);
+      
+      // If the left QR code indicates there should be items, but none are found in the left QR code,
+      // it means they are in the right QR code. We should keep scanning active.
+      if (parsed.totalItemsExpected > 0 && parsed.items.length === 0) {
+        setScanError('已讀取發票主資訊，請繼續掃描右側的 QR 碼以取得消費明細。');
+        // Do not set isActive to false, wait for the right QR code
+      } else {
+        setIsActive(false);
+      }
     } catch (e) {
       console.warn('QR scan parsing failed:', e, 'Raw data:', data);
       if (isUpload) {

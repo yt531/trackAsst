@@ -57,7 +57,35 @@ export const parseInvoiceQRCode = (rawData: string) => {
     sellerId,
     encrypt,
     items,
+    totalItemsExpected: parseInt(parts[3], 10) || items.length // Extract total expected items
   };
+};
+
+export const parseRightQRCode = (rawData: string) => {
+  const data = rawData.trim();
+  if (!data.startsWith('**')) {
+    throw new Error('Invalid Right QR Code');
+  }
+  
+  // Format: **itemName:qty:price:itemName:qty:price...
+  const parts = data.substring(2).split(':');
+  let items: InvoiceItem[] = [];
+  let currentIndex = 0;
+  
+  while (currentIndex + 2 < parts.length && parts[currentIndex]) {
+      const name = parts[currentIndex];
+      const qty = parseInt(parts[currentIndex + 1], 10) || 0;
+      const price = parseInt(parts[currentIndex + 2], 10) || 0;
+      items.push({
+          description: name,
+          quantity: qty,
+          unitPrice: price,
+          amount: qty * price
+      });
+      currentIndex += 3;
+  }
+  
+  return items;
 };
 
 function rocDateToUnixTimestamp(rocDate: string) {
