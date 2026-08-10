@@ -19,9 +19,9 @@ import type { Budget } from '../types';
 export async function saveBudget(userId: string, budget: Omit<Budget, 'id'>): Promise<Budget> {
   const collectionRef = getUserCollection(userId, COLLECTIONS.BUDGETS);
   
-  // Create a predictable ID: e.g., '2024-05_total' or '2024-05_cat123'
+  // Create a predictable ID: e.g., '2024-05_total_monthly' or '2024-05_cat123_daily'
   const idSuffix = budget.categoryId ? budget.categoryId : 'total';
-  const budgetId = `${budget.month}_${idSuffix}`;
+  const budgetId = `${budget.month}_${idSuffix}_${budget.period}`;
   
   const docRef = doc(collectionRef, budgetId);
   

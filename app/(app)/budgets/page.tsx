@@ -236,9 +236,16 @@ export default function BudgetsPage() {
         order: currentOrder,
       });
 
+      if (editingBudgetId && editingBudgetId !== newBudget.id) {
+        await deleteBudget(user.uid, editingBudgetId);
+      }
+
       setBudgets(prev => {
-        // Remove existing if same category (or same ID if editing)
-        const filtered = prev.filter(b => b.categoryId !== newBudget.categoryId);
+        const filtered = prev.filter(b => 
+          b.id !== newBudget.id && 
+          b.id !== editingBudgetId &&
+          !(b.categoryId === newBudget.categoryId && b.period === newBudget.period)
+        );
         const newArray = [...filtered, newBudget];
         newArray.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         return newArray;
