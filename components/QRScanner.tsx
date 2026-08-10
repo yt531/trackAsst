@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
-import { Upload, Camera } from 'lucide-react';
+import { Upload, Camera, SwitchCamera } from 'lucide-react';
 
 interface QRScannerProps {
   onScan: (data: string, isUpload?: boolean) => void;
@@ -16,15 +16,48 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
   const [error, setError] = useState<string>('');
   const [hasCamera, setHasCamera] = useState<boolean>(true);
 
+  // Camera selection states
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>('');
+
+  // Enumerate cameras once on mount
+  useEffect(() => {
+    const getCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setCameras(videoDevices);
+        if (videoDevices.length > 0) {
+          // Find back camera by default if possible
+          const backCamera = videoDevices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'));
+          setSelectedCameraId(backCamera ? backCamera.deviceId : videoDevices[0].deviceId);
+        }
+      } catch (err) {
+        console.warn('Cannot enumerate devices', err);
+      }
+    };
+    
+    // Only enumerate if the API is available
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      // Browsers often require getUserMedia to be called at least once before returning device labels,
+      // but enumerateDevices will still return deviceIds.
+      getCameras();
+    }
+  }, []);
+
   useEffect(() => {
     let animationFrameId: number;
     let stream: MediaStream | null = null;
 
     const startScanner = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
+        const constraints: MediaStreamConstraints = {
+          video: selectedCameraId 
+            ? { deviceId: { exact: selectedCameraId } }
+            : { facingMode: 'environment' }
+        };
+        
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
         
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -35,6 +68,7 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
           };
         }
         setHasCamera(true);
+        setError('');
       } catch (err) {
         setHasCamera(false);
       }
@@ -81,7 +115,14 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isActive, onScan]);
+  }, [isActive, onScan, selectedCameraId]);
+
+  const handleCycleCamera = () => {
+    if (cameras.length < 2) return;
+    const currentIndex = cameras.findIndex(c => c.deviceId === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % cameras.length;
+    setSelectedCameraId(cameras[nextIndex].deviceId);
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,6 +187,17 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
               <div className="absolute inset-x-0 h-0.5 bg-blue-500 animate-[scan_2s_ease-in-out_infinite]" />
             </div>
           </div>
+          
+          {/* Camera Switch Button */}
+          {cameras.length > 1 && (
+            <button
+              onClick={handleCycleCamera}
+              className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+              title="切換相機"
+            >
+              <SwitchCamera className="h-5 w-5" />
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex aspect-[3/4] w-full max-w-md mx-auto flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 p-6 text-center">
