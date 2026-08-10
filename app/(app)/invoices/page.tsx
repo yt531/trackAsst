@@ -255,17 +255,17 @@ export default function InvoicesPage() {
                       )}
                     </div>
                   </div>
-                  {inv.notes && (
-                    <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                      <div className="text-xs text-zinc-600 dark:text-zinc-300">
-                        <span className="font-medium">備註：</span>{inv.notes}
-                      </div>
-                    </div>
-                  )}
-                  {inv.items && inv.items.length > 0 && !inv.notes && (
+                  {inv.items && inv.items.length > 0 && (
                     <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
                       <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
                         {inv.items.map(i => i.description).join(', ')}
+                      </div>
+                    </div>
+                  )}
+                  {inv.notes && (
+                    <div className="mt-2 border-t border-zinc-100/50 pt-2 dark:border-zinc-800/50">
+                      <div className="text-xs text-zinc-600 dark:text-zinc-300">
+                        <span className="font-medium">備註：</span>{inv.notes}
                       </div>
                     </div>
                   )}
@@ -311,8 +311,28 @@ export default function InvoicesPage() {
               </div>
               
               <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                <div className="mb-2">
+                  <h3 className="font-medium text-zinc-900 dark:text-zinc-100">消費明細</h3>
+                </div>
+                <div className="rounded-xl bg-zinc-50 p-3 text-sm dark:bg-zinc-800/50">
+                  {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                    <ul className="space-y-2">
+                      {selectedInvoice.items.map((item, idx) => (
+                        <li key={idx} className="flex justify-between gap-4">
+                          <span className="truncate">{item.description} {item.quantity > 1 ? `x${item.quantity}` : ''}</span>
+                          {item.amount > 0 && <span className="shrink-0 text-zinc-500">NT$ {item.amount}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-zinc-500 italic">無明細資料</div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-medium text-zinc-900 dark:text-zinc-100">消費明細 (備註)</h3>
+                  <h3 className="font-medium text-zinc-900 dark:text-zinc-100">備註</h3>
                   {!isEditing && (
                     <button 
                       onClick={() => setIsEditing(true)}
@@ -328,8 +348,8 @@ export default function InvoicesPage() {
                     <textarea
                       value={editNotes}
                       onChange={(e) => setEditNotes(e.target.value)}
-                      className="w-full min-h-[100px] rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 field-sizing-content"
-                      placeholder="新增發票備註或修改明細..."
+                      className="w-full min-h-[80px] rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 field-sizing-content"
+                      placeholder="新增發票備註..."
                       autoFocus
                     />
                     <div className="flex justify-end gap-2">
@@ -350,20 +370,11 @@ export default function InvoicesPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-zinc-50 p-3 text-sm dark:bg-zinc-800/50">
+                  <div className="rounded-xl bg-zinc-50 p-3 text-sm dark:bg-zinc-800/50 min-h-[44px]">
                     {selectedInvoice.notes ? (
                       <div className="whitespace-pre-wrap">{selectedInvoice.notes}</div>
-                    ) : selectedInvoice.items && selectedInvoice.items.length > 0 ? (
-                      <ul className="space-y-2">
-                        {selectedInvoice.items.map((item, idx) => (
-                          <li key={idx} className="flex justify-between gap-4">
-                            <span className="truncate">{item.description} {item.quantity > 1 ? `x${item.quantity}` : ''}</span>
-                            {item.amount > 0 && <span className="shrink-0 text-zinc-500">NT$ {item.amount}</span>}
-                          </li>
-                        ))}
-                      </ul>
                     ) : (
-                      <div className="text-zinc-500 italic">無明細資料</div>
+                      <div className="text-zinc-500 italic">無備註</div>
                     )}
                   </div>
                 )}

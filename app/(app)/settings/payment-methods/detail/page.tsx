@@ -402,6 +402,7 @@ function PaymentMethodDetail() {
                         <div>
                           <div className="font-medium">{cat?.name || '未知分類'}</div>
                           {tx.details && <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{tx.details}</div>}
+                          {tx.notes && <div className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 italic">{tx.notes}</div>}
                         </div>
                       </div>
                       <div className={`text-right font-medium ${

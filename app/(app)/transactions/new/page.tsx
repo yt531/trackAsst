@@ -27,6 +27,7 @@ function TransactionForm() {
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [details, setDetails] = useState('');
+  const [notes, setNotes] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -106,6 +107,7 @@ function TransactionForm() {
           setPaymentMethodId(txData.paymentMethodId);
           setDate(format(new Date(txData.date), "yyyy-MM-dd'T'HH:mm"));
           setDetails(txData.details || '');
+          setNotes(txData.notes || '');
           if (txData.tagIds) {
             setSelectedTags(txData.tagIds);
           }
@@ -125,6 +127,9 @@ function TransactionForm() {
             setDate(format(new Date(invData.date), "yyyy-MM-dd'T'HH:mm"));
             const itemsDetails = invData.items?.map(i => `${i.description} x${i.quantity}`).join(', ');
             setDetails(`發票 ${invoiceId}${itemsDetails ? `\n${itemsDetails}` : ''}`);
+            if (invData.notes) {
+              setNotes(invData.notes);
+            }
           }
         }
       }
@@ -156,6 +161,7 @@ function TransactionForm() {
         paymentMethodId,
         date: new Date(date).getTime(),
         details,
+        notes,
         tagIds: selectedTags,
         updatedAt: Date.now(),
       };
@@ -374,7 +380,18 @@ function TransactionForm() {
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             className="field-sizing-content w-full min-h-[80px] rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="新增一些詳細資訊..."
+            placeholder="新增交易明細..."
+          />
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">備註</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="field-sizing-content w-full min-h-[60px] rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            placeholder="新增個人備註..."
           />
         </div>
 
