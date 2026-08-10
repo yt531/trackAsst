@@ -229,6 +229,7 @@ export default function BudgetsPage() {
   const [configBudgetId, setConfigBudgetId] = useState<string | null>(null);
   const [categoryRules, setCategoryRules] = useState<Record<string, 'deduction' | 'addition' | 'none'>>({});
   const [configSearchQuery, setConfigSearchQuery] = useState('');
+  const [configFilterRule, setConfigFilterRule] = useState<'all' | 'deduction' | 'addition' | 'none'>('all');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -327,6 +328,7 @@ export default function BudgetsPage() {
     setConfigBudgetId(budget.id);
     setCategoryRules(budget.categoryRules || {});
     setConfigSearchQuery('');
+    setConfigFilterRule('all');
   };
 
   const handleSaveConfig = async () => {
@@ -522,7 +524,7 @@ export default function BudgetsPage() {
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-800 flex flex-col max-h-[90vh]">
             <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-zinc-50">設定總預算計入規則</h2>
             
-            <div className="mb-4">
+            <div className="mb-4 space-y-3">
               <input
                 type="text"
                 placeholder="搜尋預算類型..."
@@ -530,11 +532,33 @@ export default function BudgetsPage() {
                 onChange={(e) => setConfigSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
               />
+              <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                {(['all', 'deduction', 'addition', 'none'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setConfigFilterRule(f)}
+                    className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      configFilterRule === f
+                        ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                    }`}
+                  >
+                    {f === 'all' ? '全部類型' : f === 'deduction' ? '減項 (-)' : f === 'addition' ? '增項 (+)' : '不列入'}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 space-y-3">
               {categories
-                .filter(cat => cat.name.toLowerCase().includes(configSearchQuery.toLowerCase()))
+                .filter(cat => {
+                  const matchesSearch = cat.name.toLowerCase().includes(configSearchQuery.toLowerCase());
+                  if (!matchesSearch) return false;
+                  if (configFilterRule === 'all') return true;
+                  const defaultRule = cat.type === 'expense' ? 'deduction' : 'none';
+                  const currentRule = categoryRules[cat.id] || defaultRule;
+                  return currentRule === configFilterRule;
+                })
                 .map(cat => {
                 const defaultRule = cat.type === 'expense' ? 'deduction' : 'none';
                 const currentRule = categoryRules[cat.id] || defaultRule;
