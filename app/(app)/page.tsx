@@ -95,7 +95,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">儀表板</h1>
+        <h1 className="text-2xl font-bold tracking-tight">首頁</h1>
         <div className="flex gap-2">
            <Link
              href="/invoices/scan"
