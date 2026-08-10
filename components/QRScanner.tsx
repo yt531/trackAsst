@@ -51,9 +51,12 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
 
     const startScanner = async () => {
       try {
+        // Add a small delay to allow hardware to release the camera if we are switching
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         const constraints: MediaStreamConstraints = {
           video: selectedCameraId 
-            ? { deviceId: { exact: selectedCameraId } }
+            ? { deviceId: selectedCameraId }
             : { facingMode: 'environment' }
         };
         
@@ -69,7 +72,20 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         }
         setHasCamera(true);
         setError('');
+
+        // Refresh camera list after permission is granted to get real deviceIds
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          if (videoDevices.length > 0 && videoDevices[0].deviceId) {
+            setCameras(videoDevices);
+          }
+        } catch (err) {
+          console.warn('Cannot refresh devices after getUserMedia', err);
+        }
+
       } catch (err) {
+        console.error('Camera access failed:', err);
         setHasCamera(false);
       }
     };
