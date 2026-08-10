@@ -193,7 +193,7 @@ export default function InvoicesPage() {
                 <div key={inv.id} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400">{format(new Date(inv.date), 'MMM d, yyyy')}</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">{format(new Date(inv.date), 'yyyy/MM/dd')}</div>
                       <div className="font-mono text-sm font-medium mt-1">{inv.id}</div>
                     </div>
                     <div className="text-right">
