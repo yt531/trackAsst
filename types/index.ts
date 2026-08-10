@@ -89,6 +89,13 @@ export interface SavingGoal {
   createdAt: number;
 }
 
+export interface SavingRecord {
+  id: string;
+  amount: number;
+  date: number;
+  note?: string;
+}
+
 export interface UserSettings {
   userId: string;
   baseCurrency: string;

@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { COLLECTIONS, getUserCollection } from './db';
-import type { SavingGoal } from '../types';
+import type { SavingGoal, SavingRecord } from '../types';
 /**
  * Save or update a saving goal.
  */
@@ -46,14 +46,39 @@ export async function getSavingGoals(userId: string): Promise<SavingGoal[]> {
 }
 
 /**
- * Update the current amount of a saving goal.
+ * Get a specific saving goal.
  */
-export async function updateSavingGoalAmount(userId: string, goalId: string, addedAmount: number): Promise<void> {
+export async function getSavingGoal(userId: string, goalId: string): Promise<SavingGoal | null> {
+  const docRef = doc(db, COLLECTIONS.USERS, userId, COLLECTIONS.SAVING_GOALS, goalId);
+  const snap = await getDoc(docRef);
+  return snap.exists() ? (snap.data() as SavingGoal) : null;
+}
+
+/**
+ * Update the current amount of a saving goal and add a record.
+ */
+export async function updateSavingGoalAmount(userId: string, goalId: string, addedAmount: number, note?: string, date?: number): Promise<void> {
   const docRef = doc(db, COLLECTIONS.USERS, userId, COLLECTIONS.SAVING_GOALS, goalId);
   const goalDoc = await getDoc(docRef);
   if (goalDoc.exists()) {
     const data = goalDoc.data() as SavingGoal;
-    await setDoc(docRef, { currentAmount: data.currentAmount + addedAmount }, { merge: true });
+    
+    const batch = writeBatch(db);
+    batch.set(docRef, { currentAmount: data.currentAmount + addedAmount }, { merge: true });
+
+    const recordRef = doc(collection(docRef, 'records'));
+    const recordData: any = {
+      id: recordRef.id,
+      amount: addedAmount,
+      date: date || Date.now(),
+    };
+    if (note) {
+      recordData.note = note;
+    }
+    
+    batch.set(recordRef, recordData);
+
+    await batch.commit();
   }
 }
 
@@ -77,5 +102,72 @@ export async function updateSavingGoalsOrder(userId: string, updates: { id: stri
   });
 
   await batch.commit();
+}
+
+/**
+ * Get records for a saving goal.
+ */
+export async function getSavingRecords(userId: string, goalId: string): Promise<SavingRecord[]> {
+  const recordsRef = collection(db, COLLECTIONS.USERS, userId, COLLECTIONS.SAVING_GOALS, goalId, 'records');
+  const snapshot = await getDocs(recordsRef);
+  return snapshot.docs
+    .map(doc => doc.data() as SavingRecord)
+    .sort((a, b) => b.date - a.date);
+}
+
+/**
+ * Delete a saving record and update goal's current amount.
+ */
+export async function deleteSavingRecord(userId: string, goalId: string, recordId: string, amountToDeduct: number): Promise<void> {
+  const goalRef = doc(db, COLLECTIONS.USERS, userId, COLLECTIONS.SAVING_GOALS, goalId);
+  const recordRef = doc(collection(goalRef, 'records'), recordId);
+  
+  const goalDoc = await getDoc(goalRef);
+  if (goalDoc.exists()) {
+    const data = goalDoc.data() as SavingGoal;
+    const batch = writeBatch(db);
+    
+    // Decrement the goal amount
+    batch.set(goalRef, { currentAmount: Math.max(0, data.currentAmount - amountToDeduct) }, { merge: true });
+    // Delete the record
+    batch.delete(recordRef);
+
+    await batch.commit();
+  }
+}
+
+/**
+ * Update a saving record and adjust goal's current amount.
+ */
+export async function updateSavingRecord(
+  userId: string, 
+  goalId: string, 
+  recordId: string, 
+  oldAmount: number, 
+  newAmount: number, 
+  note?: string
+): Promise<void> {
+  const goalRef = doc(db, COLLECTIONS.USERS, userId, COLLECTIONS.SAVING_GOALS, goalId);
+  const recordRef = doc(collection(goalRef, 'records'), recordId);
+  
+  const goalDoc = await getDoc(goalRef);
+  if (goalDoc.exists()) {
+    const data = goalDoc.data() as SavingGoal;
+    const batch = writeBatch(db);
+    
+    // Adjust the goal amount by the difference
+    const diff = newAmount - oldAmount;
+    batch.set(goalRef, { currentAmount: Math.max(0, data.currentAmount + diff) }, { merge: true });
+    
+    const recordData: any = { amount: newAmount };
+    if (note !== undefined) {
+      recordData.note = note;
+    }
+    
+    // Update the record
+    batch.set(recordRef, recordData, { merge: true });
+
+    await batch.commit();
+  }
 }
 

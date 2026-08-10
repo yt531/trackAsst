@@ -5,7 +5,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { getSavingGoals, saveSavingGoal, updateSavingGoalAmount, deleteSavingGoal, updateSavingGoalsOrder } from '@/lib/savingGoals';
 import type { SavingGoal } from '@/types';
 import { format } from 'date-fns';
-import { Target, Plus, Check, PlusCircle, Trash2, Bell, GripVertical } from 'lucide-react';
+import { Target, Plus, Check, PlusCircle, Trash2, Bell, GripVertical, Info } from 'lucide-react';
+import Link from 'next/link';
 import { DatePicker } from '@/components/ui/DatePicker';
 import {
   DndContext,
@@ -27,15 +28,11 @@ import { CSS } from '@dnd-kit/utilities';
 
 function SortableGoalCard({ 
   goal, 
-  openEditForm, 
-  handleDelete, 
-  setAddAmountValue, 
+  setAddAmountValue,
   setAddAmountGoalId,
   isReminderDue
 }: { 
   goal: SavingGoal; 
-  openEditForm: (g: SavingGoal) => void; 
-  handleDelete: (id: string) => void;
   setAddAmountValue: (val: string) => void;
   setAddAmountGoalId: (id: string) => void;
   isReminderDue: (g: SavingGoal) => boolean;
@@ -88,13 +85,10 @@ function SortableGoalCard({
         </div>
         
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => openEditForm(goal)} className="p-1 text-zinc-400 hover:text-blue-500">
-            <span className="sr-only">Edit</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-          </button>
-          <button onClick={() => handleDelete(goal.id)} className="p-1 text-zinc-400 hover:text-red-500">
-              <Trash2 className="h-4 w-4" />
-          </button>
+          <Link href={`/saving-goals/detail?id=${goal.id}`} className="p-1 text-zinc-400 hover:text-blue-500">
+            <span className="sr-only">Info</span>
+            <Info className="h-5 w-5" />
+          </Link>
         </div>
       </div>
 
@@ -493,8 +487,6 @@ export default function SavingGoalsPage() {
                 <SortableGoalCard
                   key={goal.id}
                   goal={goal}
-                  openEditForm={openEditForm}
-                  handleDelete={handleDelete}
                   setAddAmountValue={setAddAmountValue}
                   setAddAmountGoalId={setAddAmountGoalId}
                   isReminderDue={isReminderDue}
