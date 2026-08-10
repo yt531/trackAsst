@@ -2,11 +2,150 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { getSavingGoals, saveSavingGoal, updateSavingGoalAmount, deleteSavingGoal } from '@/lib/savingGoals';
+import { getSavingGoals, saveSavingGoal, updateSavingGoalAmount, deleteSavingGoal, updateSavingGoalsOrder } from '@/lib/savingGoals';
 import type { SavingGoal } from '@/types';
 import { format } from 'date-fns';
-import { Target, Plus, Check, PlusCircle, Trash2, Bell } from 'lucide-react';
+import { Target, Plus, Check, PlusCircle, Trash2, Bell, GripVertical } from 'lucide-react';
 import { DatePicker } from '@/components/ui/DatePicker';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableGoalCard({ 
+  goal, 
+  openEditForm, 
+  handleDelete, 
+  setAddAmountValue, 
+  setAddAmountGoalId,
+  isReminderDue
+}: { 
+  goal: SavingGoal; 
+  openEditForm: (g: SavingGoal) => void; 
+  handleDelete: (id: string) => void;
+  setAddAmountValue: (val: string) => void;
+  setAddAmountGoalId: (id: string) => void;
+  isReminderDue: (g: SavingGoal) => boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: goal.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 0,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const percent = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
+  const isCompleted = goal.currentAmount >= goal.targetAmount;
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800 flex flex-col">
+      {isCompleted && (
+        <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white shadow-lg z-10">
+          <Check className="h-5 w-5" />
+        </div>
+      )}
+      
+      <div className="mb-4 flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div 
+            {...attributes} 
+            {...listeners} 
+            className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+          >
+            <GripVertical className="h-5 w-5" />
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
+            <Target className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-50 line-clamp-1">{goal.name}</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              預計 {format(new Date(goal.targetDate), 'yyyy/MM/dd')} 達成
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={() => openEditForm(goal)} className="p-1 text-zinc-400 hover:text-blue-500">
+            <span className="sr-only">Edit</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button onClick={() => handleDelete(goal.id)} className="p-1 text-zinc-400 hover:text-red-500">
+              <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-1 flex items-end justify-between">
+        <div className="text-2xl font-bold text-zinc-900 dark:text-white">
+          ${goal.currentAmount.toLocaleString()}
+        </div>
+        <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          / ${goal.targetAmount.toLocaleString()}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
+        <div 
+          className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-green-500' : 'bg-blue-600 dark:bg-blue-500'}`}
+          style={{ width: `${percent}%` }}
+        ></div>
+      </div>
+
+      <div className="flex items-center justify-between text-xs font-medium">
+        <span className={isCompleted ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}>
+          {percent}%
+        </span>
+        
+        {!isCompleted && isReminderDue(goal) && (
+          <span className="flex items-center text-orange-500">
+            <Bell className="mr-1 h-3 w-3" />
+            該存錢囉！
+          </span>
+        )}
+      </div>
+
+      <div className="mt-auto pt-4">
+        {!isCompleted && (
+          <button
+            onClick={() => {
+              setAddAmountValue(goal.isFixedAmount && goal.fixedAmountValue ? goal.fixedAmountValue.toString() : '');
+              setAddAmountGoalId(goal.id);
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-100 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
+          >
+            <PlusCircle className="h-4 w-4" />
+            紀錄存錢
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 export default function SavingGoalsPage() {
   const { user } = useAuth();
@@ -131,6 +270,41 @@ export default function SavingGoalsPage() {
     if (goal.reminderFrequency === 'none') return false;
     // Real implementation would check last saved date, here we just mock
     return goal.isFixedAmount && goal.currentAmount < goal.targetAmount;
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = goals.findIndex((g) => g.id === active.id);
+      const newIndex = goals.findIndex((g) => g.id === over.id);
+
+      const newGoals = arrayMove(goals, oldIndex, newIndex);
+      setGoals(newGoals);
+
+      if (user) {
+        const updates = newGoals.map((g, idx) => ({
+          id: g.id,
+          order: idx,
+        }));
+        try {
+          await updateSavingGoalsOrder(user.uid, updates);
+        } catch (error) {
+          console.error('Failed to update order:', error);
+        }
+      }
+    }
   };
 
   return (
@@ -305,89 +479,30 @@ export default function SavingGoalsPage() {
           <p className="text-xs text-zinc-400 mt-1">開始規劃您的第一個目標吧！</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {goals.map(goal => {
-            const percent = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
-            const isCompleted = goal.currentAmount >= goal.targetAmount;
-            
-            return (
-              <div key={goal.id} className="relative rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800">
-                {isCompleted && (
-                  <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
-                    <Check className="h-5 w-5" />
-                  </div>
-                )}
-                
-                <div className="mb-4 flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                      <Target className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-zinc-900 dark:text-zinc-50 line-clamp-1">{goal.name}</h3>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        預計 {format(new Date(goal.targetDate), 'yyyy/MM/dd')} 達成
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => openEditForm(goal)} className="p-1 text-zinc-400 hover:text-blue-500">
-                      <span className="sr-only">Edit</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                    </button>
-                    <button onClick={() => handleDelete(goal.id)} className="p-1 text-zinc-400 hover:text-red-500">
-                       <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mb-1 flex items-end justify-between">
-                  <div className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    ${goal.currentAmount.toLocaleString()}
-                  </div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    / ${goal.targetAmount.toLocaleString()}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-green-500' : 'bg-blue-600 dark:bg-blue-500'}`}
-                    style={{ width: `${percent}%` }}
-                  ></div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-medium">
-                  <span className={isCompleted ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}>
-                    {percent}%
-                  </span>
-                  
-                  {!isCompleted && isReminderDue(goal) && (
-                    <span className="flex items-center text-orange-500">
-                      <Bell className="mr-1 h-3 w-3" />
-                      該存錢囉！
-                    </span>
-                  )}
-                </div>
-
-                {!isCompleted && (
-                  <button
-                    onClick={() => {
-                      setAddAmountValue(goal.isFixedAmount && goal.fixedAmountValue ? goal.fixedAmountValue.toString() : '');
-                      setAddAmountGoalId(goal.id);
-                    }}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-100 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    紀錄存錢
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext 
+            items={goals.map(g => g.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {goals.map(goal => (
+                <SortableGoalCard
+                  key={goal.id}
+                  goal={goal}
+                  openEditForm={openEditForm}
+                  handleDelete={handleDelete}
+                  setAddAmountValue={setAddAmountValue}
+                  setAddAmountGoalId={setAddAmountGoalId}
+                  isReminderDue={isReminderDue}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );

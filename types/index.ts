@@ -85,6 +85,7 @@ export interface SavingGoal {
   reminderFrequency: 'daily' | 'weekly' | 'monthly' | 'none'; // Reminder frequency
   isFixedAmount: boolean;   // Whether it is a regular fixed amount saving
   fixedAmountValue?: number; // Regular fixed amount value
+  order?: number;           // Sorting order
   createdAt: number;
 }
 
