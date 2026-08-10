@@ -38,7 +38,7 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
     };
     
     // Only enumerate if the API is available
-    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.enumerateDevices === 'function') {
       // Browsers often require getUserMedia to be called at least once before returning device labels,
       // but enumerateDevices will still return deviceIds.
       getCameras();
