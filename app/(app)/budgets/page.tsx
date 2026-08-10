@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { getBudgetsByMonth, saveBudget, deleteBudget, updateBudgetOrders } from '@/lib/budget';
-import type { Budget, Category } from '@/types';
+import type { Budget, Category, Transaction } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection } from '@/lib/db';
 import { format } from 'date-fns';
@@ -36,11 +36,12 @@ interface SortableBudgetCardProps {
   budget: Budget;
   categoryName: string;
   selectedMonth: string;
+  transactions: Transaction[];
   onEdit: (budget: Budget) => void;
   onDelete: (id: string) => void;
 }
 
-function SortableBudgetCard({ budget, categoryName, selectedMonth, onEdit, onDelete }: SortableBudgetCardProps) {
+function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions, onEdit, onDelete }: SortableBudgetCardProps) {
   const {
     attributes,
     listeners,
@@ -60,6 +61,28 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, onEdit, onDel
   const filterMode = budget.period === 'daily' ? 'day' : 'month';
   const catQuery = budget.categoryId ? `&categoryId=${budget.categoryId}` : '';
   const txUrl = `/transactions?filterMode=${filterMode}&date=${selectedMonth}${catQuery}`;
+
+  const categoryTxs = transactions.filter(t => t.type === 'expense' && (!budget.categoryId || t.categoryId === budget.categoryId));
+  
+  let spent = 0;
+  if (budget.period === 'monthly') {
+    spent = categoryTxs.reduce((sum, t) => sum + t.baseAmount, 0);
+  } else {
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const isCurrentMonth = selectedMonth === format(today, 'yyyy-MM');
+    if (isCurrentMonth) {
+      const todayTxs = categoryTxs.filter(t => format(new Date(t.date), 'yyyy-MM-dd') === todayStr);
+      spent = todayTxs.reduce((sum, t) => sum + t.baseAmount, 0);
+    } else {
+      const daysInMonth = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate();
+      const totalSpent = categoryTxs.reduce((sum, t) => sum + t.baseAmount, 0);
+      spent = Math.round(totalSpent / daysInMonth);
+    }
+  }
+
+  const percent = budget.amount > 0 ? Math.min(100, Math.round((spent / budget.amount) * 100)) : 0;
+  const isOverBudget = spent > budget.amount;
 
   return (
     <div ref={setNodeRef} style={style} className="relative group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 transition-colors hover:border-blue-300 dark:hover:border-blue-800 flex">
@@ -107,12 +130,29 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, onEdit, onDel
               </div>
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            ${budget.amount.toLocaleString()}
+          
+          <div className="mt-4">
+            <div className="flex justify-between items-baseline mb-2">
+              <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+                ${spent.toLocaleString()}
+              </div>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                / ${budget.amount.toLocaleString()}
+              </div>
+            </div>
+            
+            <div className="h-2.5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${isOverBudget ? 'bg-red-500' : 'bg-blue-500'}`}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            
+            <div className={`mt-1.5 text-xs font-medium ${isOverBudget ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}`}>
+              {percent}% {isOverBudget && '(已超支)'}
+            </div>
           </div>
-          <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-            點擊查看花費紀錄 →
-          </p>
+          
         </Link>
       </div>
     </div>
@@ -123,6 +163,7 @@ export default function BudgetsPage() {
   const { user } = useAuth();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
+  const [monthTransactions, setMonthTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   
   const currentMonth = format(new Date(), 'yyyy-MM');
@@ -191,6 +232,20 @@ export default function BudgetsPage() {
         const catSnap = await getDocs(catRef);
         const customCats = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
         setCategories(mergeCategories(DEFAULT_CATEGORIES as Category[], customCats));
+
+        // Fetch transactions for the selected month to calculate spent amount
+        const [year, monthStr] = selectedMonth.split('-');
+        const start = new Date(Number(year), Number(monthStr) - 1, 1).getTime();
+        const end = new Date(Number(year), Number(monthStr), 0, 23, 59, 59, 999).getTime();
+
+        const txQuery = query(
+          collection(db, 'users', user.uid, 'transactions'),
+          where('date', '>=', start),
+          where('date', '<=', end)
+        );
+        const txSnap = await getDocs(txQuery);
+        setMonthTransactions(txSnap.docs.map(d => d.data() as Transaction));
+
       } catch (error) {
         console.error('Error fetching budgets:', error);
       } finally {
@@ -416,6 +471,7 @@ export default function BudgetsPage() {
                         budget={budget}
                         categoryName={getCategoryName(budget.categoryId)}
                         selectedMonth={selectedMonth}
+                        transactions={monthTransactions}
                         onEdit={handleOpenForm}
                         onDelete={handleDeleteBudget}
                       />
@@ -442,6 +498,7 @@ export default function BudgetsPage() {
                         budget={budget}
                         categoryName={getCategoryName(budget.categoryId)}
                         selectedMonth={selectedMonth}
+                        transactions={monthTransactions}
                         onEdit={handleOpenForm}
                         onDelete={handleDeleteBudget}
                       />
