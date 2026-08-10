@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { QRScanner } from '@/components/QRScanner';
-import { Receipt, CheckCircle2, XCircle } from 'lucide-react';
+import { Receipt, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { parseInvoiceQRCode } from '@/lib/invoice';
 import { useAuth } from '@/components/AuthProvider';
@@ -22,8 +22,9 @@ export default function InvoiceScanPage() {
 
   const [showPrompt, setShowPrompt] = useState(false);
   const [savedInvoiceId, setSavedInvoiceId] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
 
-  const handleScan = (data: string) => {
+  const handleScan = (data: string, isUpload?: boolean) => {
     if (!isActive) return;
     
     try {
@@ -31,7 +32,11 @@ export default function InvoiceScanPage() {
       setIsActive(false);
       setScannedData(data);
       setInvoiceDetails(parsed);
+      setScanError(null);
     } catch (e) {
+      if (isUpload) {
+        setScanError('無法解析發票資訊，這可能不是有效的發票 QR Code。請確認掃描左側的 QR 碼。');
+      }
       // Not an invoice QR or partial scan (wait for next frame)
     }
   };
@@ -76,6 +81,13 @@ export default function InvoiceScanPage() {
           掃描電子發票證明聯上的 QR 碼。
         </p>
       </header>
+
+      {scanError && (
+        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/30">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          {scanError}
+        </div>
+      )}
 
       {isActive ? (
         <QRScanner onScan={handleScan} isActive={isActive} />
