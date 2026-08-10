@@ -73,6 +73,7 @@ export interface Budget {
   month: string; // e.g., '2024-05'
   categoryId?: string; // Optional, if not provided it's the total budget
   order?: number;
+  categoryRules?: Record<string, 'deduction' | 'addition' | 'none'>; // Rules for total budget calculation
 }
 
 export interface SavingGoal {

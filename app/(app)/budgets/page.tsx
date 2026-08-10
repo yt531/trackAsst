@@ -10,7 +10,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection } from '@/lib/db';
 import { format } from 'date-fns';
-import { Plus, Wallet, Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { SearchableCategorySelect } from '@/components/ui/SearchableCategorySelect';
@@ -39,9 +39,10 @@ interface SortableBudgetCardProps {
   transactions: Transaction[];
   onEdit: (budget: Budget) => void;
   onDelete: (id: string) => void;
+  onConfigRules?: (budget: Budget) => void;
 }
 
-function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions, onEdit, onDelete }: SortableBudgetCardProps) {
+function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions, onEdit, onDelete, onConfigRules }: SortableBudgetCardProps) {
   const {
     attributes,
     listeners,
@@ -62,27 +63,64 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
   const catQuery = budget.categoryId ? `&categoryId=${budget.categoryId}` : '';
   const txUrl = `/transactions?filterMode=${filterMode}&date=${selectedMonth}${catQuery}`;
 
-  const categoryTxs = transactions.filter(t => t.type === 'expense' && (!budget.categoryId || t.categoryId === budget.categoryId));
-  
   let spent = 0;
-  if (budget.period === 'monthly') {
-    spent = categoryTxs.reduce((sum, t) => sum + t.baseAmount, 0);
-  } else {
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const isCurrentMonth = selectedMonth === format(today, 'yyyy-MM');
-    if (isCurrentMonth) {
-      const todayTxs = categoryTxs.filter(t => format(new Date(t.date), 'yyyy-MM-dd') === todayStr);
-      spent = todayTxs.reduce((sum, t) => sum + t.baseAmount, 0);
-    } else {
+  let targetAmount = budget.amount;
+
+  if (!budget.categoryId) {
+    let relevantTxs = transactions;
+    if (budget.period === 'daily') {
+      const today = new Date();
+      const todayStr = format(today, 'yyyy-MM-dd');
+      const isCurrentMonth = selectedMonth === format(today, 'yyyy-MM');
+      if (isCurrentMonth) {
+        relevantTxs = relevantTxs.filter(t => format(new Date(t.date), 'yyyy-MM-dd') === todayStr);
+      }
+    }
+
+    let rawSpent = 0;
+    let additions = 0;
+
+    relevantTxs.forEach(t => {
+      const defaultRule = t.type === 'expense' ? 'deduction' : 'none';
+      const rule = budget.categoryRules?.[t.categoryId] || defaultRule;
+
+      if (rule === 'deduction') {
+        rawSpent += t.baseAmount;
+      } else if (rule === 'addition') {
+        additions += t.baseAmount;
+      }
+    });
+
+    if (budget.period === 'daily' && selectedMonth !== format(new Date(), 'yyyy-MM')) {
       const daysInMonth = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate();
-      const totalSpent = categoryTxs.reduce((sum, t) => sum + t.baseAmount, 0);
-      spent = Math.round(totalSpent / daysInMonth);
+      spent = Math.round(rawSpent / daysInMonth);
+      const avgAddition = Math.round(additions / daysInMonth);
+      targetAmount += avgAddition;
+    } else {
+      spent = rawSpent;
+      targetAmount += additions;
+    }
+  } else {
+    const categoryTxs = transactions.filter(t => t.type === 'expense' && t.categoryId === budget.categoryId);
+    if (budget.period === 'monthly') {
+      spent = categoryTxs.reduce((sum, t) => sum + t.baseAmount, 0);
+    } else {
+      const today = new Date();
+      const todayStr = format(today, 'yyyy-MM-dd');
+      const isCurrentMonth = selectedMonth === format(today, 'yyyy-MM');
+      if (isCurrentMonth) {
+        const todayTxs = categoryTxs.filter(t => format(new Date(t.date), 'yyyy-MM-dd') === todayStr);
+        spent = todayTxs.reduce((sum, t) => sum + t.baseAmount, 0);
+      } else {
+        const daysInMonth = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate();
+        const totalSpent = categoryTxs.reduce((sum, t) => sum + t.baseAmount, 0);
+        spent = Math.round(totalSpent / daysInMonth);
+      }
     }
   }
 
-  const percent = budget.amount > 0 ? Math.min(100, Math.round((spent / budget.amount) * 100)) : 0;
-  const isOverBudget = spent > budget.amount;
+  const percent = targetAmount > 0 ? Math.min(100, Math.round((spent / targetAmount) * 100)) : 0;
+  const isOverBudget = spent > targetAmount;
 
   return (
     <div ref={setNodeRef} style={style} className="relative group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 transition-colors hover:border-blue-300 dark:hover:border-blue-800 flex">
@@ -96,8 +134,17 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
       </div>
 
       <div className="flex-1 ml-4 relative">
-        {/* Actions (Edit / Delete) */}
+        {/* Actions (Edit / Delete / Config) */}
         <div className="absolute -top-1 -right-1 flex gap-1 z-10">
+          {!budget.categoryId && onConfigRules && (
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onConfigRules(budget); }}
+              className="p-1.5 text-zinc-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
+              title="設定計入規則"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+          )}
           <button 
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(budget); }}
             className="p-1.5 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
@@ -137,7 +184,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
                 ${spent.toLocaleString()}
               </div>
               <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                / ${budget.amount.toLocaleString()}
+                / ${targetAmount.toLocaleString()}
               </div>
             </div>
             
@@ -177,6 +224,11 @@ export default function BudgetsPage() {
   const [period, setPeriod] = useState<'daily' | 'monthly'>('monthly');
   const [categoryId, setCategoryId] = useState<string>(''); // empty means 'total'
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+  
+  // Config Rules State
+  const [configBudgetId, setConfigBudgetId] = useState<string | null>(null);
+  const [categoryRules, setCategoryRules] = useState<Record<string, 'deduction' | 'addition' | 'none'>>({});
+  const [configSearchQuery, setConfigSearchQuery] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -269,6 +321,36 @@ export default function BudgetsPage() {
       setEditingBudgetId(null);
     }
     setIsFormOpen(true);
+  };
+
+  const handleOpenConfig = (budget: Budget) => {
+    setConfigBudgetId(budget.id);
+    setCategoryRules(budget.categoryRules || {});
+    setConfigSearchQuery('');
+  };
+
+  const handleSaveConfig = async () => {
+    if (!user || !configBudgetId) return;
+    try {
+      const existing = budgets.find(b => b.id === configBudgetId);
+      if (!existing) return;
+      
+      const updatedBudget = await saveBudget(user.uid, {
+        userId: existing.userId,
+        amount: existing.amount,
+        period: existing.period,
+        month: existing.month,
+        categoryId: existing.categoryId,
+        order: existing.order,
+        categoryRules
+      });
+      
+      setBudgets(prev => prev.map(b => b.id === configBudgetId ? updatedBudget : b));
+      setConfigBudgetId(null);
+    } catch (e) {
+      console.error(e);
+      alert('儲存失敗');
+    }
   };
 
   const handleSaveBudget = async (e: React.FormEvent) => {
@@ -435,6 +517,63 @@ export default function BudgetsPage() {
         </div>
       )}
 
+      {configBudgetId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-800 flex flex-col max-h-[90vh]">
+            <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-zinc-50">設定總預算計入規則</h2>
+            
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="搜尋預算類型..."
+                value={configSearchQuery}
+                onChange={(e) => setConfigSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+              {categories
+                .filter(cat => cat.name.toLowerCase().includes(configSearchQuery.toLowerCase()))
+                .map(cat => {
+                const defaultRule = cat.type === 'expense' ? 'deduction' : 'none';
+                const currentRule = categoryRules[cat.id] || defaultRule;
+                return (
+                  <div key={cat.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{cat.name}</span>
+                    </div>
+                    <select
+                      value={currentRule}
+                      onChange={(e) => setCategoryRules(prev => ({ ...prev, [cat.id]: e.target.value as 'deduction' | 'addition' | 'none' }))}
+                      className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-zinc-600 dark:bg-zinc-900"
+                    >
+                      <option value="deduction">減項 (-)</option>
+                      <option value="addition">增項 (+)</option>
+                      <option value="none">不計入</option>
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+              <button
+                onClick={() => setConfigBudgetId(null)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveConfig}
+                className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+              >
+                儲存設定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* View Mode Switcher */}
       <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
         <button
@@ -474,6 +613,7 @@ export default function BudgetsPage() {
                         transactions={monthTransactions}
                         onEdit={handleOpenForm}
                         onDelete={handleDeleteBudget}
+                        onConfigRules={handleOpenConfig}
                       />
                     ))}
                   </SortableContext>
@@ -501,6 +641,7 @@ export default function BudgetsPage() {
                         transactions={monthTransactions}
                         onEdit={handleOpenForm}
                         onDelete={handleDeleteBudget}
+                        onConfigRules={handleOpenConfig}
                       />
                     ))}
                   </SortableContext>
