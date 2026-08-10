@@ -40,3 +40,8 @@
   0%, 100% { top: 0; }
   50% { top: 100%; }
 }
+
+/* 確保輸入框可以正常選取文字 */
+input, textarea, [contenteditable] {
+  user-select: text;
+}

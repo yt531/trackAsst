@@ -3,7 +3,7 @@ import './globals.css'; // Global styles
 import { AuthProvider } from '@/components/AuthProvider';
 import { ThemeProvider } from 'next-themes';
 import { LockProvider } from '@/components/LockProvider';
-import { DisableContextMenu } from '@/components/DisableContextMenu';
+import { UserInteractionLock } from '@/components/UserInteractionLock';
 
 export const metadata: Metadata = {
   title: '輕鬆記 (FinTrack) - 輕鬆記、不忘記',
@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased">
-        <DisableContextMenu />
+      <body suppressHydrationWarning className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased select-none">
+        <UserInteractionLock />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <LockProvider>
