@@ -51,11 +51,13 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
   useEffect(() => {
     let animationFrameId: number;
     let stream: MediaStream | null = null;
+    let isCancelled = false;
 
     const startScanner = async () => {
       try {
         // Add a small delay to allow hardware to release the camera if we are switching
         await new Promise(resolve => setTimeout(resolve, 300));
+        if (isCancelled) return;
 
         const constraints: MediaStreamConstraints = {
           video: selectedCameraId 
@@ -66,6 +68,7 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         try {
           stream = await navigator.mediaDevices.getUserMedia(constraints);
         } catch (err) {
+          if (isCancelled) return;
           console.warn(`Camera access with exact deviceId failed, trying fallback...`, err);
           // Fallback to non-exact or environment
           const fallbackConstraints: MediaStreamConstraints = {
@@ -74,10 +77,16 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
           stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
         }
         
+        if (isCancelled) {
+          if (stream) stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           // Add event listener for when video is ready to play
           videoRef.current.onloadedmetadata = () => {
+            if (isCancelled) return;
             videoRef.current?.play();
             requestAnimationFrame(tick);
           };
@@ -88,8 +97,12 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         // Refresh camera list after permission is granted to get real deviceIds
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
+          if (isCancelled) return;
           const videoDevices = devices.filter(device => device.kind === 'videoinput');
-          if (videoDevices.length > 0 && videoDevices[0].deviceId) {
+          const backCameras = videoDevices.filter(d => !d.label.toLowerCase().includes('front') && !d.label.toLowerCase().includes('user'));
+          if (backCameras.length > 0 && backCameras[0].deviceId) {
+            setCameras(backCameras);
+          } else if (videoDevices.length > 0 && videoDevices[0].deviceId) {
             setCameras(videoDevices);
           }
         } catch (err) {
@@ -97,12 +110,14 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         }
 
       } catch (err) {
+        if (isCancelled) return;
         console.error('Camera access failed:', err);
         setHasCamera(false);
       }
     };
 
     const tick = () => {
+      if (isCancelled) return;
       if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
         const canvas = canvasRef.current;
         const video = videoRef.current;
@@ -126,7 +141,7 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         }
       }
       
-      if (isActive) {
+      if (isActive && !isCancelled) {
         animationFrameId = requestAnimationFrame(tick);
       }
     };
@@ -136,6 +151,7 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
     }
 
     return () => {
+      isCancelled = true;
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
