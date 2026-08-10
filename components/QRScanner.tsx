@@ -199,8 +199,9 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        // Scale down if image is too large to improve performance and success rate
-        const MAX_WIDTH = 1200;
+        // Increase MAX_WIDTH to preserve detail for dense invoice QR codes.
+        // Downscaling 4K photos to 1200px causes bilinear blur which breaks jsQR.
+        const MAX_WIDTH = 3000;
         let width = img.width;
         let height = img.height;
         if (width > MAX_WIDTH) {
