@@ -1,0 +1,4 @@
+BeforeDecryptDir=E:\16_CHTBOX\CHT Box\yeni\eInvoice
+BeforeDecryptFile=1040721-ACHExpense(20150102-3B).bin
+AfterDecryptFile=1040721-ACHExpense(20150102-3B).txt
+AfterDecryptDir=E:\16_CHTBOX\CHT Box\yeni\eInvoice

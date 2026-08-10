@@ -1,7 +1,8 @@
 import { InvoiceItem } from '@/types';
 
 // Parsing invoice QR Code data based on MoF spec v1.9
-export const parseInvoiceQRCode = (data: string) => {
+export const parseInvoiceQRCode = (rawData: string) => {
+  const data = rawData.trim();
   if (!data || data.length < 77 || !/^[A-Z]{2}[0-9]{8}/.test(data)) {
     throw new Error('Invalid Invoice QR Code format');
   }

@@ -34,8 +34,10 @@ export default function InvoiceScanPage() {
       setInvoiceDetails(parsed);
       setScanError(null);
     } catch (e) {
+      console.warn('QR scan parsing failed:', e, 'Raw data:', data);
       if (isUpload) {
-        setScanError('無法解析發票資訊，這可能不是有效的發票 QR Code。請確認掃描左側的 QR 碼。');
+        const preview = data.length > 30 ? data.substring(0, 30) + '...' : data;
+        setScanError(`無法解析發票資訊，掃描內容：[${preview}]。請確認這是發票左側的 QR 碼。`);
       }
       // Not an invoice QR or partial scan (wait for next frame)
     }

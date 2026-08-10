@@ -18,7 +18,7 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
 
   // Camera selection states
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
-  const [selectedCameraId, setSelectedCameraId] = useState<string>('');
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
   // Enumerate cameras once on mount
   useEffect(() => {
@@ -27,11 +27,8 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         setCameras(videoDevices);
-        if (videoDevices.length > 0) {
-          // Find back camera by default if possible
-          const backCamera = videoDevices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear'));
-          setSelectedCameraId(backCamera ? backCamera.deviceId : videoDevices[0].deviceId);
-        }
+        setCameras(videoDevices);
+        // We don't set deviceId anymore, relying on facingMode
       } catch (err) {
         console.warn('Cannot enumerate devices', err);
       }
@@ -55,12 +52,18 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
         await new Promise(resolve => setTimeout(resolve, 300));
 
         const constraints: MediaStreamConstraints = {
-          video: selectedCameraId 
-            ? { deviceId: selectedCameraId }
-            : { facingMode: 'environment' }
+          video: { facingMode: facingMode }
         };
         
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+          console.warn(`Camera access with facingMode ${facingMode} failed, trying fallback...`, err);
+          // Fallback to the other facing mode if the requested one fails
+          const fallbackMode = facingMode === 'environment' ? 'user' : 'environment';
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: fallbackMode } });
+          setFacingMode(fallbackMode); // Update state to match actual
+        }
         
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -130,14 +133,14 @@ export function QRScanner({ onScan, isActive }: QRScannerProps) {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     };
-  }, [isActive, onScan, selectedCameraId]);
+  }, [isActive, onScan, facingMode]);
 
   const handleCycleCamera = () => {
-    if (cameras.length < 2) return;
-    const currentIndex = cameras.findIndex(c => c.deviceId === selectedCameraId);
-    const nextIndex = (currentIndex + 1) % cameras.length;
-    setSelectedCameraId(cameras[nextIndex].deviceId);
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
