@@ -128,6 +128,8 @@ export default function BudgetsPage() {
   const currentMonth = format(new Date(), 'yyyy-MM');
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
+  const [viewMode, setViewMode] = useState<'monthly' | 'daily'>('monthly');
+
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [amount, setAmount] = useState('');
@@ -378,6 +380,22 @@ export default function BudgetsPage() {
         </div>
       )}
 
+      {/* View Mode Switcher */}
+      <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
+        <button
+          onClick={() => setViewMode('monthly')}
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'monthly' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
+        >
+          月預算
+        </button>
+        <button
+          onClick={() => setViewMode('daily')}
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'daily' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
+        >
+          日預算
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex h-32 items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>
       ) : budgets.length === 0 ? (
@@ -387,12 +405,8 @@ export default function BudgetsPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {monthlyBudgets.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                月預算
-              </h2>
+          {viewMode === 'monthly' && (
+            monthlyBudgets.length > 0 ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <SortableContext items={monthlyBudgets.map(b => b.id)} strategy={rectSortingStrategy}>
@@ -409,15 +423,16 @@ export default function BudgetsPage() {
                   </SortableContext>
                 </div>
               </DndContext>
-            </div>
+            ) : (
+              <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+                <Wallet className="mb-2 h-8 w-8 text-zinc-400" />
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">尚無月預算設定</p>
+              </div>
+            )
           )}
 
-          {dailyBudgets.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                日預算
-              </h2>
+          {viewMode === 'daily' && (
+            dailyBudgets.length > 0 ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <SortableContext items={dailyBudgets.map(b => b.id)} strategy={rectSortingStrategy}>
@@ -434,7 +449,12 @@ export default function BudgetsPage() {
                   </SortableContext>
                 </div>
               </DndContext>
-            </div>
+            ) : (
+              <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+                <Wallet className="mb-2 h-8 w-8 text-zinc-400" />
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">尚無日預算設定</p>
+              </div>
+            )
           )}
         </div>
       )}
