@@ -53,3 +53,15 @@ export const setSecuritySettings = async (userId: string, data: any) => {
   const docRef = getUserDoc(userId, COLLECTIONS.SETTINGS, 'security');
   await setDoc(docRef, data, { merge: true });
 };
+
+// General User Settings (Preferences) Helpers
+export const getUserSettings = async (userId: string): Promise<Partial<UserSettings> | null> => {
+  const docRef = getUserDoc(userId, COLLECTIONS.SETTINGS, 'preferences');
+  const snap = await getDoc(docRef);
+  return snap.exists() ? (snap.data() as Partial<UserSettings>) : null;
+};
+
+export const setUserSettings = async (userId: string, data: Partial<UserSettings>) => {
+  const docRef = getUserDoc(userId, COLLECTIONS.SETTINGS, 'preferences');
+  await setDoc(docRef, data, { merge: true });
+};

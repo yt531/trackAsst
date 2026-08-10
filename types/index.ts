@@ -103,6 +103,7 @@ export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
   promptToRecordAfterScan: boolean;
   biometricEnabled: boolean;
+  calendarSyncEnabled?: boolean;
 }
 
 export interface Tag {
