@@ -218,6 +218,19 @@ export default function BudgetsPage() {
     e.preventDefault();
     if (!user || !amount) return;
 
+    // 檢查是否已經存在相同分類與週期的預算 (排除目前正在編輯的項目)
+    const targetCategoryId = categoryId || undefined;
+    const isDuplicate = budgets.some(b => 
+      b.categoryId === targetCategoryId && 
+      b.period === period && 
+      b.id !== editingBudgetId
+    );
+
+    if (isDuplicate) {
+      alert('該預算類型已經存在相同的預算週期設定，請直接修改現有預算。');
+      return;
+    }
+
     try {
       let currentOrder = budgets.length;
       if (editingBudgetId) {
@@ -277,6 +290,9 @@ export default function BudgetsPage() {
     if (!id) return '總預算';
     return categories.find(c => c.id === id)?.name || '未知分類';
   };
+
+  const monthlyBudgets = budgets.filter(b => b.period === 'monthly');
+  const dailyBudgets = budgets.filter(b => b.period === 'daily');
 
   return (
     <div className="space-y-6">
@@ -370,22 +386,57 @@ export default function BudgetsPage() {
           <p className="text-sm text-zinc-500 dark:text-zinc-400">此月份尚無設定預算</p>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <SortableContext items={budgets.map(b => b.id)} strategy={rectSortingStrategy}>
-              {budgets.map(budget => (
-                <SortableBudgetCard
-                  key={budget.id}
-                  budget={budget}
-                  categoryName={getCategoryName(budget.categoryId)}
-                  selectedMonth={selectedMonth}
-                  onEdit={handleOpenForm}
-                  onDelete={handleDeleteBudget}
-                />
-              ))}
-            </SortableContext>
-          </div>
-        </DndContext>
+        <div className="space-y-8">
+          {monthlyBudgets.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                月預算
+              </h2>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SortableContext items={monthlyBudgets.map(b => b.id)} strategy={rectSortingStrategy}>
+                    {monthlyBudgets.map(budget => (
+                      <SortableBudgetCard
+                        key={budget.id}
+                        budget={budget}
+                        categoryName={getCategoryName(budget.categoryId)}
+                        selectedMonth={selectedMonth}
+                        onEdit={handleOpenForm}
+                        onDelete={handleDeleteBudget}
+                      />
+                    ))}
+                  </SortableContext>
+                </div>
+              </DndContext>
+            </div>
+          )}
+
+          {dailyBudgets.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                日預算
+              </h2>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SortableContext items={dailyBudgets.map(b => b.id)} strategy={rectSortingStrategy}>
+                    {dailyBudgets.map(budget => (
+                      <SortableBudgetCard
+                        key={budget.id}
+                        budget={budget}
+                        categoryName={getCategoryName(budget.categoryId)}
+                        selectedMonth={selectedMonth}
+                        onEdit={handleOpenForm}
+                        onDelete={handleDeleteBudget}
+                      />
+                    ))}
+                  </SortableContext>
+                </div>
+              </DndContext>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
