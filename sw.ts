@@ -15,7 +15,26 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    ...defaultCache.map(cache => {
+      // If it's a navigation cache rule, make sure we don't serve RSC payloads
+      if (cache.handler && (cache.handler as any).cacheName === "pages") {
+        return {
+          ...cache,
+          matcher: (options: any) => {
+            const { request } = options;
+            const isRSC = request.headers.has("RSC") || request.headers.has("Next-Router-Prefetch");
+            if (isRSC) return false;
+            if (typeof cache.matcher === 'function') {
+              return cache.matcher(options);
+            }
+            return false;
+          }
+        }
+      }
+      return cache;
+    })
+  ],
 });
 
 serwist.addEventListeners();
