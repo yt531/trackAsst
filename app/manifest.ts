@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: '輕鬆記 (FinTrack)',
     short_name: 'FinTrack',
     description: '簡單、無壓力的個人記帳與發票存摺應用程式',
-    start_url: '.',
+    start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: '#ffffff',
