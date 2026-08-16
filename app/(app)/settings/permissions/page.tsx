@@ -167,12 +167,12 @@ export default function PermissionsPage() {
             {/* 相機權限 */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-700/50">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
                     <Camera className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-medium">相機</div>
                       {getStatusBadge(cameraState)}
                     </div>
@@ -203,12 +203,12 @@ export default function PermissionsPage() {
             {/* 通知權限 */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-700/50">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
                     <Bell className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-medium">系統推播通知</div>
                       {getStatusBadge(notificationState)}
                     </div>
@@ -237,12 +237,12 @@ export default function PermissionsPage() {
             {/* 照片與相簿權限 */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-700/50">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
                     <ImageIcon className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-medium">相片圖庫</div>
                       <span className="flex items-center gap-1 text-xs font-medium text-zinc-600 bg-zinc-100 px-2 py-1 rounded-full dark:bg-zinc-700 dark:text-zinc-400">
                         由系統控管
@@ -259,12 +259,12 @@ export default function PermissionsPage() {
             {/* Google 日曆同步 */}
             <div className="p-4">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
                     <Calendar className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-medium">Google 日曆存取</div>
                       {!calendarLoading && calendarSyncEnabled ? (
                         <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full dark:bg-emerald-500/10 dark:text-emerald-400">
