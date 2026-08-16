@@ -4,6 +4,11 @@ import { useEffect } from 'react';
 
 export function UserInteractionLock() {
   useEffect(() => {
+    // 允許在 localhost 或 127.0.0.1 網域下使用開發者工具與右鍵
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return;
+    }
+
     // 阻擋右鍵選單 (全域無條件攔截)
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
