@@ -99,7 +99,7 @@ function TransactionForm() {
         const txDoc = await getDoc(doc(db, 'users', user.uid, 'transactions', editId));
         if (txDoc.exists()) {
           const txData = txDoc.data() as Transaction;
-          setType(txData.type);
+          setType(txData.type as 'income' | 'expense');
           setAmount(txData.amount.toString());
           setCurrency(txData.currency || 'TWD');
           setExchangeRate(txData.exchangeRate?.toString() || '1');

@@ -184,7 +184,7 @@ export default function CategoriesPage() {
   const handleEditClick = (cat: Category) => {
     setEditingId(cat.id);
     setName(cat.name);
-    setType(cat.type);
+    setType(cat.type as 'income' | 'expense');
     setIsAdding(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

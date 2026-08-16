@@ -26,17 +26,16 @@ export function calculateBalances(transactions: Transaction[]): Record<string, U
   for (const t of transactions) {
     if (t.type !== 'expense' && t.type !== 'settlement') continue;
     
-    // The person who paid gets positive credit
-    ensureUser(t.userId);
-    balances[t.userId].netBalance += t.amount;
-
-    // The people in the splits get negative debt
     if (t.splits && t.splits.length > 0) {
       for (const split of t.splits) {
         ensureUser(split.userId);
-        balances[split.userId].netBalance -= split.amount;
+        balances[split.userId].netBalance += (split.paidAmount || 0);
+        balances[split.userId].netBalance -= (split.owedAmount || 0);
       }
     } else {
+      // The person who paid gets positive credit
+      ensureUser(t.userId);
+      balances[t.userId].netBalance += t.amount;
       // If no splits are defined for some reason, assume the payer paid for themselves
       balances[t.userId].netBalance -= t.amount;
     }
