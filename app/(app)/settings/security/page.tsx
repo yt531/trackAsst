@@ -218,7 +218,7 @@ export default function SecurityPage() {
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">開啟後允許在應用程式內截圖 (需原生 App 支援)</div>
               </div>
             </div>
-            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${allowScreenshot ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
+            <div className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${allowScreenshot ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
               <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${allowScreenshot ? 'translate-x-6' : 'translate-x-1'}`} />
             </div>
           </div>
@@ -364,7 +364,7 @@ export default function SecurityPage() {
                       <div className="text-sm text-zinc-500 dark:text-zinc-400">使用 Face ID / Touch ID 快速解鎖</div>
                     </div>
                   </div>
-                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${hasBiometric ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
+                  <div className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${hasBiometric ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
                     <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${hasBiometric ? 'translate-x-6' : 'translate-x-1'}`} />
                   </div>
                 </div>
