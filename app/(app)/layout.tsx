@@ -77,6 +77,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <span className="font-bold whitespace-nowrap text-lg">輕鬆記</span>
         
         <div className="flex items-center gap-2">
+          <PrivacyDropdown variant="icon" />
+          
+          {/* More Features Link */}
+          <Link 
+            href="/more"
+            className={`flex items-center gap-1 p-2 transition-colors ${pathname.startsWith('/more') ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'}`}
+          >
+            <LayoutGrid className="h-5 w-5" />
+          </Link>
+
           {/* Notification Bell */}
           <Link href="/notifications" className="relative p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors">
             <Bell className="h-5 w-5" />
@@ -87,15 +97,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </Link>
 
-          {/* More Features Link */}
-          <Link 
-            href="/more"
-            className={`flex items-center gap-1 p-2 transition-colors ${pathname.startsWith('/more') ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'}`}
-          >
-            <LayoutGrid className="h-5 w-5" />
-          </Link>
-
-          <PrivacyDropdown variant="icon" />
           <Link href="/settings" className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 ml-1">
             <Settings className="h-5 w-5" />
           </Link>
