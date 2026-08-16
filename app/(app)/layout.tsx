@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/components/AuthProvider';
-import { Settings, LayoutGrid, Bell } from 'lucide-react';
+import { Settings, Menu, Bell } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -78,14 +78,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         
         <div className="flex items-center gap-2">
           <PrivacyDropdown variant="icon" />
-          
-          {/* More Features Link */}
-          <Link 
-            href="/more"
-            className={`flex items-center gap-1 p-2 transition-colors ${pathname.startsWith('/more') ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'}`}
-          >
-            <LayoutGrid className="h-5 w-5" />
-          </Link>
 
           {/* Notification Bell */}
           <Link href="/notifications" className="relative p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors">
@@ -96,9 +88,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             )}
           </Link>
-
-          <Link href="/settings" className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 ml-1">
-            <Settings className="h-5 w-5" />
+          
+          {/* Hamburger (More Features) */}
+          <Link 
+            href="/more"
+            className={`flex items-center gap-1 p-2 transition-colors ml-1 ${pathname.startsWith('/more') ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'}`}
+          >
+            <Menu className="h-5 w-5" />
           </Link>
         </div>
       </header>
@@ -149,7 +145,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   : 'text-zinc-500 hover:bg-zinc-50 dark:text-zinc-400 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50'
               }`}
             >
-              <LayoutGrid className="h-5 w-5" />
+              <Menu className="h-5 w-5" />
               更多功能
             </Link>
 

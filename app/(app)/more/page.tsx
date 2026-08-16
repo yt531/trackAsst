@@ -1,7 +1,7 @@
 'use client';
 
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
-import { Target, BarChart2, Users, ChevronRight } from 'lucide-react';
+import { Target, BarChart2, Users, ChevronRight, Settings } from 'lucide-react';
 
 export default function MoreFeaturesPage() {
   const moreFeatures = [
@@ -28,6 +28,14 @@ export default function MoreFeaturesPage() {
       description: '透過圖表了解您的收支狀況',
       color: 'text-purple-500 dark:text-purple-400',
       bg: 'bg-purple-100 dark:bg-purple-900/30'
+    },
+    { 
+      name: '系統設定', 
+      href: '/settings', 
+      icon: Settings,
+      description: '管理您的個人資料與應用程式偏好',
+      color: 'text-zinc-500 dark:text-zinc-400',
+      bg: 'bg-zinc-100 dark:bg-zinc-800'
     },
   ];
 
