@@ -3,7 +3,7 @@
 import { useLedger } from '@/components/LedgerProvider';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, ChevronLeft } from 'lucide-react';
+import { Plus, ChevronLeft, List, Calculator, Settings } from 'lucide-react';
 import { useEffect, useState, Suspense } from 'react';
 import { Ledger } from '@/types';
 import { getLedger } from '@/lib/ledger';
@@ -44,9 +44,9 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
   if (!ledger) return null;
 
   const tabs = [
-    { name: '動態時報', href: `/ledgers/detail?id=${ledgerId}` },
-    { name: '結算餘額', href: `/ledgers/detail/balances?id=${ledgerId}` },
-    { name: '帳本設定', href: `/ledgers/detail/settings?id=${ledgerId}` },
+    { name: '動態時報', href: `/ledgers/detail?id=${ledgerId}`, icon: List },
+    { name: '結算餘額', href: `/ledgers/detail/balances?id=${ledgerId}`, icon: Calculator },
+    { name: '帳本設定', href: `/ledgers/detail/settings?id=${ledgerId}`, icon: Settings },
   ];
 
   return (
@@ -68,8 +68,8 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        {/* Top Tabs */}
-        <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto no-scrollbar">
+        {/* Top Tabs (Desktop only) */}
+        <div className="hidden md:flex gap-2 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto no-scrollbar">
           {tabs.map(tab => {
             const isActive = pathname === tab.href;
             return (
@@ -98,12 +98,34 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
       {!pathname.endsWith('/settings') && !pathname.endsWith('/transactions/new') && (
         <button
           onClick={() => router.push(`/ledgers/detail/transactions/new?id=${ledgerId}`)}
-          className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-transform hover:scale-105 hover:bg-blue-700 active:scale-95 md:bottom-8 md:right-8 z-50"
+          className="fixed bottom-20 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-transform hover:scale-105 hover:bg-blue-700 active:scale-95 md:bottom-8 md:right-8 z-50"
           aria-label="新增交易"
         >
           <Plus className="h-6 w-6" />
         </button>
       )}
+
+      {/* Bottom Navigation Bar (Mobile only) */}
+      <div className="fixed inset-x-0 bottom-0 z-50 flex h-16 items-center justify-around border-t border-zinc-200 bg-white/90 px-2 backdrop-blur-lg dark:border-zinc-700 dark:bg-zinc-800/90 md:hidden">
+        {tabs.map((tab) => {
+          const isActive = pathname === tab.href;
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.name}
+              href={tab.href}
+              className={`flex flex-col items-center justify-center p-2 relative ${
+                isActive
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'
+              }`}
+            >
+              <Icon className="h-6 w-6" />
+              <span className="mt-1 text-[10px] font-medium">{tab.name}</span>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }
