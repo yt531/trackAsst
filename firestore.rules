@@ -2,14 +2,58 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only allow users to read/write their own data
+    // Legacy / Personal rules
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // Match all subcollections (transactions, categories, paymentMethods, invoices, etc.)
       match /{document=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+    }
+    
+    // Shared Ledger rules
+    function isLedgerMember(ledgerId) {
+      return exists(/databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid));
+    }
+    
+    function isLedgerAdmin(ledgerId) {
+      return get(/databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Allow collectionGroup('members') queries
+    match /{path=**}/members/{memberId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    match /ledgers/{ledgerId} {
+      allow create: if request.auth != null;
+      allow read: if isLedgerMember(ledgerId);
+      allow update, delete: if isLedgerAdmin(ledgerId);
+      
+      match /members/{memberId} {
+        allow read: if isLedgerMember(ledgerId);
+        allow write: if isLedgerAdmin(ledgerId) || request.auth.uid == memberId;
+      }
+      
+      match /transactions/{transactionId} {
+        allow read, write: if isLedgerMember(ledgerId);
+      }
+      
+      match /categories/{categoryId} {
+        allow read, write: if isLedgerMember(ledgerId);
+      }
+      
+      match /tags/{tagId} {
+        allow read, write: if isLedgerMember(ledgerId);
+      }
+      
+      match /activityFeed/{feedId} {
+        allow read, write: if isLedgerMember(ledgerId);
+      }
+    }
+    
+    match /ledgerInvitations/{inviteId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
   }
 }

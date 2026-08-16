@@ -1,13 +1,15 @@
-export type TransactionType = 'expense' | 'income';
+export type TransactionType = 'expense' | 'income' | 'settlement';
 
 export interface Category {
   id: string;
+  ledgerId?: string;
   name: string;
   type: TransactionType;
   icon: string;
   isCustom: boolean;
   order: number;
   isDeleted?: boolean;
+  createdBy?: string;
 }
 
 export type PaymentMethodType = 'bank' | 'epay' | 'card' | 'cash' | 'unset';
@@ -24,8 +26,15 @@ export interface PaymentMethod {
   isSystem?: boolean;
 }
 
+export interface TransactionSplit {
+  userId: string;
+  paidAmount: number;
+  owedAmount: number;
+}
+
 export interface Transaction {
   id: string;
+  ledgerId?: string;
   userId: string;
   type: TransactionType;
   amount: number;
@@ -39,6 +48,7 @@ export interface Transaction {
   notes?: string;
   invoiceId?: string; // Link to the scanned/imported invoice
   tagIds?: string[];
+  splits?: TransactionSplit[];
   createdAt: number;
   updatedAt: number;
 }
@@ -112,8 +122,80 @@ export interface UserSettings {
 
 export interface Tag {
   id: string;
+  ledgerId?: string;
   userId: string;
   name: string;
   order?: number;
   createdAt: number;
+  createdBy?: string;
+}
+
+export type LedgerMode = 'shared_fund' | 'split';
+
+export interface Ledger {
+  id: string;
+  name: string;
+  type: 'personal' | 'shared';
+  mode?: LedgerMode;
+  currency: string;
+  createdAt: number;
+  createdBy: string;
+  settings: {
+    allowMembersToCreateCategories: boolean;
+    allowMembersToCreateTags: boolean;
+  };
+}
+
+export type LedgerRole = 'admin' | 'member';
+
+export interface LedgerMember {
+  id: string;
+  ledgerId: string;
+  userId: string;
+  role: LedgerRole;
+  joinedAt: number;
+  status: 'active' | 'invited' | 'declined';
+  notificationPreferences: {
+    all: boolean;
+    newTransaction: boolean;
+    updateTransaction: boolean;
+    settlement: boolean;
+  };
+}
+
+export interface LedgerInvitation {
+  id: string;
+  ledgerId: string;
+  createdBy: string;
+  targetEmailOrId?: string;
+  defaultRole: LedgerRole;
+  expiresAt: number;
+  status: 'active' | 'used' | 'revoked';
+  usageCount: number;
+  createdAt: number;
+}
+
+export type NotificationType = 'split_assigned' | 'large_expense' | 'system';
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: number;
+}
+
+export type ActivityType = 'transaction_created' | 'transaction_updated' | 'member_joined' | 'member_left' | 'settlement';
+
+export interface ActivityFeedItem {
+  id: string;
+  ledgerId: string;
+  actorId: string;
+  type: ActivityType;
+  targetId?: string;
+  details: string;
+  timestamp: number;
 }

@@ -34,6 +34,7 @@ export default function SettingsPage() {
             </div>
           </Link>
 
+
           <Link href="/settings/appearance" className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700/50 transition-colors">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
