@@ -9,6 +9,7 @@ import { Plus, Trash2, ArrowLeft, Pencil, GripVertical, Info } from 'lucide-reac
 import { PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/PageHeader';
 import {
   DndContext,
   closestCenter,
@@ -247,7 +248,8 @@ export default function PaymentMethodsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center gap-4">
+      <PageHeader title="支付方式管理" backHref="/settings" />
+      <header className="hidden md:flex items-center gap-4">
         <Link href="/settings" className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </Link>

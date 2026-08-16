@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { AppNotification } from '@/types';
 import { Bell, Check, BellRing, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -85,7 +86,8 @@ export default function NotificationsPage() {
 
   return (
     <div className="relative min-h-screen pb-24">
-      <header className="mb-6 flex items-center justify-between">
+      <PageHeader title="通知中心" backHref="/" />
+      <header className="hidden md:flex mb-6 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">通知中心</h1>
           <p className="text-sm text-zinc-500">所有來自分帳與公積金的活動提醒</p>

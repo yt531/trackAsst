@@ -9,11 +9,12 @@ import { mergeCategories } from '@/lib/utils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection } from '@/lib/db';
-import { format } from 'date-fns';
-import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings } from 'lucide-react';
+import { format, subMonths, addMonths } from 'date-fns';
+import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { SearchableCategorySelect } from '@/components/ui/SearchableCategorySelect';
+import { PageHeader } from '@/components/PageHeader';
 import {
   DndContext,
   closestCenter,
@@ -217,6 +218,18 @@ export default function BudgetsPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
   const [viewMode, setViewMode] = useState<'monthly' | 'daily'>('monthly');
+
+  const handlePrevMonth = () => {
+    const [year, month] = selectedMonth.split('-');
+    const prev = subMonths(new Date(Number(year), Number(month) - 1, 1), 1);
+    setSelectedMonth(format(prev, 'yyyy-MM'));
+  };
+
+  const handleNextMonth = () => {
+    const [year, month] = selectedMonth.split('-');
+    const next = addMonths(new Date(Number(year), Number(month) - 1, 1), 1);
+    setSelectedMonth(format(next, 'yyyy-MM'));
+  };
 
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -437,26 +450,30 @@ export default function BudgetsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <PageHeader 
+        title="預算管理" 
+        backHref="/" 
+        rightAction={
+          <button
+            onClick={() => handleOpenForm()}
+            className="p-2 text-blue-600 dark:text-blue-400"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        }
+      />
+      <div className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">預算管理</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">設定並追蹤您的花費目標</p>
         </div>
-        <DatePicker 
-          type="month" 
-          value={selectedMonth}
-          onChange={(val) => setSelectedMonth(val)}
-        />
-      </div>
-
-      <div className="flex justify-end">
-         <button
-            onClick={() => handleOpenForm()}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            新增預算
-          </button>
+        <button
+          onClick={() => handleOpenForm()}
+          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4" />
+          新增預算
+        </button>
       </div>
 
       {isFormOpen && (
@@ -598,20 +615,44 @@ export default function BudgetsPage() {
         </div>
       )}
 
-      {/* View Mode Switcher */}
-      <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
-        <button
-          onClick={() => setViewMode('monthly')}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'monthly' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-        >
-          月預算
-        </button>
-        <button
-          onClick={() => setViewMode('daily')}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'daily' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-        >
-          日預算
-        </button>
+      {/* Filter Area */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700">
+        <div className="flex flex-col items-center justify-center gap-4">
+          {/* View Mode Switcher */}
+          <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
+            <button
+              onClick={() => setViewMode('monthly')}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'monthly' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
+            >
+              月預算
+            </button>
+            <button
+              onClick={() => setViewMode('daily')}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'daily' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
+            >
+              日預算
+            </button>
+          </div>
+
+          {/* Date Selector */}
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full">
+            <button onClick={handlePrevMonth} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
+            <DatePicker 
+              type="month" 
+              value={selectedMonth}
+              onChange={(val) => setSelectedMonth(val || format(new Date(), 'yyyy-MM'))}
+              className="w-32 sm:w-48"
+              showTodayButton={false}
+            />
+            <button onClick={handleNextMonth} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
+            <button
+              onClick={() => setSelectedMonth(format(new Date(), 'yyyy-MM'))}
+              className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-[10px] text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
+            >
+              本月
+            </button>
+          </div>
+        </div>
       </div>
 
       {loading ? (

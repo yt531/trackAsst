@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { Monitor, Moon, Sun, ArrowLeft } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function AppearancePage() {
   const { theme, setTheme } = useTheme();
@@ -76,7 +77,8 @@ export default function AppearancePage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center gap-4">
+      <PageHeader title="調整色彩模式" backHref="/settings" />
+      <header className="hidden md:flex items-center gap-4">
         <button onClick={handleCancel} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>

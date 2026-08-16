@@ -4,6 +4,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { ArrowLeft, User as UserIcon, Mail, ShieldCheck } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function AccountPage() {
   const { user } = useAuth();
@@ -22,7 +23,8 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center gap-4">
+      <PageHeader title="帳號管理" backHref="/settings" />
+      <header className="hidden md:flex items-center gap-4">
         <button onClick={() => router.push('/settings')} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>

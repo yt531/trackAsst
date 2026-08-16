@@ -12,6 +12,7 @@ import { signInWithPopup } from 'firebase/auth';
 import { setSecuritySettings, getUserSettings, setUserSettings } from '@/lib/db';
 import { deleteField } from 'firebase/firestore';
 import { Eye, EyeOff } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function SecurityPage() {
   const router = useRouter();
@@ -158,7 +159,8 @@ export default function SecurityPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center gap-4">
+      <PageHeader title="安全性管理" backHref="/settings" />
+      <header className="hidden md:flex items-center gap-4">
         <button onClick={() => router.push('/settings')} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>

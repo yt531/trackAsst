@@ -9,6 +9,7 @@ import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2, GripVerti
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
 import { mergeCategories } from '@/lib/utils';
+import { PageHeader } from '@/components/PageHeader';
 import {
   DndContext,
   closestCenter,
@@ -250,7 +251,8 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center justify-between gap-4">
+      <PageHeader title="交易分類管理" backHref="/settings" />
+      <header className="hidden md:flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/settings')} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
             <ArrowLeft className="w-6 h-6" />

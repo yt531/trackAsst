@@ -7,6 +7,7 @@ import { Plus, ChevronLeft, List, Calculator, Settings } from 'lucide-react';
 import { useEffect, useState, Suspense } from 'react';
 import { Ledger } from '@/types';
 import { getLedger } from '@/lib/ledger';
+import { PageHeader } from '@/components/PageHeader';
 
 function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -52,7 +53,8 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
   return (
     <div className="relative min-h-screen pb-24">
       {/* Top Header area for the specific ledger */}
-      <div className="mb-6">
+      <PageHeader title={ledger.name} backHref="/ledgers" />
+      <div className="hidden md:block mb-6">
         <div className="flex items-center gap-3 mb-4">
           <button 
             onClick={() => router.push('/ledgers')}

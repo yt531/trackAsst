@@ -10,6 +10,7 @@ import { ScanLine, Receipt, Settings2, Cloud, FileText, ChevronLeft, ChevronRigh
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Dialog } from '@/components/ui/dialog';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function InvoicesPage() {
   const { user } = useAuth();
@@ -114,7 +115,16 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <PageHeader 
+        title="發票存摺" 
+        backHref="/" 
+        rightAction={
+          <Link href="/invoices/scan" className="p-2 text-blue-600 dark:text-blue-400">
+            <ScanLine className="h-5 w-5" />
+          </Link>
+        }
+      />
+      <header className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">發票存摺</h1>
         </div>

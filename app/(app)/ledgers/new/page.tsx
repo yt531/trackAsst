@@ -8,6 +8,7 @@ import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useRouter } from 'next/navigation';
 import { createLedger, addLedgerMember } from '@/lib/ledger';
 import { Ledger, LedgerMode, LedgerMember } from '@/types';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function NewLedgerPage() {
   const { user } = useAuth();
@@ -72,7 +73,8 @@ export default function NewLedgerPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center gap-4">
+      <PageHeader title="建立新共享帳本" backHref="/ledgers" />
+      <header className="hidden md:flex items-center gap-4 mb-6">
         <Link href="/ledgers" className="rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="h-6 w-6" />
         </Link>

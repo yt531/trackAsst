@@ -11,6 +11,7 @@ import { mergeCategories } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
 import { Search, X, Plus } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 
 function TransactionForm() {
   const { user } = useAuth();
@@ -211,7 +212,8 @@ function TransactionForm() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <header>
+      <PageHeader title={editId ? '修改交易' : '新增交易'} />
+      <header className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">{editId ? '修改交易' : '新增交易'}</h1>
       </header>
 

@@ -6,6 +6,7 @@ import { Search, Plus, Users, Wallet, QrCode, X, ChevronLeft } from 'lucide-reac
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function LedgersHubPage() {
   const { ledgers, isLoading } = useLedger();
@@ -25,7 +26,8 @@ export default function LedgersHubPage() {
 
   return (
     <div className="relative min-h-screen pb-24">
-      <header className="mb-6">
+      <PageHeader title="共享帳本" backHref="/more" />
+      <header className="hidden md:block mb-6">
         <h1 className="text-2xl font-bold tracking-tight">共享帳本</h1>
         <p className="text-sm text-zinc-500">管理與您朋友共用的帳本</p>
       </header>

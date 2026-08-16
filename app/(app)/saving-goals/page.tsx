@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { Target, Plus, Check, PlusCircle, Trash2, Bell, GripVertical, Info } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { PageHeader } from '@/components/PageHeader';
 import {
   DndContext,
   closestCenter,
@@ -266,7 +267,8 @@ export default function SavingGoalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <PageHeader title="存錢目標" backHref="/more" />
+      <div className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">存錢目標</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">規劃並達成您的夢想基金</p>

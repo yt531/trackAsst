@@ -10,6 +10,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@/components/ui/dialog';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function InvoiceScanPage() {
   const { user } = useAuth();
@@ -110,7 +111,8 @@ export default function InvoiceScanPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <PageHeader title="掃描發票" />
+      <header className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">掃描發票</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           掃描電子發票證明聯上的 QR 碼。

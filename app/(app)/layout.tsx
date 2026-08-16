@@ -70,34 +70,39 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isLedgerRoute = pathname.startsWith('/ledgers');
 
+  const mainRoutes = ['/'];
+  const isMainRoute = mainRoutes.includes(pathname);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950">
       {/* Mobile Top Header */}
-      <header className={`fixed top-0 inset-x-0 z-50 flex h-14 items-center justify-between border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md dark:border-zinc-700 dark:bg-zinc-800/80 md:hidden transition-transform duration-300 ${isNavVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <span className="font-bold whitespace-nowrap text-lg">輕鬆記</span>
-        
-        <div className="flex items-center gap-2">
-          <PrivacyDropdown variant="icon" />
-
-          {/* Notification Bell */}
-          <Link href="/notifications" className="relative p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors">
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-800">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </Link>
+      {isMainRoute && (
+        <header className={`fixed top-0 inset-x-0 z-50 flex h-14 items-center justify-between border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md dark:border-zinc-700 dark:bg-zinc-800/80 md:hidden transition-transform duration-300 ${isNavVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+          <span className="font-bold whitespace-nowrap text-lg">輕鬆記</span>
           
-          {/* Hamburger (More Features) */}
-          <Link 
-            href="/more"
-            className={`flex items-center gap-1 p-2 transition-colors ml-1 ${pathname.startsWith('/more') ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'}`}
-          >
-            <Menu className="h-5 w-5" />
-          </Link>
-        </div>
-      </header>
+          <div className="flex items-center gap-2">
+            <PrivacyDropdown variant="icon" />
+
+            {/* Notification Bell */}
+            <Link href="/notifications" className="relative p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-800">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
+            
+            {/* Hamburger (More Features) */}
+            <Link 
+              href="/more"
+              className={`flex items-center gap-1 p-2 transition-colors ml-1 ${pathname.startsWith('/more') ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'}`}
+            >
+              <Menu className="h-5 w-5" />
+            </Link>
+          </div>
+        </header>
+      )}
 
       {/* Main Content Area */}
       {/* If it is a ledger route, we want to remove the bottom padding because the tab bar is hidden */}

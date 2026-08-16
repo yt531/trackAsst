@@ -7,6 +7,7 @@ import { auth } from '@/lib/firebase';
 import { getUserSettings, setUserSettings } from '@/lib/db';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from '@/components/AuthProvider';
+import { PageHeader } from '@/components/PageHeader';
 
 type PermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'loading';
 
@@ -145,7 +146,8 @@ export default function PermissionsPage() {
 
   return (
     <div className="space-y-8 pb-20">
-      <header>
+      <PageHeader title="權限管理" backHref="/settings" />
+      <header className="hidden md:block">
         <div className="flex items-center gap-2 mb-2">
           <Link href="/settings" className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
             設定

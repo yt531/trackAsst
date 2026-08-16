@@ -12,6 +12,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfYear, endOfYear, addMonths, subMonths, addDays, subDays, addYears, subYears } from 'date-fns';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { PageHeader } from '@/components/PageHeader';
 
 function PaymentMethodDetail() {
   const { user } = useAuth();
@@ -193,7 +194,8 @@ function PaymentMethodDetail() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center justify-between gap-4">
+      <PageHeader title={paymentMethod?.name || '載入中...'} backHref="/settings/payment-methods" />
+      <header className="hidden md:flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link href="/settings/payment-methods" className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
             <ArrowLeft className="w-6 h-6" />

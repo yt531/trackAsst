@@ -4,13 +4,15 @@ import { NotificationSettings } from '@/components/settings/NotificationSettings
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function NotificationsPage() {
   const router = useRouter();
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center gap-4">
+      <PageHeader title="通知與提醒管理" backHref="/settings" />
+      <header className="hidden md:flex items-center gap-4">
         <button onClick={() => router.push('/settings')} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>

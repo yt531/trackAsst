@@ -2,6 +2,7 @@
 
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { Target, BarChart2, Users, ChevronRight, Settings } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function MoreFeaturesPage() {
   const moreFeatures = [
@@ -41,7 +42,8 @@ export default function MoreFeaturesPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="mb-6">
+      <PageHeader title="更多功能" backHref="/" />
+      <header className="hidden md:block mb-6">
         <h1 className="text-2xl font-bold tracking-tight">更多功能</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           其他實用工具與個人設定

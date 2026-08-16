@@ -10,6 +10,7 @@ import { ArrowLeft, Target, Trash2, Edit, Save, X, PlusCircle } from 'lucide-rea
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Suspense } from 'react';
+import { PageHeader } from '@/components/PageHeader';
 
 function SavingGoalDetailContent() {
   const { user } = useAuth();
@@ -199,8 +200,9 @@ function SavingGoalDetailContent() {
 
   return (
     <div className="space-y-6">
+      <PageHeader title={goal.name} backHref="/saving-goals" />
       <div className="flex items-center gap-4">
-        <Link href="/saving-goals" className="rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+        <Link href="/saving-goals" className="hidden md:flex rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
           <ArrowLeft className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
         </Link>
         <div className="flex-1">

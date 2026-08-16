@@ -10,6 +10,7 @@ import { startOfMonth, endOfMonth, format, subMonths, eachDayOfInterval } from '
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 
 const COLORS = [
   'var(--color-chart-1)',
@@ -108,7 +109,8 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <PageHeader title="報表" backHref="/more" />
+      <header className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">報表</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">

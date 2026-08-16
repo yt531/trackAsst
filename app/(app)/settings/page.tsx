@@ -4,11 +4,13 @@ import { Fingerprint, User, Palette, LogOut, Tags, Bell, Shield, Database, Smart
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function SettingsPage() {
   return (
     <div className="space-y-8 pb-20">
-      <header>
+      <PageHeader title="設定" backHref="/more" />
+      <header className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">設定</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           管理您的應用程式偏好設定與資料。

@@ -13,6 +13,7 @@ import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useSearchParams } from 'next/navigation';
+import { PageHeader } from '@/components/PageHeader';
 
 function TransactionsList() {
   const { user } = useAuth();
@@ -129,7 +130,16 @@ function TransactionsList() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <PageHeader 
+        title="交易紀錄" 
+        backHref="/" 
+        rightAction={
+          <Link href="/transactions/new" className="p-2 text-blue-600 dark:text-blue-400">
+            <Plus className="h-5 w-5" />
+          </Link>
+        }
+      />
+      <header className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">交易紀錄</h1>
           {filterCategoryId && (

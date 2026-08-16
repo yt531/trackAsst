@@ -7,6 +7,7 @@ import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, writeBatch } fr
 import { Tag } from '@/types';
 import { Plus, Trash2, ArrowLeft, Tags as TagsIcon, Edit2, GripVertical, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/PageHeader';
 
 import {
   DndContext,
@@ -283,7 +284,8 @@ export default function TagsPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center justify-between gap-4">
+      <PageHeader title="標籤管理" backHref="/settings" />
+      <header className="hidden md:flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/settings')} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
             <ArrowLeft className="w-6 h-6" />
