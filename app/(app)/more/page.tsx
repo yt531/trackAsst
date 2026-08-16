@@ -44,7 +44,7 @@ export default function MoreFeaturesPage() {
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">更多功能</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          探索更多進階的財務管理工具
+          其他實用工具與個人設定
         </p>
       </header>
 
