@@ -31,6 +31,13 @@ export const verifyAndJoinLedger = async (
       return { success: false, message: '您不是此邀請碼的指定受邀者' };
     }
     
+    // 4.5. Check maxUsage if no target email is specified
+    if (!invitation.targetEmailOrId && invitation.maxUsage !== undefined) {
+      if (invitation.usageCount >= invitation.maxUsage) {
+        return { success: false, message: '此邀請碼已達使用人數上限' };
+      }
+    }
+    
     // 5. Add user to ledger
     await addLedgerMember({
       id: userId,
@@ -48,9 +55,13 @@ export const verifyAndJoinLedger = async (
     });
     
     // 6. Update invitation status
+    const newUsageCount = (invitation.usageCount || 0) + 1;
+    const maxUsage = invitation.targetEmailOrId ? 1 : (invitation.maxUsage || 1);
+    const newStatus = newUsageCount >= maxUsage ? 'used' : 'active';
+    
     await updateDoc(doc(db, LEDGER_COLLECTIONS.INVITATIONS, inviteCode), {
-      status: 'used',
-      usageCount: invitation.usageCount + 1
+      status: newStatus,
+      usageCount: newUsageCount
     });
     
     return { 

@@ -21,6 +21,8 @@ export default function LedgersSettingsPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<LedgerRole>('editor');
   const [inviteExpiry, setInviteExpiry] = useState<number>(24 * 60 * 60 * 1000); // Default 1 day
+  const [inviteMode, setInviteMode] = useState<'single' | 'multi'>('single');
+  const [maxUsage, setMaxUsage] = useState<number>(5);
   const [generatedInvite, setGeneratedInvite] = useState<LedgerInvitation | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -36,7 +38,11 @@ export default function LedgersSettingsPage() {
   }, [activeLedgerId]);
 
   const handleGenerateInvite = async () => {
-    if (!activeLedgerId || !user || !inviteEmail) return;
+    if (!activeLedgerId || !user) return;
+    if (inviteMode === 'single' && !inviteEmail) {
+      alert('請輸入受邀者 Email');
+      return;
+    }
     
     setInviteLoading(true);
     try {
@@ -47,12 +53,13 @@ export default function LedgersSettingsPage() {
         id: code,
         ledgerId: activeLedgerId,
         createdBy: user.uid,
-        targetEmailOrId: inviteEmail,
+        maxUsage: inviteMode === 'multi' ? maxUsage : 1,
         defaultRole: inviteRole,
         expiresAt,
         status: 'active',
         usageCount: 0,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...(inviteMode === 'single' ? { targetEmailOrId: inviteEmail } : {})
       };
       
       await createLedgerInvitation(newInvitation);
@@ -147,17 +154,56 @@ export default function LedgersSettingsPage() {
                 
                 {!generatedInvite ? (
                   <div className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">受邀者 Email</label>
-                      <input 
-                        type="email" 
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="輸入對方的電子信箱" 
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800"
-                      />
-                      <p className="mt-1 text-xs text-zinc-500">為了安全起見，只有該 Email 登入的使用者才能使用此邀請碼加入。</p>
+                    {/* Invitation Mode Selection */}
+                    <div className="flex gap-2 p-1 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg">
+                      <button
+                        onClick={() => setInviteMode('single')}
+                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                          inviteMode === 'single' 
+                            ? 'bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-300 shadow-sm' 
+                            : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                        }`}
+                      >
+                        指定對象 (高安全性)
+                      </button>
+                      <button
+                        onClick={() => setInviteMode('multi')}
+                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                          inviteMode === 'multi' 
+                            ? 'bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-300 shadow-sm' 
+                            : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                        }`}
+                      >
+                        共用連結 (多人加入)
+                      </button>
                     </div>
+
+                    {inviteMode === 'single' ? (
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">受邀者 Email</label>
+                        <input 
+                          type="email" 
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder="輸入對方的電子信箱" 
+                          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800"
+                        />
+                        <p className="mt-1 text-xs text-zinc-500">為了安全起見，只有該 Email 登入的使用者才能使用此邀請碼加入。此邀請碼限用 1 次。</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">可加入人數上限 (最多 10 人)</label>
+                        <input 
+                          type="number" 
+                          min={1}
+                          max={10}
+                          value={maxUsage}
+                          onChange={(e) => setMaxUsage(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+                          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800"
+                        />
+                        <p className="mt-1 text-xs text-zinc-500">任何人只要取得此邀請碼即可加入，直到人數達到上限為止。</p>
+                      </div>
+                    )}
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -188,7 +234,7 @@ export default function LedgersSettingsPage() {
 
                     <button 
                       onClick={handleGenerateInvite}
-                      disabled={!inviteEmail || inviteLoading}
+                      disabled={inviteLoading}
                       className="mt-2 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                     >
                       {inviteLoading ? '產生中...' : '產生邀請碼與 QR Code'}
@@ -198,7 +244,9 @@ export default function LedgersSettingsPage() {
                   <div className="flex flex-col items-center justify-center space-y-5 rounded-lg bg-white p-6 shadow-sm dark:bg-zinc-800">
                     <div className="text-center">
                       <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">
-                        專屬邀請碼 (指定給: {generatedInvite.targetEmailOrId})
+                        {generatedInvite.targetEmailOrId 
+                          ? `專屬邀請碼 (指定給: ${generatedInvite.targetEmailOrId})` 
+                          : `共用邀請碼 (人數上限: ${generatedInvite.maxUsage} 人)`}
                       </p>
                       <div className="flex items-center justify-center gap-2">
                         <span className="text-3xl font-black tracking-widest text-blue-600 dark:text-blue-400">

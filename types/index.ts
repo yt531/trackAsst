@@ -172,6 +172,7 @@ export interface LedgerInvitation {
   expiresAt: number;
   status: 'active' | 'used' | 'revoked';
   usageCount: number;
+  maxUsage?: number;
   createdAt: number;
 }
 
