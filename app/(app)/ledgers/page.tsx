@@ -193,7 +193,7 @@ export default function LedgersHubPage() {
                           className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
                         />
                         <button
-                          className="rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                          className="shrink-0 whitespace-nowrap rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
                           disabled={!inviteCode.trim()}
                         >
                           加入
