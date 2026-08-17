@@ -8,19 +8,26 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageHeader } from '@/components/PageHeader';
-import { verifyAndJoinLedger } from '@/lib/invitation';
+import { verifyAndJoinLedger, validateInvitation } from '@/lib/invitation';
 
 function LedgersHubContent() {
   const { ledgers, isLoading, refreshLedgers } = useLedger();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sheetMode, setSheetMode] = useState<'menu' | 'join'>('menu');
+  const [sheetMode, setSheetMode] = useState<'menu' | 'join' | 'nickname'>('menu');
   const [inviteCode, setInviteCode] = useState('');
+  const [nickname, setNickname] = useState('');
   const [joinLoading, setJoinLoading] = useState(false);
   const [joinMessage, setJoinMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (user && !nickname) {
+      setNickname(user.displayName || '');
+    }
+  }, [user, nickname]);
 
   useEffect(() => {
     const inviteParam = searchParams.get('invite');
@@ -31,7 +38,7 @@ function LedgersHubContent() {
     }
   }, [searchParams]);
 
-  const handleJoinLedger = async () => {
+  const handleValidateInvite = async () => {
     if (!inviteCode.trim() || !user || !user.email) {
       if (!user?.email) {
         setJoinMessage({ text: '您的帳號沒有綁定 Email，無法使用此功能', type: 'error' });
@@ -42,7 +49,27 @@ function LedgersHubContent() {
     setJoinLoading(true);
     setJoinMessage(null);
     
-    const result = await verifyAndJoinLedger(inviteCode.trim(), user.email, user.uid);
+    const result = await validateInvitation(inviteCode.trim(), user.email);
+    
+    if (result.success) {
+      setNickname(user.displayName || '');
+      setSheetMode('nickname');
+    } else {
+      setJoinMessage({ text: result.message, type: 'error' });
+    }
+    setJoinLoading(false);
+  };
+
+  const handleJoinLedger = async () => {
+    if (!nickname.trim() || !user || !user.email) {
+      setJoinMessage({ text: '請輸入您的帳本暱稱', type: 'error' });
+      return;
+    }
+    
+    setJoinLoading(true);
+    setJoinMessage(null);
+    
+    const result = await verifyAndJoinLedger(inviteCode.trim(), user.email, user.uid, nickname.trim());
     
     if (result.success) {
       setJoinMessage({ text: '成功加入帳本！', type: 'success' });
@@ -204,7 +231,7 @@ function LedgersHubContent() {
                     </div>
                   </button>
                 </div>
-              ) : (
+              ) : sheetMode === 'join' ? (
                 <div>
                   <div className="mb-6 flex items-center justify-between">
                     <button
@@ -242,14 +269,68 @@ function LedgersHubContent() {
                           className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
                         />
                         <button
-                          onClick={handleJoinLedger}
+                          onClick={handleValidateInvite}
                           className="shrink-0 whitespace-nowrap rounded-xl bg-blue-600 px-6 font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                           disabled={!inviteCode.trim() || joinLoading}
                         >
                           {joinLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                          加入
+                          下一步
                         </button>
                       </div>
+                      
+                      {joinMessage && (
+                        <p className={`mt-2 text-sm ${joinMessage.type === 'error' ? 'text-red-500' : 'text-green-500'}`}>
+                          {joinMessage.text}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="mb-6 flex items-center justify-between">
+                    <button
+                      onClick={() => setSheetMode('join')}
+                      className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <h3 className="text-lg font-bold">設定您的帳本暱稱</h3>
+                    <button
+                      onClick={() => {
+                        setIsSheetOpen(false);
+                        setJoinMessage(null);
+                      }}
+                      className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        在此帳本中顯示的名稱
+                      </label>
+                      <input
+                        type="text"
+                        value={nickname}
+                        onChange={(e) => {
+                          setNickname(e.target.value);
+                          setJoinMessage(null);
+                        }}
+                        placeholder="請輸入暱稱"
+                        className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
+                      />
+                      
+                      <button
+                        onClick={handleJoinLedger}
+                        className="mt-6 w-full rounded-xl bg-blue-600 py-3 font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                        disabled={!nickname.trim() || joinLoading}
+                      >
+                        {joinLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        確認加入
+                      </button>
                       
                       {joinMessage && (
                         <p className={`mt-2 text-sm ${joinMessage.type === 'error' ? 'text-red-500' : 'text-green-500'}`}>

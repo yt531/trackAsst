@@ -64,6 +64,21 @@ export const getLedgerMembers = async (ledgerId: string): Promise<LedgerMember[]
   return snap.docs.map(doc => doc.data() as LedgerMember);
 };
 
+// Check if a nickname already exists in a ledger
+export const checkNicknameExists = async (ledgerId: string, nickname: string, excludeUserId?: string): Promise<boolean> => {
+  const membersRef = collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, LEDGER_COLLECTIONS.MEMBERS);
+  const q = query(membersRef, where('nickname', '==', nickname));
+  const snap = await getDocs(q);
+  
+  if (snap.empty) return false;
+  
+  if (excludeUserId) {
+    return snap.docs.some(doc => doc.id !== excludeUserId);
+  }
+  
+  return true;
+};
+
 // Update member role or settings
 export const updateLedgerMember = async (ledgerId: string, userId: string, data: Partial<LedgerMember>) => {
   const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, LEDGER_COLLECTIONS.MEMBERS, userId);

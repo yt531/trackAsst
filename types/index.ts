@@ -155,6 +155,7 @@ export interface LedgerMember {
   role: LedgerRole;
   joinedAt: number;
   status: 'active' | 'invited' | 'declined';
+  nickname?: string;
   notificationPreferences: {
     all: boolean;
     newTransaction: boolean;

@@ -62,8 +62,8 @@ export default function NewLedgerPage() {
       await addLedgerMember(newMember);
       
       // Initialize default categories for the shared ledger
-      const categoryPromises = DEFAULT_CATEGORIES.map(category => 
-        createLedgerCategory(newLedgerId, { ...category, ledgerId: newLedgerId })
+      const categoryPromises = DEFAULT_CATEGORIES.map((category, index) => 
+        createLedgerCategory(newLedgerId, { ...category, type: category.type as import('@/types').TransactionType, ledgerId: newLedgerId, order: index })
       );
       await Promise.all(categoryPromises);
 
