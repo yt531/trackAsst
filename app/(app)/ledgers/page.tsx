@@ -1,23 +1,66 @@
 'use client';
 
 import { useLedger } from '@/components/LedgerProvider';
+import { useAuth } from '@/components/AuthProvider';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
-import { Search, Plus, Users, Wallet, QrCode, X, ChevronLeft } from 'lucide-react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Search, Plus, Users, Wallet, QrCode, X, ChevronLeft, Loader2 } from 'lucide-react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageHeader } from '@/components/PageHeader';
+import { verifyAndJoinLedger } from '@/lib/invitation';
 
-export default function LedgersHubPage() {
-  const { ledgers, isLoading } = useLedger();
+function LedgersHubContent() {
+  const { ledgers, isLoading, refreshLedgers } = useLedger();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<'menu' | 'join'>('menu');
   const [inviteCode, setInviteCode] = useState('');
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [joinMessage, setJoinMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const inviteParam = searchParams.get('invite');
+    if (inviteParam) {
+      setInviteCode(inviteParam);
+      setSheetMode('join');
+      setIsSheetOpen(true);
+    }
+  }, [searchParams]);
+
+  const handleJoinLedger = async () => {
+    if (!inviteCode.trim() || !user || !user.email) {
+      if (!user?.email) {
+        setJoinMessage({ text: '您的帳號沒有綁定 Email，無法使用此功能', type: 'error' });
+      }
+      return;
+    }
+    
+    setJoinLoading(true);
+    setJoinMessage(null);
+    
+    const result = await verifyAndJoinLedger(inviteCode.trim(), user.email, user.uid);
+    
+    if (result.success) {
+      setJoinMessage({ text: '成功加入帳本！', type: 'success' });
+      await refreshLedgers();
+      setTimeout(() => {
+        setIsSheetOpen(false);
+        if (result.ledgerId) {
+          router.push(`/ledgers/detail?id=${result.ledgerId}`);
+        }
+      }, 1500);
+    } else {
+      setJoinMessage({ text: result.message, type: 'error' });
+    }
+    setJoinLoading(false);
+  };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-zinc-500">載入帳本中...</div>;
+    return <div className="p-8 text-center text-zinc-500 flex justify-center"><Loader2 className="animate-spin h-6 w-6" /></div>;
   }
 
   const filteredLedgers = ledgers.filter(ledger => 
@@ -172,7 +215,10 @@ export default function LedgersHubPage() {
                     </button>
                     <h3 className="text-lg font-bold">加入共享帳本</h3>
                     <button
-                      onClick={() => setIsSheetOpen(false)}
+                      onClick={() => {
+                        setIsSheetOpen(false);
+                        setJoinMessage(null);
+                      }}
                       className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     >
                       <X className="h-6 w-6" />
@@ -188,31 +234,29 @@ export default function LedgersHubPage() {
                         <input
                           type="text"
                           value={inviteCode}
-                          onChange={(e) => setInviteCode(e.target.value)}
-                          placeholder="請輸入 6 碼或 8 碼邀請碼"
+                          onChange={(e) => {
+                            setInviteCode(e.target.value.toUpperCase());
+                            setJoinMessage(null);
+                          }}
+                          placeholder="請輸入邀請碼"
                           className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
                         />
                         <button
-                          className="shrink-0 whitespace-nowrap rounded-xl bg-blue-600 px-6 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
-                          disabled={!inviteCode.trim()}
+                          onClick={handleJoinLedger}
+                          className="shrink-0 whitespace-nowrap rounded-xl bg-blue-600 px-6 font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                          disabled={!inviteCode.trim() || joinLoading}
                         >
+                          {joinLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                           加入
                         </button>
                       </div>
+                      
+                      {joinMessage && (
+                        <p className={`mt-2 text-sm ${joinMessage.type === 'error' ? 'text-red-500' : 'text-green-500'}`}>
+                          {joinMessage.text}
+                        </p>
+                      )}
                     </div>
-
-                    <div className="relative flex items-center py-2">
-                      <div className="flex-grow border-t border-zinc-200 dark:border-zinc-700"></div>
-                      <span className="mx-4 flex-shrink-0 text-xs text-zinc-400">或使用其他方式</span>
-                      <div className="flex-grow border-t border-zinc-200 dark:border-zinc-700"></div>
-                    </div>
-
-                    <button
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 font-bold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                    >
-                      <QrCode className="h-5 w-5" />
-                      打開相機掃描 QR Code
-                    </button>
                   </div>
                 </div>
               )}
@@ -221,5 +265,13 @@ export default function LedgersHubPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function LedgersHubPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500 flex justify-center"><Loader2 className="animate-spin h-6 w-6" /></div>}>
+      <LedgersHubContent />
+    </Suspense>
   );
 }

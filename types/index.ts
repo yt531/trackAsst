@@ -146,7 +146,7 @@ export interface Ledger {
   };
 }
 
-export type LedgerRole = 'admin' | 'member';
+export type LedgerRole = 'admin' | 'editor' | 'viewer';
 
 export interface LedgerMember {
   id: string;
