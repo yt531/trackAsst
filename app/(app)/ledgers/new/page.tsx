@@ -107,13 +107,13 @@ export default function NewLedgerPage() {
               onChange={(e) => setMode(e.target.value as LedgerMode)}
               className="mt-1 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
-              <option value="shared_fund">公積金模式 (僅共同記帳，不計算欠款)</option>
-              <option value="split">分帳模式 (自動計算誰欠誰多少錢)</option>
+              <option value="shared_fund">公積金模式 (多人共同記帳，無代墊欠款)</option>
+              <option value="split">分帳模式 (支援代墊與分攤，自動計算欠款)</option>
             </select>
             <p className="mt-1.5 text-xs text-zinc-500">
               {mode === 'shared_fund' 
-                ? '適合：家庭共用錢包、已經繳交公積金的團體。' 
-                : '適合：出遊代墊、室友分攤水電費（類似 Splitwise）。'}
+                ? '所有支出由共同資金支付，不計算個人代墊。' 
+                : '適合各種代墊、平分、按比例分攤的複雜情境。'}
             </p>
           </div>
 
