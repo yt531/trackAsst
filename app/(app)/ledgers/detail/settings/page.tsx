@@ -7,7 +7,7 @@ import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useState, useEffect } from 'react';
 import { getLedgerMembers, createLedgerInvitation, updateLedger } from '@/lib/ledger';
 import { generateShortCode } from '@/lib/invitation';
-import { LedgerMember, LedgerRole, LedgerInvitation } from '@/types';
+import { LedgerMember, LedgerRole, LedgerInvitation, LedgerMode } from '@/types';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function LedgersSettingsPage() {
@@ -16,6 +16,12 @@ export default function LedgersSettingsPage() {
   const [members, setMembers] = useState<LedgerMember[]>([]);
   const [loading, setLoading] = useState(false);
   
+  // Edit Info State
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editMode, setEditMode] = useState<LedgerMode>('split');
+  const [editCurrency, setEditCurrency] = useState('TWD');
+
   // Invitation Form State
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -106,6 +112,39 @@ export default function LedgersSettingsPage() {
   const currentUserMember = members.find(m => m.userId === user?.uid);
   const isAdmin = currentUserMember?.role === 'admin';
 
+  const handleEditClick = () => {
+    if (!activeLedger) return;
+    setEditName(activeLedger.name);
+    setEditMode(activeLedger.mode || 'split');
+    setEditCurrency(activeLedger.currency || 'TWD');
+    setIsEditingInfo(true);
+  };
+
+  const handleSaveInfo = async () => {
+    if (!activeLedgerId || !activeLedger) return;
+    if (!editName.trim()) {
+      alert('請輸入帳本名稱');
+      return;
+    }
+    if (!editCurrency.trim()) {
+      alert('請輸入主幣別');
+      return;
+    }
+    
+    try {
+      await updateLedger(activeLedgerId, {
+        name: editName.trim(),
+        mode: editMode,
+        currency: editCurrency.trim().toUpperCase()
+      });
+      await refreshLedgers();
+      setIsEditingInfo(false);
+    } catch (e) {
+      console.error(e);
+      alert('設定更新失敗');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {!activeLedgerId ? (
@@ -119,27 +158,89 @@ export default function LedgersSettingsPage() {
       ) : activeLedger ? (
         <>
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5" />
-              帳本資訊
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5" />
+                帳本資訊
+              </h2>
+              {isAdmin && !isEditingInfo && (
+                <button 
+                  onClick={handleEditClick}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  編輯
+                </button>
+              )}
+            </div>
+            
             <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-medium text-zinc-500">帳本名稱</label>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{activeLedger.name}</p>
+              {isEditingInfo ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">帳本名稱</label>
+                      <input 
+                        type="text" 
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">記帳模式</label>
+                      <select 
+                        value={editMode}
+                        onChange={(e) => setEditMode(e.target.value as LedgerMode)}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800"
+                      >
+                        <option value="split">分帳與結算模式</option>
+                        <option value="shared_fund">公積金模式</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">主幣別</label>
+                      <input 
+                        type="text" 
+                        value={editCurrency}
+                        onChange={(e) => setEditCurrency(e.target.value.toUpperCase())}
+                        maxLength={3}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 uppercase"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-700/50">
+                    <button 
+                      onClick={() => setIsEditingInfo(false)}
+                      className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    >
+                      取消
+                    </button>
+                    <button 
+                      onClick={handleSaveInfo}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      儲存
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-zinc-500">記帳模式</label>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {activeLedger.mode === 'split' ? '分帳與結算模式' : '公積金模式'}
-                  </p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-zinc-500">帳本名稱</label>
+                    <p className="font-medium text-zinc-900 dark:text-zinc-100">{activeLedger.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-zinc-500">記帳模式</label>
+                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {activeLedger.mode === 'split' ? '分帳與結算模式' : '公積金模式'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-zinc-500">主幣別</label>
+                    <p className="font-medium text-zinc-900 dark:text-zinc-100">{activeLedger.currency}</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-zinc-500">主幣別</label>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{activeLedger.currency}</p>
-                </div>
-              </div>
+              )}
             </div>
           </section>
 
