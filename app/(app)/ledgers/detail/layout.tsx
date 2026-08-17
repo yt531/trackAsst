@@ -3,7 +3,7 @@
 import { useLedger } from '@/components/LedgerProvider';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, ChevronLeft, List, Calculator, Settings } from 'lucide-react';
+import { Plus, ChevronLeft, List, Calculator, Settings, ReceiptText } from 'lucide-react';
 import { useEffect, useState, Suspense } from 'react';
 import { Ledger } from '@/types';
 import { getLedger } from '@/lib/ledger';
@@ -46,6 +46,7 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
 
   const tabs = [
     { name: '動態時報', href: `/ledgers/detail?id=${ledgerId}`, icon: List },
+    { name: '帳本明細', href: `/ledgers/detail/transactions?id=${ledgerId}`, icon: ReceiptText },
     { name: '結算餘額', href: `/ledgers/detail/balances?id=${ledgerId}`, icon: Calculator },
     { name: '帳本設定', href: `/ledgers/detail/settings?id=${ledgerId}`, icon: Settings },
   ];
