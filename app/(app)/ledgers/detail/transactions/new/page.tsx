@@ -4,15 +4,13 @@ import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { useRouter } from 'next/navigation';
-import { Category, LedgerMember, TransactionSplit } from '@/types';
+import { Category, LedgerMember, TransactionSplit, Tag } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
 import { Search, X, Users, User } from 'lucide-react';
-import { getLedgerMembers } from '@/lib/ledger';
+import { getLedgerMembers, getLedgerCategories, getLedgerTags } from '@/lib/ledger';
 import { createTransaction } from '@/lib/transactions';
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
 
 function SharedTransactionForm() {
   const { user } = useAuth();
@@ -28,6 +26,10 @@ function SharedTransactionForm() {
   
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
+
+  // Tags Logic
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Split Logic
   const [members, setMembers] = useState<LedgerMember[]>([]);
@@ -58,15 +60,18 @@ function SharedTransactionForm() {
       // Default split with everyone
       setSplitWithIds(ledgerMembers.map(m => m.userId));
 
-      // Load Categories (for now, just use default or fetch from ledger categories if they exist)
-      // Since shared ledger categories are not fully built, fallback to DEFAULT
-      const catsSnap = await getDocs(collection(db, 'ledgers', activeLedgerId, 'categories'));
-      if (!catsSnap.empty) {
-        setCategories(catsSnap.docs.map(d => ({id: d.id, ...d.data()} as Category)));
+      // Load Categories
+      const fetchedCategories = await getLedgerCategories(activeLedgerId);
+      if (fetchedCategories.length > 0) {
+        setCategories(fetchedCategories);
       } else {
         setCategories(DEFAULT_CATEGORIES as Category[]);
       }
-      setCategoryId(DEFAULT_CATEGORIES[0].id);
+      setCategoryId(fetchedCategories[0]?.id || DEFAULT_CATEGORIES[0].id);
+
+      // Load Tags
+      const fetchedTags = await getLedgerTags(activeLedgerId);
+      setTags(fetchedTags);
 
     } catch (e) {
       console.error(e);
@@ -119,6 +124,7 @@ function SharedTransactionForm() {
         date: new Date(date).getTime(),
         details,
         notes,
+        tagIds: selectedTags.length > 0 ? selectedTags : undefined,
         splits,
       }, true);
 
@@ -198,6 +204,38 @@ function SharedTransactionForm() {
               </button>
             </div>
           </div>
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div>
+              <label className="mb-2 block text-sm font-medium">標籤</label>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => {
+                  const isSelected = selectedTags.includes(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedTags(selectedTags.filter((id) => id !== tag.id));
+                        } else {
+                          setSelectedTags([...selectedTags, tag.id]);
+                        }
+                      }}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-100 text-blue-700 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-100'
+                          : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                      }`}
+                    >
+                      {tag.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Split Mode Fields */}
           {activeLedger?.mode === 'split' && (

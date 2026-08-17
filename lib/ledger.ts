@@ -14,6 +14,8 @@ import type {
   Ledger,
   LedgerMember,
   LedgerInvitation,
+  Category,
+  Tag,
 } from '../types';
 
 export const LEDGER_COLLECTIONS = {
@@ -33,6 +35,12 @@ export const getLedger = async (ledgerId: string): Promise<Ledger | null> => {
   const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId);
   const snap = await getDoc(docRef);
   return snap.exists() ? (snap.data() as Ledger) : null;
+};
+
+// Update a ledger
+export const updateLedger = async (ledgerId: string, data: Partial<Ledger>) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId);
+  await updateDoc(docRef, data);
 };
 
 // Add a member to a ledger
@@ -83,3 +91,55 @@ export const getLedgerInvitation = async (invitationId: string): Promise<LedgerI
   const snap = await getDoc(docRef);
   return snap.exists() ? (snap.data() as LedgerInvitation) : null;
 };
+
+// ==========================================
+// Shared Categories
+// ==========================================
+
+export const getLedgerCategories = async (ledgerId: string): Promise<Category[]> => {
+  const categoriesRef = collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'categories');
+  const snap = await getDocs(categoriesRef);
+  return snap.docs.map(doc => doc.data() as Category).sort((a, b) => a.order - b.order);
+};
+
+export const createLedgerCategory = async (ledgerId: string, category: Category) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'categories', category.id);
+  await setDoc(docRef, category);
+};
+
+export const updateLedgerCategory = async (ledgerId: string, categoryId: string, data: Partial<Category>) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'categories', categoryId);
+  await updateDoc(docRef, data);
+};
+
+export const deleteLedgerCategory = async (ledgerId: string, categoryId: string) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'categories', categoryId);
+  // Optional: check if category is used before deleting or handle safely
+  await deleteDoc(docRef);
+};
+
+// ==========================================
+// Shared Tags
+// ==========================================
+
+export const getLedgerTags = async (ledgerId: string): Promise<Tag[]> => {
+  const tagsRef = collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'tags');
+  const snap = await getDocs(tagsRef);
+  return snap.docs.map(doc => doc.data() as Tag).sort((a, b) => (a.order || 0) - (b.order || 0));
+};
+
+export const createLedgerTag = async (ledgerId: string, tag: Tag) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'tags', tag.id);
+  await setDoc(docRef, tag);
+};
+
+export const updateLedgerTag = async (ledgerId: string, tagId: string, data: Partial<Tag>) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'tags', tagId);
+  await updateDoc(docRef, data);
+};
+
+export const deleteLedgerTag = async (ledgerId: string, tagId: string) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'tags', tagId);
+  await deleteDoc(docRef);
+};
+

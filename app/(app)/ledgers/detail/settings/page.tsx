@@ -5,13 +5,13 @@ import { useAuth } from '@/components/AuthProvider';
 import { ArrowLeft, Plus, Users, Key, Settings as SettingsIcon, QrCode, Copy, CheckCircle2 } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useState, useEffect } from 'react';
-import { getLedgerMembers, createLedgerInvitation } from '@/lib/ledger';
+import { getLedgerMembers, createLedgerInvitation, updateLedger } from '@/lib/ledger';
 import { generateShortCode } from '@/lib/invitation';
 import { LedgerMember, LedgerRole, LedgerInvitation } from '@/types';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function LedgersSettingsPage() {
-  const { activeLedger, activeLedgerId } = useLedger();
+  const { activeLedger, activeLedgerId, refreshLedgers } = useLedger();
   const { user } = useAuth();
   const [members, setMembers] = useState<LedgerMember[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,6 +87,25 @@ export default function LedgersSettingsPage() {
     }
   };
 
+  const handleToggleSetting = async (key: 'allowMembersToCreateCategories' | 'allowMembersToCreateTags', value: boolean) => {
+    if (!activeLedgerId || !activeLedger) return;
+    try {
+      await updateLedger(activeLedgerId, {
+        settings: {
+          ...activeLedger.settings,
+          [key]: value
+        }
+      });
+      await refreshLedgers();
+    } catch (e) {
+      console.error(e);
+      alert('設定更新失敗');
+    }
+  };
+
+  const currentUserMember = members.find(m => m.userId === user?.uid);
+  const isAdmin = currentUserMember?.role === 'admin';
+
   return (
     <div className="space-y-6">
       {!activeLedgerId ? (
@@ -121,6 +140,65 @@ export default function LedgersSettingsPage() {
                   <p className="font-medium text-zinc-900 dark:text-zinc-100">{activeLedger.currency}</p>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <SettingsIcon className="h-5 w-5" />
+              帳本分類與標籤
+            </h2>
+            <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700 overflow-hidden">
+              <Link href={`/ledgers/detail/settings/categories?id=${activeLedgerId}`} className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                <div>
+                  <div className="font-medium text-zinc-900 dark:text-zinc-100">分類管理</div>
+                  <div className="text-xs text-zinc-500">管理此帳本專屬的收支分類</div>
+                </div>
+                <div className="text-zinc-400">&gt;</div>
+              </Link>
+              <Link href={`/ledgers/detail/settings/tags?id=${activeLedgerId}`} className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                <div>
+                  <div className="font-medium text-zinc-900 dark:text-zinc-100">標籤管理</div>
+                  <div className="text-xs text-zinc-500">管理此帳本專屬的標籤</div>
+                </div>
+                <div className="text-zinc-400">&gt;</div>
+              </Link>
+              
+              {isAdmin && (
+                <div className="p-4 space-y-4 bg-zinc-50 dark:bg-zinc-900/30">
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2">成員權限設定</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">允許成員建立分類</div>
+                      <div className="text-xs text-zinc-500">開啟後，編輯者也能新增、修改、刪除分類</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={activeLedger.settings?.allowMembersToCreateCategories || false}
+                        onChange={(e) => handleToggleSetting('allowMembersToCreateCategories', e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">允許成員建立標籤</div>
+                      <div className="text-xs text-zinc-500">開啟後，編輯者也能新增、修改、刪除標籤</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={activeLedger.settings?.allowMembersToCreateTags || false}
+                        onChange={(e) => handleToggleSetting('allowMembersToCreateTags', e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 

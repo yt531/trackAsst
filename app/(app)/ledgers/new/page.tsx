@@ -6,8 +6,9 @@ import { useLedger } from '@/components/LedgerProvider';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useRouter } from 'next/navigation';
-import { createLedger, addLedgerMember } from '@/lib/ledger';
+import { createLedger, addLedgerMember, createLedgerCategory } from '@/lib/ledger';
 import { Ledger, LedgerMode, LedgerMember } from '@/types';
+import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { PageHeader } from '@/components/PageHeader';
 
 export default function NewLedgerPage() {
@@ -60,6 +61,12 @@ export default function NewLedgerPage() {
       await createLedger(newLedger);
       await addLedgerMember(newMember);
       
+      // Initialize default categories for the shared ledger
+      const categoryPromises = DEFAULT_CATEGORIES.map(category => 
+        createLedgerCategory(newLedgerId, { ...category, ledgerId: newLedgerId })
+      );
+      await Promise.all(categoryPromises);
+
       await refreshLedgers();
       setActiveLedgerId(newLedgerId);
       router.push(`/ledgers/detail?id=${newLedgerId}`);
