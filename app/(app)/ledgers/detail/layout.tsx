@@ -9,6 +9,8 @@ import { Ledger } from '@/types';
 import { getLedger } from '@/lib/ledger';
 import { PageHeader } from '@/components/PageHeader';
 
+import { PrivacyDropdown } from '@/components/PrivacyDropdown';
+
 function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -54,20 +56,29 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
   return (
     <div className="relative min-h-screen pb-24">
       {/* Top Header area for the specific ledger */}
-      <PageHeader title={ledger.name} backHref="/ledgers" />
+      <PageHeader 
+        title={ledger.name} 
+        backHref="/ledgers" 
+        rightAction={<PrivacyDropdown variant="icon" />}
+      />
       <div className="hidden md:block mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <button 
-            onClick={() => router.push('/ledgers')}
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors -ml-2"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => router.push('/ledgers')}
+              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors -ml-2"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{ledger.name}</h1>
+              <p className="text-xs font-medium text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full inline-block mt-1">
+                {ledger.mode === 'split' ? '分帳模式' : '公積金模式'}
+              </p>
+            </div>
+          </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{ledger.name}</h1>
-            <p className="text-xs font-medium text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full inline-block mt-1">
-              {ledger.mode === 'split' ? '分帳模式' : '公積金模式'}
-            </p>
+            <PrivacyDropdown variant="icon" />
           </div>
         </div>
 
