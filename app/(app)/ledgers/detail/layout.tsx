@@ -46,6 +46,8 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
 
   if (!ledger) return null;
 
+  const isTransactionsPage = pathname?.includes('/transactions') && !pathname?.includes('/new');
+
   const tabs = [
     { name: '動態時報', href: `/ledgers/detail?id=${ledgerId}`, icon: List },
     { name: '帳本明細', href: `/ledgers/detail/transactions?id=${ledgerId}`, icon: ReceiptText },
@@ -60,7 +62,7 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
       <PageHeader 
         title={ledger.name} 
         backHref="/ledgers" 
-        rightAction={<PrivacyDropdown variant="icon" />}
+        rightAction={isTransactionsPage ? <PrivacyDropdown variant="icon" /> : null}
       />
       <div className="hidden md:block mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -79,7 +81,7 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <div>
-            <PrivacyDropdown variant="icon" />
+            {isTransactionsPage && <PrivacyDropdown variant="icon" />}
           </div>
         </div>
 
