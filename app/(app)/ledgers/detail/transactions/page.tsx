@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
-import { PrivacyText } from '@/components/PrivacyProvider';
+import { LedgerPrivacyText } from '@/components/LedgerPrivacyProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { Transaction, Category, LedgerMember } from '@/types';
@@ -171,11 +171,11 @@ function LedgerTransactionsList() {
         <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
           <div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-green-500" /> 總收入</div>
-            <div className="text-lg font-semibold mt-1"><PrivacyText type="summary" text={`NT$ ${totals.income.toLocaleString()}`} /></div>
+            <div className="text-lg font-semibold mt-1"><LedgerPrivacyText type="summary" text={`NT$ ${totals.income.toLocaleString()}`} /></div>
           </div>
           <div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
-            <div className="text-lg font-semibold mt-1"><PrivacyText type="summary" text={`NT$ ${totals.expense.toLocaleString()}`} /></div>
+            <div className="text-lg font-semibold mt-1"><LedgerPrivacyText type="summary" text={`NT$ ${totals.expense.toLocaleString()}`} /></div>
           </div>
         </div>
       </div>
@@ -229,11 +229,11 @@ function LedgerTransactionsList() {
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <div className={`text-right font-medium whitespace-nowrap ${isExpense ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'}`}>
-                          <PrivacyText text={`${isExpense ? '-' : '+'} ${tx.amount.toLocaleString()} ${tx.currency}`} />
+                          <LedgerPrivacyText text={`${isExpense ? '-' : '+'} ${tx.amount.toLocaleString()} ${tx.currency}`} />
                         </div>
                         {activeLedger?.mode === 'split' && myOwed > 0 && (
                           <div className="text-[11px] font-medium text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded dark:bg-orange-900/30 dark:text-orange-400">
-                            您需分攤: {myOwed.toLocaleString()} {tx.currency}
+                            您需分攤: <LedgerPrivacyText text={`${myOwed.toLocaleString()} ${tx.currency}`} />
                           </div>
                         )}
                         {/* Optional edit/delete buttons for shared txs could be added here later */}

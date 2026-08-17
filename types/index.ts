@@ -117,6 +117,7 @@ export interface UserSettings {
   biometricEnabled: boolean;
   calendarSyncEnabled?: boolean;
   defaultPrivacyLevel?: number;
+  ledgerPrivacyLevel?: number;
   allowScreenshot?: boolean;
 }
 

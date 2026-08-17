@@ -8,8 +8,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { Ledger } from '@/types';
 import { getLedger } from '@/lib/ledger';
 import { PageHeader } from '@/components/PageHeader';
-
-import { PrivacyDropdown } from '@/components/PrivacyDropdown';
+import { LedgerPrivacyDropdown } from '@/components/LedgerPrivacyDropdown';
+import { LedgerPrivacyProvider } from '@/components/LedgerPrivacyProvider';
 
 function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -62,7 +62,7 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
       <PageHeader 
         title={ledger.name} 
         backHref="/ledgers" 
-        rightAction={isTransactionsPage ? <PrivacyDropdown variant="icon" /> : null}
+        rightAction={isTransactionsPage ? <LedgerPrivacyDropdown variant="icon" /> : null}
       />
       <div className="hidden md:block mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -81,7 +81,7 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <div>
-            {isTransactionsPage && <PrivacyDropdown variant="icon" />}
+            {isTransactionsPage && <LedgerPrivacyDropdown variant="icon" />}
           </div>
         </div>
 
@@ -142,7 +142,9 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
 export default function LedgerDetailLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<div className="p-8 text-center">載入中...</div>}>
-      <LedgerDetailLayoutContent>{children}</LedgerDetailLayoutContent>
+      <LedgerPrivacyProvider>
+        <LedgerDetailLayoutContent>{children}</LedgerDetailLayoutContent>
+      </LedgerPrivacyProvider>
     </Suspense>
   );
 }
