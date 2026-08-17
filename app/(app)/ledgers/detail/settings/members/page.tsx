@@ -2,7 +2,7 @@
 
 import { useLedger } from '@/components/LedgerProvider';
 import { useAuth } from '@/components/AuthProvider';
-import { ArrowLeft, MoreVertical, Trash2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Trash2, ShieldAlert, Search } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { getLedgerMembers, updateLedgerMember, removeLedgerMember } from '@/lib/ledger';
 import { LedgerMember, LedgerRole } from '@/types';
@@ -19,6 +19,8 @@ export default function MembersListPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'view' | 'edit'>('view');
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [viewSearchQuery, setViewSearchQuery] = useState('');
+  const [editSearchQuery, setEditSearchQuery] = useState('');
 
   const loadMembers = async () => {
     if (!activeLedgerId) return;
@@ -55,6 +57,21 @@ export default function MembersListPage() {
       default: return '一般成員';
     }
   };
+
+  const filteredMembers = members.filter(member => {
+    const isMe = member.userId === user?.uid;
+    const displayName = member.nickname || (isMe ? (user?.displayName || '未設定') : '未設定');
+    
+    if (activeTab === 'view') {
+      if (!viewSearchQuery.trim()) return true;
+      return displayName.toLowerCase().includes(viewSearchQuery.toLowerCase());
+    } else {
+      if (!editSearchQuery.trim()) return true;
+      const q = editSearchQuery.toLowerCase();
+      const roleLabel = getRoleLabel(member.role);
+      return displayName.toLowerCase().includes(q) || roleLabel.includes(q);
+    }
+  });
 
   const handleUpdateRole = async (targetUserId: string, newRole: LedgerRole) => {
     if (!activeLedgerId || !isAdmin) return;
@@ -146,13 +163,28 @@ export default function MembersListPage() {
         )}
       </div>
 
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+          <Search className="h-5 w-5 text-zinc-400" />
+        </div>
+        <input
+          type="text"
+          value={activeTab === 'view' ? viewSearchQuery : editSearchQuery}
+          onChange={(e) => activeTab === 'view' ? setViewSearchQuery(e.target.value) : setEditSearchQuery(e.target.value)}
+          placeholder={activeTab === 'view' ? "搜尋成員名稱..." : "搜尋名稱或權限角色..."}
+          className="w-full rounded-xl border border-zinc-200 bg-white py-3 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800"
+        />
+      </div>
+
       <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 overflow-visible divide-y divide-zinc-200 dark:divide-zinc-700">
         {loading ? (
           <div className="p-8 text-center text-sm text-zinc-500">載入中...</div>
-        ) : members.length === 0 ? (
-          <div className="p-8 text-center text-sm text-zinc-500">無成員資訊</div>
+        ) : filteredMembers.length === 0 ? (
+          <div className="p-8 text-center text-sm text-zinc-500">
+            {members.length === 0 ? '無成員資訊' : '找不到符合條件的成員'}
+          </div>
         ) : (
-          members.map((member) => {
+          filteredMembers.map((member) => {
             const isMe = member.userId === user?.uid;
             const displayName = member.nickname || (isMe ? (user?.displayName || '未設定') : '未設定');
             const initial = displayName.charAt(0).toUpperCase();
