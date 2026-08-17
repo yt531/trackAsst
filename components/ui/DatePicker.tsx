@@ -52,7 +52,7 @@ export function DatePicker({ type = 'date', value, onChange, required, className
             // dateFormat: type === 'datetime-local' ? 'Y-m-d H:i' : 'Y-m-d',
             dateFormat: 'Y-m-d',
           }}
-          className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="w-full min-w-0 rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           required={required}
         />
       ) : (
@@ -61,7 +61,7 @@ export function DatePicker({ type = 'date', value, onChange, required, className
           required={required}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="w-full min-w-0 rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       )}
       {showTodayButton && (
