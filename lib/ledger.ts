@@ -94,6 +94,25 @@ export const updateLedgerMember = async (ledgerId: string, userId: string, data:
   await updateDoc(docRef, data);
 };
 
+// Leave ledger
+export const leaveLedger = async (ledgerId: string, userId: string, transferAdminToId?: string) => {
+  const { writeBatch } = await import('firebase/firestore');
+  const batch = writeBatch(db);
+
+  if (transferAdminToId) {
+    const adminDocRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, LEDGER_COLLECTIONS.MEMBERS, transferAdminToId);
+    batch.update(adminDocRef, { role: 'admin' });
+  }
+
+  const userDocRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, LEDGER_COLLECTIONS.MEMBERS, userId);
+  batch.update(userDocRef, { status: 'left' });
+
+  const userMembershipRef = doc(db, 'users', userId, 'ledgerMemberships', ledgerId);
+  batch.delete(userMembershipRef);
+
+  await batch.commit();
+};
+
 // Remove a member
 export const removeLedgerMember = async (ledgerId: string, userId: string) => {
   const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, LEDGER_COLLECTIONS.MEMBERS, userId);

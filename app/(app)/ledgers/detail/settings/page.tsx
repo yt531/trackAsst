@@ -5,7 +5,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { Settings as SettingsIcon, Users, Key, User as UserIcon, Bell } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useState, useEffect } from 'react';
-import { getLedgerMembers, updateLedger, checkNicknameExists, updateLedgerMember } from '@/lib/ledger';
+import { useRouter } from 'next/navigation';
+import { getLedgerMembers, updateLedger, checkNicknameExists, updateLedgerMember, leaveLedger } from '@/lib/ledger';
 import { LedgerMember, LedgerRole, LedgerMode } from '@/types';
 
 export default function LedgersSettingsPage() {
@@ -13,6 +14,11 @@ export default function LedgersSettingsPage() {
   const { user } = useAuth();
   const [members, setMembers] = useState<LedgerMember[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState<string>('');
+  const [leaving, setLeaving] = useState(false);
   
   // Edit Info State
   const [isEditingInfo, setIsEditingInfo] = useState(false);
@@ -110,6 +116,57 @@ export default function LedgersSettingsPage() {
       alert('儲存失敗');
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const activeMembers = members.filter(m => m.status === 'active');
+  const otherActiveMembers = activeMembers.filter(m => m.userId !== user?.uid).sort((a, b) => a.joinedAt - b.joinedAt);
+
+  const handleLeaveClick = () => {
+    if (!currentUserMember || !user) return;
+    
+    const adminsCount = activeMembers.filter(m => m.role === 'admin').length;
+    const isSoleAdmin = currentUserMember.role === 'admin' && adminsCount === 1;
+
+    if (isSoleAdmin) {
+      if (otherActiveMembers.length === 0) {
+        alert('您是唯一的活躍成員，無法轉移權限並退出。如果不再使用，請選擇刪除此帳本。');
+        return;
+      }
+      setTransferTargetId(otherActiveMembers[0].userId);
+      setShowLeaveDialog(true);
+    } else {
+      if (confirm('確定要退出此共享帳本嗎？退出後您將無法再查看或新增交易，但您的歷史紀錄仍會被保留。')) {
+        executeLeave();
+      }
+    }
+  };
+
+  const executeLeave = async () => {
+    if (!activeLedgerId || !user) return;
+    setLeaving(true);
+    try {
+      await leaveLedger(activeLedgerId, user.uid, transferTargetId || undefined);
+      
+      try {
+        const { createActivityFeedItem } = await import('@/lib/transactions');
+        await createActivityFeedItem(
+          activeLedgerId,
+          user.uid,
+          'member_left',
+          `${currentUserMember?.nickname || '成員'} 退出了帳本`
+        );
+      } catch (err) {
+        console.error('Failed to log activity', err);
+      }
+
+      await refreshLedgers();
+      router.push('/ledgers');
+    } catch (err) {
+      console.error(err);
+      alert('退出失敗，請稍後再試');
+      setLeaving(false);
+      setShowLeaveDialog(false);
     }
   };
 
@@ -415,6 +472,61 @@ export default function LedgersSettingsPage() {
               </Link>
             </div>
           </section>
+
+          {/* 退出帳本 */}
+          {currentUserMember && (
+            <section className="pt-6">
+              <button
+                onClick={handleLeaveClick}
+                disabled={leaving}
+                className="w-full rounded-xl border border-red-200 bg-red-50 p-4 text-center font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+              >
+                {leaving ? '處理中...' : '退出此共享帳本'}
+              </button>
+            </section>
+          )}
+
+          {/* 轉移權限對話框 */}
+          {showLeaveDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+              <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">轉移管理員權限並退出</h3>
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  您是此帳本的唯一管理員。退出前，您必須先將管理員權限轉移給其他活躍成員。退出後您的歷史紀錄將被保留。
+                </p>
+                <div className="mt-4">
+                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">選擇新管理員</label>
+                  <select
+                    value={transferTargetId}
+                    onChange={(e) => setTransferTargetId(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  >
+                    {otherActiveMembers.map(m => (
+                      <option key={m.userId} value={m.userId}>
+                        {m.nickname} (加入時間：{new Date(m.joinedAt).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowLeaveDialog(false)}
+                    disabled={leaving}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={executeLeave}
+                    disabled={leaving || !transferTargetId}
+                    className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {leaving ? '處理中...' : '確認轉移並退出'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       ) : null}
     </div>

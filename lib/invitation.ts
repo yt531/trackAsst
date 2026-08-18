@@ -47,28 +47,53 @@ export const verifyAndJoinLedger = async (
     if (!invitation) return { success: false, message: '找不到此邀請碼' };
 
     // 2. Check nickname
-    const exists = await checkNicknameExists(invitation.ledgerId, nickname);
+    const exists = await checkNicknameExists(invitation.ledgerId, nickname, userId);
     if (exists) {
       return { success: false, message: '此暱稱已被帳本中其他成員使用，請換一個' };
     }
     
-    // 3. Add user to ledger
-    await addLedgerMember({
-      id: userId,
-      ledgerId: invitation.ledgerId,
-      userId: userId,
-      role: invitation.defaultRole as LedgerRole,
-      joinedAt: Date.now(),
-      status: 'active',
-      nickname: nickname,
-      notificationPreferences: {
-        all: true,
-        newTransaction: true,
-        updateTransaction: false,
-        settlement: true,
-        memberJoined: true
+    const existingMembers = await getLedgerMembers(invitation.ledgerId);
+    const existingMember = existingMembers.find(m => m.userId === userId);
+
+    if (existingMember) {
+      if (existingMember.status === 'active') {
+        return { success: false, message: '您已經是此帳本的成員' };
       }
-    });
+      // Rejoin logic
+      const { setDoc } = await import('firebase/firestore');
+      const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, invitation.ledgerId, LEDGER_COLLECTIONS.MEMBERS, userId);
+      await updateDoc(docRef, {
+        status: 'active',
+        role: invitation.defaultRole as LedgerRole,
+        joinedAt: Date.now(),
+        nickname: nickname
+      });
+      // Restore userMembership
+      const userMembershipRef = doc(db, 'users', userId, 'ledgerMemberships', invitation.ledgerId);
+      await setDoc(userMembershipRef, {
+        ledgerId: invitation.ledgerId,
+        role: invitation.defaultRole as LedgerRole,
+        joinedAt: Date.now()
+      });
+    } else {
+      // 3. Add user to ledger
+      await addLedgerMember({
+        id: userId,
+        ledgerId: invitation.ledgerId,
+        userId: userId,
+        role: invitation.defaultRole as LedgerRole,
+        joinedAt: Date.now(),
+        status: 'active',
+        nickname: nickname,
+        notificationPreferences: {
+          all: true,
+          newTransaction: true,
+          updateTransaction: false,
+          settlement: true,
+          memberJoined: true
+        }
+      });
+    }
     
     // Write to Activity Feed
     try {
@@ -96,15 +121,17 @@ export const verifyAndJoinLedger = async (
     // 5. Send notifications to existing members
     try {
       const ledger = await getLedger(invitation.ledgerId);
-      const existingMembers = await getLedgerMembers(invitation.ledgerId);
+      // We already fetched existingMembers above, but we fetch again to get updated list 
+      // or we can just use the existing one. Let's fetch again to be safe.
+      const updatedMembers = await getLedgerMembers(invitation.ledgerId);
       
       if (ledger) {
         const { writeBatch, collection } = await import('firebase/firestore');
         const batch = writeBatch(db);
         let hasNotifications = false;
 
-        existingMembers.forEach(member => {
-          if (member.userId !== userId && (member.notificationPreferences?.all || member.notificationPreferences?.memberJoined)) {
+        updatedMembers.forEach(member => {
+          if (member.userId !== userId && member.status === 'active' && (member.notificationPreferences?.all || member.notificationPreferences?.memberJoined)) {
             const notifRef = doc(collection(db, 'users', member.userId, 'notifications'));
             const notification: AppNotification = {
               id: notifRef.id,

@@ -155,7 +155,7 @@ export interface LedgerMember {
   userId: string;
   role: LedgerRole;
   joinedAt: number;
-  status: 'active' | 'invited' | 'declined';
+  status: 'active' | 'invited' | 'declined' | 'left';
   nickname?: string;
   notificationPreferences: {
     all: boolean;
