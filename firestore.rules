@@ -30,7 +30,7 @@ service cloud.firestore {
       allow update, delete: if isLedgerAdmin(ledgerId);
       
       match /members/{memberId} {
-        allow read: if isLedgerMember(ledgerId);
+        allow read: if request.auth != null;
         allow write: if isLedgerAdmin(ledgerId) || request.auth.uid == memberId;
       }
       

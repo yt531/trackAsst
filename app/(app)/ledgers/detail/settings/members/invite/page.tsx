@@ -233,7 +233,7 @@ export default function InviteMemberPage() {
 
             <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-700">
               <QRCodeSVG 
-                value={`${window.location.origin}/ledgers?invite=${generatedInvite.id}`}
+                value={`${window.location.href.split('/ledgers/')[0]}/ledgers/?invite=${generatedInvite.id}`}
                 size={200}
                 level="H"
                 includeMargin={true}
