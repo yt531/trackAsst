@@ -54,7 +54,8 @@ export default function NewLedgerPage() {
           all: true,
           newTransaction: true,
           updateTransaction: true,
-          settlement: true
+          settlement: true,
+          memberJoined: true
         }
       };
 

@@ -1,7 +1,7 @@
 import { db } from './firebase';
 import { updateDoc, doc } from 'firebase/firestore';
-import { getLedgerInvitation, addLedgerMember, checkNicknameExists, LEDGER_COLLECTIONS } from './ledger';
-import { LedgerRole } from '../types';
+import { getLedgerInvitation, addLedgerMember, checkNicknameExists, getLedgerMembers, getLedger, LEDGER_COLLECTIONS } from './ledger';
+import { LedgerRole, AppNotification } from '../types';
 
 export const validateInvitation = async (
   inviteCode: string, 
@@ -65,7 +65,8 @@ export const verifyAndJoinLedger = async (
         all: true,
         newTransaction: true,
         updateTransaction: false,
-        settlement: true
+        settlement: true,
+        memberJoined: true
       }
     });
     
@@ -78,6 +79,42 @@ export const verifyAndJoinLedger = async (
       status: newStatus,
       usageCount: newUsageCount
     });
+
+    // 5. Send notifications to existing members
+    try {
+      const ledger = await getLedger(invitation.ledgerId);
+      const existingMembers = await getLedgerMembers(invitation.ledgerId);
+      
+      if (ledger) {
+        const { writeBatch, collection } = await import('firebase/firestore');
+        const batch = writeBatch(db);
+        let hasNotifications = false;
+
+        existingMembers.forEach(member => {
+          if (member.userId !== userId && (member.notificationPreferences?.all || member.notificationPreferences?.memberJoined)) {
+            const notifRef = doc(collection(db, 'users', member.userId, 'notifications'));
+            const notification: AppNotification = {
+              id: notifRef.id,
+              userId: member.userId,
+              type: 'member_joined',
+              title: '新成員加入',
+              message: `${nickname} 加入了 ${ledger.name}`,
+              link: `/ledgers/detail/settings/members?id=${ledger.id}`,
+              isRead: false,
+              createdAt: Date.now()
+            };
+            batch.set(notifRef, notification);
+            hasNotifications = true;
+          }
+        });
+
+        if (hasNotifications) {
+          await batch.commit();
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to send member joined notifications:', notifErr);
+    }
     
     return { 
       success: true, 

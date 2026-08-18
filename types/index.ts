@@ -162,6 +162,7 @@ export interface LedgerMember {
     newTransaction: boolean;
     updateTransaction: boolean;
     settlement: boolean;
+    memberJoined: boolean;
   };
 }
 
@@ -178,7 +179,7 @@ export interface LedgerInvitation {
   createdAt: number;
 }
 
-export type NotificationType = 'split_assigned' | 'large_expense' | 'system';
+export type NotificationType = 'split_assigned' | 'large_expense' | 'system' | 'member_joined';
 
 export interface AppNotification {
   id: string;

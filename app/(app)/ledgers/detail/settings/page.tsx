@@ -2,7 +2,7 @@
 
 import { useLedger } from '@/components/LedgerProvider';
 import { useAuth } from '@/components/AuthProvider';
-import { Settings as SettingsIcon, Users, Key, User as UserIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Key, User as UserIcon, Bell } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useState, useEffect } from 'react';
 import { getLedgerMembers, updateLedger, checkNicknameExists, updateLedgerMember } from '@/lib/ledger';
@@ -276,6 +276,54 @@ export default function LedgersSettingsPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </section>
+          )}
+
+          {/* 通知設定 */}
+          {currentUserMember && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                通知設定
+              </h2>
+              <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">有新成員加入時通知我</div>
+                    <div className="text-xs text-zinc-500">當其他人加入此共享帳本時，在通知中心提醒我</div>
+                  </div>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input 
+                      type="checkbox" 
+                      className="peer sr-only" 
+                      checked={currentUserMember.notificationPreferences?.memberJoined !== false}
+                      onChange={async (e) => {
+                        if (!user) return;
+                        const checked = e.target.checked;
+                        try {
+                          await updateLedgerMember(activeLedgerId, user.uid, {
+                            notificationPreferences: {
+                              ...currentUserMember.notificationPreferences,
+                              memberJoined: checked
+                            }
+                          });
+                          setMembers(members.map(m => m.userId === user.uid ? {
+                            ...m,
+                            notificationPreferences: {
+                              ...m.notificationPreferences,
+                              memberJoined: checked
+                            }
+                          } : m));
+                        } catch (err) {
+                          console.error(err);
+                          alert('通知設定更新失敗');
+                        }
+                      }}
+                    />
+                    <div className="peer h-6 w-11 rounded-full bg-gray-200 peer-focus:outline-none dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 dark:border-gray-600"></div>
+                  </label>
+                </div>
               </div>
             </section>
           )}
