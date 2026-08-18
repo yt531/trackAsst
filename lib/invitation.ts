@@ -70,6 +70,19 @@ export const verifyAndJoinLedger = async (
       }
     });
     
+    // Write to Activity Feed
+    try {
+      const { createActivityFeedItem } = await import('./transactions');
+      await createActivityFeedItem(
+        invitation.ledgerId,
+        userId,
+        'member_joined',
+        `${nickname} 加入了帳本`
+      );
+    } catch (err) {
+      console.error('Failed to create activity feed item:', err);
+    }
+    
     // 4. Update invitation status
     const newUsageCount = (invitation.usageCount || 0) + 1;
     const maxUsage = invitation.targetEmailOrId ? 1 : (invitation.maxUsage || 1);

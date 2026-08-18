@@ -60,7 +60,9 @@ export default function LedgerFeedPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {item.actorId === user?.uid ? '您' : `使用者 ${item.actorId.slice(0,4)}`} {item.details}
+                  {item.type === 'member_joined' 
+                    ? item.details 
+                    : `${item.actorId === user?.uid ? '您' : `使用者 ${item.actorId.slice(0,4)}`} ${item.details}`}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
                   {new Date(item.timestamp).toLocaleString()}
