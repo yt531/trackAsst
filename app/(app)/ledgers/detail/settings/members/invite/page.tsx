@@ -29,6 +29,7 @@ export default function InviteMemberPage() {
   const [generatedInvite, setGeneratedInvite] = useState<LedgerInvitation | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     if (activeLedgerId) {
@@ -88,6 +89,26 @@ export default function InviteMemberPage() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyFullInvite = () => {
+    if (!generatedInvite || !activeLedger) return;
+    
+    const inviteLink = `${window.location.href.split('/ledgers/')[0]}/ledgers/?invite=${generatedInvite.id}`;
+    const expiryDate = new Date(generatedInvite.expiresAt).toLocaleString();
+    
+    let text = `邀請您加入共享帳本「${activeLedger.name}」！\n`;
+    text += `點擊連結立即加入：${inviteLink}\n`;
+    text += `或輸入邀請碼：${generatedInvite.id}\n`;
+    text += `(請在 ${expiryDate} 前使用)`;
+    
+    if (generatedInvite.targetEmailOrId) {
+      text += `\n\n💡 提醒：此邀請專屬於您，請務必使用 ${generatedInvite.targetEmailOrId} 登入以加入帳本。`;
+    }
+    
+    navigator.clipboard.writeText(text);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   const getRoleLabel = (role: LedgerRole) => {
@@ -243,6 +264,23 @@ export default function InviteMemberPage() {
             <p className="text-sm text-center text-zinc-500 dark:text-zinc-400 max-w-sm leading-relaxed">
               對方可使用手機相機掃描上述 QR Code，或在「加入共享帳本」頁面直接輸入邀請碼。
             </p>
+
+            <button 
+              onClick={handleCopyFullInvite}
+              className="mt-2 flex items-center justify-center gap-2 w-full max-w-sm rounded-lg bg-zinc-100 py-3 text-sm font-bold text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600"
+            >
+              {linkCopied ? (
+                <>
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  已複製邀請連結與說明
+                </>
+              ) : (
+                <>
+                  <Copy className="h-5 w-5" />
+                  複製邀請連結與說明
+                </>
+              )}
+            </button>
 
             <button 
               onClick={() => {
