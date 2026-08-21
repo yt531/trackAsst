@@ -244,6 +244,7 @@ export default function AuditLogsPage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400">
                   <tr>
+                    <th className="px-6 py-3 font-medium">日期</th>
                     <th className="px-6 py-3 font-medium">時間</th>
                     <th className="px-6 py-3 font-medium">操作人員</th>
                     <th className="px-6 py-3 font-medium w-full">詳細內容</th>
@@ -253,7 +254,10 @@ export default function AuditLogsPage() {
                   {logs.map(log => (
                     <tr key={log.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                       <td className="px-6 py-4 text-zinc-500">
-                        {format(new Date(log.timestamp), 'MM/dd HH:mm:ss')}
+                        {format(new Date(log.timestamp), 'yyyy-MM-dd')}
+                      </td>
+                      <td className="px-6 py-4 text-zinc-500">
+                        {format(new Date(log.timestamp), 'HH:mm:ss')}
                       </td>
                       <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
                         {getActorName(log.actorId)}
