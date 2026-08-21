@@ -551,6 +551,25 @@ export default function LedgersSettingsPage() {
             </div>
           </section>
 
+          {/* 管理員工具 */}
+          {isAdmin && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5" />
+                管理員工具
+              </h2>
+              <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden">
+                <Link href={`/ledgers/detail/settings/logs?id=${activeLedgerId}`} className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                  <div>
+                    <div className="font-medium text-zinc-900 dark:text-zinc-100">查看系統日誌 (Audit Logs)</div>
+                    <div className="text-xs text-zinc-500">檢視、匯出帳本內的所有操作紀錄，或清除動態時報</div>
+                  </div>
+                  <div className="text-zinc-400">&gt;</div>
+                </Link>
+              </div>
+            </section>
+          )}
+
           {/* 退出帳本 */}
           {currentUserMember && (
             <section className="pt-6">

@@ -141,6 +141,7 @@ export interface Ledger {
   currency: string;
   createdAt: number;
   createdBy: string;
+  feedHiddenUntil?: number;
   settings: {
     allowMembersToCreateCategories: boolean;
     allowMembersToCreateTags: boolean;

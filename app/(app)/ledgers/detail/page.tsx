@@ -4,30 +4,39 @@ import { useLedger } from '@/components/LedgerProvider';
 import { Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { ActivityFeedItem, LedgerMember } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 import { getLedgerMembers } from '@/lib/ledger';
 
 export default function LedgerFeedPage() {
-  const { activeLedgerId } = useLedger();
+  const { activeLedgerId, activeLedger } = useLedger();
   const { user } = useAuth();
   const [feed, setFeed] = useState<ActivityFeedItem[]>([]);
   const [members, setMembers] = useState<Record<string, LedgerMember>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const fetchFeed = async () => {
       if (!activeLedgerId) return;
       setLoading(true);
       try {
+        const conditions: any[] = [orderBy('timestamp', 'desc'), limit(20)];
+        if (activeLedger?.feedHiddenUntil) {
+          conditions.unshift(where('timestamp', '>=', activeLedger.feedHiddenUntil));
+        }
+
         const q = query(
           collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
-          orderBy('timestamp', 'desc'),
-          limit(50)
+          ...conditions
         );
         const snap = await getDocs(q);
         setFeed(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem)));
+        setLastVisible(snap.docs[snap.docs.length - 1] || null);
+        setHasMore(snap.docs.length === 20);
 
         const ledgerMembers = await getLedgerMembers(activeLedgerId);
         const membersMap = ledgerMembers.reduce((acc, m) => {
@@ -42,9 +51,39 @@ export default function LedgerFeedPage() {
       }
     };
     fetchFeed();
-  }, [activeLedgerId]);
+  }, [activeLedgerId, activeLedger?.feedHiddenUntil]);
 
-  if (loading) {
+  const handleLoadMore = async () => {
+    if (!activeLedgerId || !lastVisible) return;
+    setLoadingMore(true);
+    try {
+      const conditions: any[] = [
+        orderBy('timestamp', 'desc'),
+        startAfter(lastVisible),
+        limit(20)
+      ];
+      if (activeLedger?.feedHiddenUntil) {
+        conditions.unshift(where('timestamp', '>=', activeLedger.feedHiddenUntil));
+      }
+
+      const q = query(
+        collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
+        ...conditions
+      );
+      const snap = await getDocs(q);
+      const newItems = snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem));
+      
+      setFeed(prev => [...prev, ...newItems]);
+      setLastVisible(snap.docs[snap.docs.length - 1] || null);
+      setHasMore(snap.docs.length === 20);
+    } catch (err) {
+      console.error('Error fetching more feed:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  if (loading && feed.length === 0) {
     return <div className="p-8 text-center text-sm text-zinc-500">載入動態中...</div>;
   }
 
@@ -91,6 +130,17 @@ export default function LedgerFeedPage() {
               </div>
             </div>
           ))}
+          {hasMore && (
+            <div className="pt-4 text-center">
+              <button 
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+              >
+                {loadingMore ? '載入中...' : '載入更多動態'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
