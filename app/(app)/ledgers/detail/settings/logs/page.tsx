@@ -8,7 +8,7 @@ import { getLedgerMembers, updateLedger } from '@/lib/ledger';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { ActivityFeedItem, LedgerMember } from '@/types';
-import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, subMonths, addMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, Download, Trash2, ShieldAlert, ArrowUpDown } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { SearchableSelect } from '@/components/SearchableSelect';
@@ -23,7 +23,8 @@ export default function AuditLogsPage() {
   const [members, setMembers] = useState<Record<string, LedgerMember>>({});
   const [logs, setLogs] = useState<ActivityFeedItem[]>([]);
   
-  const [viewMonth, setViewMonth] = useState<Date>(new Date());
+  const [viewDate, setViewDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'day'>('month');
   const [exportMonth, setExportMonth] = useState<Date>(new Date());
   const [filterActorId, setFilterActorId] = useState<string>('all');
   const [filterActionType, setFilterActionType] = useState<string>('all');
@@ -54,18 +55,18 @@ export default function AuditLogsPage() {
       }, {} as Record<string, LedgerMember>);
       setMembers(membersMap);
       
-      await loadLogsForMonth(viewMonth);
+      await loadLogs(viewDate, viewMode);
     };
 
     checkAuthAndLoad();
-  }, [activeLedgerId, user, viewMonth, router]);
+  }, [activeLedgerId, user, viewDate, viewMode, router]);
 
-  const loadLogsForMonth = async (date: Date) => {
+  const loadLogs = async (date: Date, mode: 'month' | 'day') => {
     if (!activeLedgerId) return;
     setLoading(true);
     try {
-      const start = startOfMonth(date).getTime();
-      const end = endOfMonth(date).getTime();
+      const start = mode === 'month' ? startOfMonth(date).getTime() : startOfDay(date).getTime();
+      const end = mode === 'month' ? endOfMonth(date).getTime() : endOfDay(date).getTime();
 
       const q = query(
         collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
@@ -223,17 +224,40 @@ export default function AuditLogsPage() {
         {activeTab === 'view' && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">選擇檢視月份</span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg w-full sm:w-auto">
+                  <button
+                    onClick={() => setViewMode('month')}
+                    className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      viewMode === 'month' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
+                    }`}
+                  >
+                    按月
+                  </button>
+                  <button
+                    onClick={() => setViewMode('day')}
+                    className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      viewMode === 'day' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
+                    }`}
+                  >
+                    按日
+                  </button>
+                </div>
+              </div>
               <input
-                type="month"
-                value={format(viewMonth, 'yyyy-MM')}
+                type={viewMode === 'month' ? "month" : "date"}
+                value={format(viewDate, viewMode === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd')}
                 onChange={(e) => {
                   if (e.target.value) {
-                    const [year, month] = e.target.value.split('-');
-                    setViewMonth(new Date(parseInt(year), parseInt(month) - 1, 1));
+                    if (viewMode === 'month') {
+                      const [year, month] = e.target.value.split('-');
+                      setViewDate(new Date(parseInt(year), parseInt(month) - 1, 1));
+                    } else {
+                      setViewDate(new Date(e.target.value));
+                    }
                   }
                 }}
-                max={format(new Date(), 'yyyy-MM')}
+                max={format(new Date(), viewMode === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd')}
                 className="w-full sm:w-auto px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
             </div>
