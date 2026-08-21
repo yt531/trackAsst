@@ -13,6 +13,7 @@ import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subM
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { getLedgerMembers } from '@/lib/ledger';
+import { deleteTransaction } from '@/lib/transactions';
 
 function LedgerTransactionsList() {
   const { user } = useAuth();
@@ -89,18 +90,15 @@ function LedgerTransactionsList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (tx: Transaction) => {
     if (!user || !activeLedgerId || !confirm('確定要刪除這筆共享交易嗎？')) return;
     try {
-      await deleteDoc(doc(db, 'ledgers', activeLedgerId, 'transactions', id));
-      const deletedTx = transactions.find(t => t.id === id);
-      if (deletedTx) {
-        setTotals(prev => ({
-          income: prev.income - (deletedTx.type === 'income' ? (deletedTx.baseAmount || deletedTx.amount) : 0),
-          expense: prev.expense - (deletedTx.type === 'expense' ? (deletedTx.baseAmount || deletedTx.amount) : 0),
-        }));
-      }
-      setTransactions(transactions.filter(t => t.id !== id));
+      await deleteTransaction(user.uid, tx.id, true, activeLedgerId, tx);
+      setTotals(prev => ({
+        income: prev.income - (tx.type === 'income' ? (tx.baseAmount || tx.amount) : 0),
+        expense: prev.expense - (tx.type === 'expense' ? (tx.baseAmount || tx.amount) : 0),
+      }));
+      setTransactions(transactions.filter(t => t.id !== tx.id));
     } catch (e) {
       console.error(e);
     }
@@ -123,7 +121,7 @@ function LedgerTransactionsList() {
 
   const getMemberDisplayName = (uid: string) => {
     if (uid === user?.uid) return '我';
-    return uid.substring(0, 4);
+    return members[uid]?.nickname || uid.substring(0, 4);
   };
 
   return (
@@ -215,6 +213,11 @@ function LedgerTransactionsList() {
 
                   const payerName = getMemberDisplayName(payerId);
 
+                  const isCreator = tx.userId === user?.uid;
+                  const currentUserRole = members[user?.uid || '']?.role || 'viewer';
+                  const isAdmin = currentUserRole === 'admin';
+                  const canEdit = isCreator || isAdmin;
+
                   return (
                     <div key={tx.id} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group">
                       <div className={`shrink-0 flex h-10 w-10 items-center justify-center rounded-full ${isExpense ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
@@ -236,7 +239,19 @@ function LedgerTransactionsList() {
                             您需分攤: <LedgerPrivacyText text={`${myOwed.toLocaleString()} ${tx.currency}`} />
                           </div>
                         )}
-                        {/* Optional edit/delete buttons for shared txs could be added here later */}
+                        {canEdit && (
+                          <div className="mt-1 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Link href={`/ledgers/detail/transactions/edit?id=${activeLedgerId}&txId=${tx.id}`} className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-300">
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(tx)}
+                              className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

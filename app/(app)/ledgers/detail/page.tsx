@@ -5,13 +5,15 @@ import { Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { ActivityFeedItem } from '@/types';
+import { ActivityFeedItem, LedgerMember } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
+import { getLedgerMembers } from '@/lib/ledger';
 
 export default function LedgerFeedPage() {
   const { activeLedgerId } = useLedger();
   const { user } = useAuth();
   const [feed, setFeed] = useState<ActivityFeedItem[]>([]);
+  const [members, setMembers] = useState<Record<string, LedgerMember>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +28,13 @@ export default function LedgerFeedPage() {
         );
         const snap = await getDocs(q);
         setFeed(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem)));
+
+        const ledgerMembers = await getLedgerMembers(activeLedgerId);
+        const membersMap = ledgerMembers.reduce((acc, m) => {
+          acc[m.userId] = m;
+          return acc;
+        }, {} as Record<string, LedgerMember>);
+        setMembers(membersMap);
       } catch (err) {
         console.error('Error fetching feed:', err);
       } finally {
@@ -38,6 +47,12 @@ export default function LedgerFeedPage() {
   if (loading) {
     return <div className="p-8 text-center text-sm text-zinc-500">載入動態中...</div>;
   }
+
+  const getActorName = (actorId: string) => {
+    if (actorId === user?.uid) return '您';
+    const member = members[actorId];
+    return member?.nickname || `使用者 ${actorId.slice(0, 4)}`;
+  };
 
   return (
     <div className="space-y-4">
@@ -62,7 +77,13 @@ export default function LedgerFeedPage() {
                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                   {item.type === 'member_joined' 
                     ? item.details 
-                    : `${item.actorId === user?.uid ? '您' : `使用者 ${item.actorId.slice(0,4)}`} ${item.details}`}
+                    : item.type === 'transaction_created'
+                      ? `${getActorName(item.actorId)} 新增了一筆交易：${item.details}`
+                      : item.type === 'transaction_updated'
+                        ? `${getActorName(item.actorId)} 修改了一筆交易：金額變更為 ${item.details}`
+                        : item.type === 'transaction_deleted'
+                          ? `${getActorName(item.actorId)} 刪除了一筆交易${item.details ? ` (${item.details})` : ''}`
+                          : `${getActorName(item.actorId)} ${item.details}`}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
                   {new Date(item.timestamp).toLocaleString()}

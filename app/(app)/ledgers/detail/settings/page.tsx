@@ -344,8 +344,8 @@ export default function LedgersSettingsPage() {
                 <Bell className="h-5 w-5" />
                 通知設定
               </h2>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-                <div className="flex items-center justify-between">
+              <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
+                <div className="flex items-center justify-between p-4">
                   <div>
                     <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">有新成員加入時通知我</div>
                     <div className="text-xs text-zinc-500">當其他人加入此共享帳本時，在通知中心提醒我</div>
@@ -381,6 +381,84 @@ export default function LedgersSettingsPage() {
                     <div className="peer h-6 w-11 rounded-full bg-gray-200 peer-focus:outline-none dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600 dark:border-gray-600"></div>
                   </label>
                 </div>
+
+                {activeLedger.mode === 'split' && (
+                  <div className="flex items-center justify-between p-4">
+                    <div>
+                      <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">分帳款項提醒</div>
+                      <div className="text-xs text-zinc-500">當有人在帳本中將您標記為分攤人時，在通知中心提醒我</div>
+                    </div>
+                    <label className="relative inline-flex cursor-pointer items-center">
+                      <input 
+                        type="checkbox" 
+                        className="peer sr-only" 
+                        checked={currentUserMember.notificationPreferences?.splitAssigned !== false}
+                        onChange={async (e) => {
+                          if (!user) return;
+                          const checked = e.target.checked;
+                          try {
+                            await updateLedgerMember(activeLedgerId, user.uid, {
+                              notificationPreferences: {
+                                ...currentUserMember.notificationPreferences,
+                                splitAssigned: checked
+                              }
+                            });
+                            setMembers(members.map(m => m.userId === user.uid ? {
+                              ...m,
+                              notificationPreferences: {
+                                ...m.notificationPreferences,
+                                splitAssigned: checked
+                              }
+                            } : m));
+                          } catch (err) {
+                            console.error(err);
+                            alert('通知設定更新失敗');
+                          }
+                        }}
+                      />
+                      <div className="peer h-6 w-11 rounded-full bg-gray-200 peer-focus:outline-none dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600 dark:border-gray-600"></div>
+                    </label>
+                  </div>
+                )}
+
+                {activeLedger.mode === 'shared_fund' && (
+                  <div className="flex items-center justify-between p-4">
+                    <div>
+                      <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">大額公積金支出提醒</div>
+                      <div className="text-xs text-zinc-500">當有人新增大於等於 $1000 的支出時，在通知中心提醒我</div>
+                    </div>
+                    <label className="relative inline-flex cursor-pointer items-center">
+                      <input 
+                        type="checkbox" 
+                        className="peer sr-only" 
+                        checked={currentUserMember.notificationPreferences?.largeExpense !== false}
+                        onChange={async (e) => {
+                          if (!user) return;
+                          const checked = e.target.checked;
+                          try {
+                            await updateLedgerMember(activeLedgerId, user.uid, {
+                              notificationPreferences: {
+                                ...currentUserMember.notificationPreferences,
+                                largeExpense: checked
+                              }
+                            });
+                            setMembers(members.map(m => m.userId === user.uid ? {
+                              ...m,
+                              notificationPreferences: {
+                                ...m.notificationPreferences,
+                                largeExpense: checked
+                              }
+                            } : m));
+                          } catch (err) {
+                            console.error(err);
+                            alert('通知設定更新失敗');
+                          }
+                        }}
+                      />
+                      <div className="peer h-6 w-11 rounded-full bg-gray-200 peer-focus:outline-none dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600 dark:border-gray-600"></div>
+                    </label>
+                  </div>
+                )}
               </div>
             </section>
           )}

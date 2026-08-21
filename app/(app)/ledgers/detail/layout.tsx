@@ -46,7 +46,15 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
 
   if (!ledger) return null;
 
-  const isTransactionsPage = pathname?.includes('/transactions') && !pathname?.includes('/new');
+  const isTransactionsPage = pathname?.includes('/transactions') && !pathname?.includes('/new') && !pathname?.includes('/edit');
+  
+  const isEditing = pathname?.includes('/edit');
+  const isNew = pathname?.includes('/new');
+  
+  let backHref = '/ledgers';
+  if (isEditing || isNew) {
+    backHref = `/ledgers/detail/transactions?id=${ledgerId}`;
+  }
 
   const tabs = [
     { name: '動態時報', href: `/ledgers/detail?id=${ledgerId}`, icon: List },
@@ -61,14 +69,14 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
       {/* Top Header area for the specific ledger */}
       <PageHeader 
         title={ledger.name} 
-        backHref="/ledgers" 
+        backHref={backHref}
         rightAction={isTransactionsPage ? <LedgerPrivacyDropdown variant="icon" /> : null}
       />
       <div className="hidden md:block mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => router.push('/ledgers')}
+              onClick={() => router.push(backHref)}
               className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors -ml-2"
             >
               <ChevronLeft className="h-6 w-6" />

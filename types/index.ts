@@ -158,11 +158,13 @@ export interface LedgerMember {
   status: 'active' | 'invited' | 'declined' | 'left';
   nickname?: string;
   notificationPreferences: {
-    all: boolean;
-    newTransaction: boolean;
-    updateTransaction: boolean;
-    settlement: boolean;
-    memberJoined: boolean;
+    all?: boolean;
+    newTransaction?: boolean;
+    updateTransaction?: boolean;
+    settlement?: boolean;
+    memberJoined?: boolean;
+    splitAssigned?: boolean;
+    largeExpense?: boolean;
   };
 }
 
@@ -192,7 +194,7 @@ export interface AppNotification {
   createdAt: number;
 }
 
-export type ActivityType = 'transaction_created' | 'transaction_updated' | 'member_joined' | 'member_left' | 'settlement';
+export type ActivityType = 'transaction_created' | 'transaction_updated' | 'transaction_deleted' | 'member_joined' | 'member_left' | 'settlement';
 
 export interface ActivityFeedItem {
   id: string;
