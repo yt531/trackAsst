@@ -22,9 +22,12 @@ export default function AuditLogsPage() {
   const [members, setMembers] = useState<Record<string, LedgerMember>>({});
   const [logs, setLogs] = useState<ActivityFeedItem[]>([]);
   
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [viewMonth, setViewMonth] = useState<Date>(new Date());
+  const [exportMonth, setExportMonth] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState<'view' | 'export' | 'hide'>('view');
   const [isExporting, setIsExporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [clearDate, setClearDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
 
   useEffect(() => {
     const checkAuthAndLoad = async () => {
@@ -47,11 +50,11 @@ export default function AuditLogsPage() {
       }, {} as Record<string, LedgerMember>);
       setMembers(membersMap);
       
-      await loadLogsForMonth(currentMonth);
+      await loadLogsForMonth(viewMonth);
     };
 
     checkAuthAndLoad();
-  }, [activeLedgerId, user, currentMonth, router]);
+  }, [activeLedgerId, user, viewMonth, router]);
 
   const loadLogsForMonth = async (date: Date) => {
     if (!activeLedgerId) return;
@@ -85,11 +88,30 @@ export default function AuditLogsPage() {
   };
 
   const handleExport = async () => {
+    if (!activeLedgerId) return;
     setIsExporting(true);
     try {
+      const start = startOfMonth(exportMonth).getTime();
+      const end = endOfMonth(exportMonth).getTime();
+
+      const q = query(
+        collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
+        where('timestamp', '>=', start),
+        where('timestamp', '<=', end),
+        orderBy('timestamp', 'desc')
+      );
+      
+      const snap = await getDocs(q);
+      const exportLogs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem));
+
+      if (exportLogs.length === 0) {
+        alert('此月份無任何紀錄可匯出');
+        return;
+      }
+
       const XLSX = await import('xlsx');
       
-      const exportData = logs.map(item => ({
+      const exportData = exportLogs.map(item => ({
         '日期': format(new Date(item.timestamp), 'yyyy-MM-dd'),
         '時間': format(new Date(item.timestamp), 'HH:mm:ss'),
         '操作人員': getActorName(item.actorId),
@@ -118,7 +140,7 @@ export default function AuditLogsPage() {
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Logs");
-      XLSX.writeFile(wb, `Audit_Logs_${activeLedger?.name || 'Ledger'}_${format(currentMonth, 'yyyyMM')}.xlsx`);
+      XLSX.writeFile(wb, `Audit_Logs_${activeLedger?.name || 'Ledger'}_${format(exportMonth, 'yyyyMM')}.xlsx`);
     } catch (err) {
       console.error('Export failed', err);
       alert('匯出失敗');
@@ -128,17 +150,21 @@ export default function AuditLogsPage() {
   };
 
   const handleClearLogs = async () => {
-    if (!activeLedgerId) return;
-    const confirmClear = window.confirm(`確定要清除前台的動態時報嗎？\n這會將目前顯示的所有動態時報對所有成員隱藏（管理員仍可在此頁面查看歷史紀錄）。`);
+    if (!activeLedgerId || !clearDate) return;
+    
+    const selectedDate = new Date(clearDate);
+    selectedDate.setHours(23, 59, 59, 999);
+    const hiddenUntil = selectedDate.getTime();
+
+    const confirmClear = window.confirm(`確定要隱藏 ${clearDate} (含) 以前的前台動態時報嗎？\n管理員仍可在此頁面查看歷史紀錄。`);
     if (!confirmClear) return;
 
     setIsClearing(true);
     try {
-      // Set the global hidden until timestamp to NOW
       await updateLedger(activeLedgerId, {
-        feedHiddenUntil: Date.now()
+        feedHiddenUntil: hiddenUntil
       });
-      alert('已成功清除前台的動態時報顯示！');
+      alert(`已成功隱藏 ${clearDate} 以前的前台動態時報顯示！`);
     } catch (err) {
       console.error('Clear feed failed', err);
       alert('清除失敗');
@@ -159,59 +185,54 @@ export default function AuditLogsPage() {
       />
 
       <div className="max-w-4xl mx-auto p-4 space-y-6 mt-4">
-        {/* Top Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-          
-          {/* Month Selector */}
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <span className="font-bold text-lg min-w-[100px] text-center">
-              {format(currentMonth, 'yyyy年 MM月')}
-            </span>
-            <button 
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              disabled={format(currentMonth, 'yyyyMM') === format(new Date(), 'yyyyMM')}
-              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-30"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleExport}
-              disabled={isExporting || logs.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              {isExporting ? '匯出中...' : '匯出 Excel'}
-            </button>
-            <button
-              onClick={handleClearLogs}
-              disabled={isClearing}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              隱藏所有前台動態
-            </button>
-          </div>
+        {/* Tabs Navigation */}
+        <div className="flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('view')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'view' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
+            }`}
+          >
+            檢視日誌
+          </button>
+          <button
+            onClick={() => setActiveTab('export')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'export' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
+            }`}
+          >
+            匯出日誌
+          </button>
+          <button
+            onClick={() => setActiveTab('hide')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'hide' ? 'bg-white dark:bg-zinc-700 shadow-sm text-red-600 dark:text-red-400' : 'text-zinc-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400'
+            }`}
+          >
+            隱藏動態
+          </button>
         </div>
 
-        {/* Warning Banner */}
-        <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 p-4 rounded-xl text-sm">
-          <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
-          <p>
-            此頁面僅供管理員查閱帳本歷史操作紀錄（包含被隱藏的動態）。執行「隱藏所有前台動態」會讓一般成員看不到目前的時報內容，但資料仍會永久保存在此日誌中供查閱與匯出。
-          </p>
-        </div>
+        {/* Tab Content: View Logs */}
+        {activeTab === 'view' && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">選擇檢視月份</span>
+              <input
+                type="month"
+                value={format(viewMonth, 'yyyy-MM')}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const [year, month] = e.target.value.split('-');
+                    setViewMonth(new Date(parseInt(year), parseInt(month) - 1, 1));
+                  }
+                }}
+                max={format(new Date(), 'yyyy-MM')}
+                className="w-full sm:w-auto px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
 
-        {/* Logs Table */}
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
           {loading ? (
             <div className="p-8 text-center text-sm text-zinc-500">載入日誌中...</div>
           ) : logs.length === 0 ? (
@@ -255,6 +276,81 @@ export default function AuditLogsPage() {
             </div>
           )}
         </div>
+      </div>
+    )}
+
+    {/* Tab Content: Export Logs */}
+        {activeTab === 'export' && (
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 max-w-md mx-auto space-y-6 mt-8">
+            <div className="text-center">
+              <h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 mb-2">匯出日誌</h3>
+              <p className="text-sm text-zinc-500">選擇想匯出的月份，將下載 Excel 檔案</p>
+            </div>
+            
+            <div className="flex flex-col space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 text-left">選擇匯出月份</label>
+              <input
+                type="month"
+                value={format(exportMonth, 'yyyy-MM')}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const [year, month] = e.target.value.split('-');
+                    setExportMonth(new Date(parseInt(year), parseInt(month) - 1, 1));
+                  }
+                }}
+                max={format(new Date(), 'yyyy-MM')}
+                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-xl text-base font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
+            
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 disabled:opacity-50 transition-colors shadow-sm"
+            >
+              <Download className="w-5 h-5" />
+              {isExporting ? '匯出中...' : '下載 Excel'}
+            </button>
+          </div>
+        )}
+
+        {/* Tab Content: Hide Feed */}
+        {activeTab === 'hide' && (
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 max-w-md mx-auto space-y-6 mt-8">
+            <div className="text-center">
+              <h3 className="font-semibold text-lg text-red-600 dark:text-red-400 mb-2">隱藏動態</h3>
+              <p className="text-sm text-zinc-500">選擇特定日期，隱藏前台動態時報</p>
+            </div>
+
+            <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 p-4 rounded-xl text-sm">
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+              <p>
+                執行後會讓一般成員看不到該日期（含）以前的時報內容，但資料仍會永久保存在此系統日誌中供查閱。
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">選擇截止日期</label>
+                <input
+                  type="date"
+                  value={clearDate}
+                  onChange={(e) => setClearDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-xl text-base bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                />
+              </div>
+              
+              <button
+                onClick={handleClearLogs}
+                disabled={isClearing || !clearDate}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                <Trash2 className="w-5 h-5" />
+                執行隱藏
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
