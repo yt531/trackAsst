@@ -90,7 +90,9 @@ export default function LedgerFeedPage() {
   const getActorName = (actorId: string) => {
     if (actorId === user?.uid) return '您';
     const member = members[actorId];
-    return member?.nickname || `使用者 ${actorId.slice(0, 4)}`;
+    if (member?.nickname) return member.nickname;
+    if (member?.role === 'admin') return '管理員';
+    return `使用者 ${actorId.slice(0, 4)}`;
   };
 
   return (
@@ -110,7 +112,7 @@ export default function LedgerFeedPage() {
           {feed.map(item => (
             <div key={item.id} className="flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
-                {item.actorId === user?.uid ? '我' : '友'}
+                {item.actorId === user?.uid ? '我' : getActorName(item.actorId).charAt(0).toUpperCase()}
               </div>
               <div>
                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">

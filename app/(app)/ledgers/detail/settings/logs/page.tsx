@@ -79,7 +79,9 @@ export default function AuditLogsPage() {
   const getActorName = (actorId: string) => {
     if (actorId === user?.uid) return '您';
     const member = members[actorId];
-    return member?.nickname || `使用者 ${actorId.slice(0, 4)}`;
+    if (member?.nickname) return member.nickname;
+    if (member?.role === 'admin') return '管理員';
+    return `使用者 ${actorId.slice(0, 4)}`;
   };
 
   const handleExport = async () => {

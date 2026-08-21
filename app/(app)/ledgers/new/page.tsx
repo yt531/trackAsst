@@ -47,6 +47,7 @@ export default function NewLedgerPage() {
         id: `${newLedgerId}_${user.uid}`,
         ledgerId: newLedgerId,
         userId: user.uid,
+        nickname: user.displayName || user.email?.split('@')[0] || '',
         role: 'admin',
         joinedAt: Date.now(),
         status: 'active',
