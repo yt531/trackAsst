@@ -25,7 +25,8 @@ export default function AuditLogsPage() {
   
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'day'>('month');
-  const [exportMonth, setExportMonth] = useState<Date>(new Date());
+  const [exportDate, setExportDate] = useState<Date>(new Date());
+  const [exportMode, setExportMode] = useState<'month' | 'day'>('month');
   const [filterActorId, setFilterActorId] = useState<string>('all');
   const [filterActionType, setFilterActionType] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'view' | 'export' | 'hide'>('view');
@@ -108,8 +109,8 @@ export default function AuditLogsPage() {
     if (!activeLedgerId) return;
     setIsExporting(true);
     try {
-      const start = startOfMonth(exportMonth).getTime();
-      const end = endOfMonth(exportMonth).getTime();
+      const start = exportMode === 'month' ? startOfMonth(exportDate).getTime() : startOfDay(exportDate).getTime();
+      const end = exportMode === 'month' ? endOfMonth(exportDate).getTime() : endOfDay(exportDate).getTime();
 
       const q = query(
         collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
@@ -146,8 +147,10 @@ export default function AuditLogsPage() {
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Logs");
-      XLSX.writeFile(wb, `Audit_Logs_${activeLedger?.name || 'Ledger'}_${format(exportMonth, 'yyyyMM')}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, '系統日誌');
+      
+      const timeStr = exportMode === 'month' ? format(exportDate, 'yyyy-MM') : format(exportDate, 'yyyy-MM-dd');
+      XLSX.writeFile(wb, `系統日誌_${timeStr}.xlsx`);
     } catch (err) {
       console.error('Export failed', err);
       alert('匯出失敗');
@@ -370,21 +373,43 @@ export default function AuditLogsPage() {
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 max-w-md mx-auto space-y-6 mt-8">
             <div className="text-center">
               <h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 mb-2">匯出日誌</h3>
-              <p className="text-sm text-zinc-500">選擇想匯出的月份，將下載 Excel 檔案</p>
+              <p className="text-sm text-zinc-500">選擇想匯出的時間範圍，將下載 Excel 檔案</p>
             </div>
             
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 text-left">選擇匯出月份</label>
+            <div className="flex flex-col space-y-4">
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+                <button
+                  onClick={() => setExportMode('month')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    exportMode === 'month' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
+                  }`}
+                >
+                  按月匯出
+                </button>
+                <button
+                  onClick={() => setExportMode('day')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    exportMode === 'day' ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
+                  }`}
+                >
+                  按日匯出
+                </button>
+              </div>
+
               <input
-                type="month"
-                value={format(exportMonth, 'yyyy-MM')}
+                type={exportMode === 'month' ? "month" : "date"}
+                value={format(exportDate, exportMode === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd')}
                 onChange={(e) => {
                   if (e.target.value) {
-                    const [year, month] = e.target.value.split('-');
-                    setExportMonth(new Date(parseInt(year), parseInt(month) - 1, 1));
+                    if (exportMode === 'month') {
+                      const [year, month] = e.target.value.split('-');
+                      setExportDate(new Date(parseInt(year), parseInt(month) - 1, 1));
+                    } else {
+                      setExportDate(new Date(e.target.value));
+                    }
                   }
                 }}
-                max={format(new Date(), 'yyyy-MM')}
+                max={format(new Date(), exportMode === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd')}
                 className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-xl text-base font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
             </div>
