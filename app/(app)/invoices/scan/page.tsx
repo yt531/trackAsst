@@ -111,7 +111,7 @@ export default function InvoiceScanPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="掃描發票" />
+      <PageHeader title="掃描發票" backHref="/invoices?tab=paper" />
       <header className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">掃描發票</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -221,7 +221,7 @@ export default function InvoiceScanPage() {
             <button
               onClick={() => {
                 setShowPrompt(false);
-                router.push('/invoices');
+                router.push('/invoices?tab=paper');
               }}
               className="rounded-lg border border-zinc-200 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800"
             >

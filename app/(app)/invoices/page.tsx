@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -11,12 +11,33 @@ import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subM
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Dialog } from '@/components/ui/dialog';
 import { PageHeader } from '@/components/PageHeader';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
-export default function InvoicesPage() {
+function InvoicesContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'cloud' | 'paper'>('cloud');
+  
+  const tabFromUrl = searchParams.get('tab') as 'cloud' | 'paper' | null;
+  const [activeTabState, setActiveTabState] = useState<'cloud' | 'paper'>(
+    (tabFromUrl === 'cloud' || tabFromUrl === 'paper') ? tabFromUrl : 'paper'
+  );
+
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTabState && (tabFromUrl === 'cloud' || tabFromUrl === 'paper')) {
+      setActiveTabState(tabFromUrl);
+    }
+  }, [tabFromUrl, activeTabState]);
+
+  const activeTab = activeTabState;
+  const setActiveTab = (tab: 'cloud' | 'paper') => {
+    setActiveTabState(tab);
+    router.replace(`${pathname}?tab=${tab}`, { scroll: false });
+  };
   
   const [filterMode, setFilterMode] = useState<'month' | 'day'>('month');
   const [filterDate, setFilterDate] = useState<Date>(new Date());
@@ -405,5 +426,13 @@ export default function InvoicesPage() {
         )}
       </Dialog>
     </div>
+  );
+}
+
+export default function InvoicesPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center p-8 text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>}>
+      <InvoicesContent />
+    </Suspense>
   );
 }
