@@ -9,7 +9,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { ActivityFeedItem, LedgerMember } from '@/types';
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Download, Trash2, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Trash2, ShieldAlert, ArrowUpDown } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 
 export default function AuditLogsPage() {
@@ -25,6 +25,7 @@ export default function AuditLogsPage() {
   const [viewMonth, setViewMonth] = useState<Date>(new Date());
   const [exportMonth, setExportMonth] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<'view' | 'export' | 'hide'>('view');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isExporting, setIsExporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [clearDate, setClearDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -244,14 +245,24 @@ export default function AuditLogsPage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400">
                   <tr>
-                    <th className="px-6 py-3 font-medium">日期</th>
-                    <th className="px-6 py-3 font-medium">時間</th>
+                    <th className="px-6 py-3 font-medium cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors group" onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}>
+                      <div className="flex items-center gap-1">
+                        日期
+                        <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 font-medium cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors group" onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}>
+                      <div className="flex items-center gap-1">
+                        時間
+                        <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+                      </div>
+                    </th>
                     <th className="px-6 py-3 font-medium">操作人員</th>
                     <th className="px-6 py-3 font-medium w-full">詳細內容</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {logs.map(log => (
+                  {[...logs].sort((a, b) => sortOrder === 'desc' ? b.timestamp - a.timestamp : a.timestamp - b.timestamp).map(log => (
                     <tr key={log.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                       <td className="px-6 py-4 text-zinc-500">
                         {format(new Date(log.timestamp), 'yyyy-MM-dd')}
