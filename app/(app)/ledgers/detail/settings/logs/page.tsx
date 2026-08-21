@@ -11,6 +11,7 @@ import { ActivityFeedItem, LedgerMember } from '@/types';
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, Download, Trash2, ShieldAlert, ArrowUpDown } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 export default function AuditLogsPage() {
   const { user } = useAuth();
@@ -24,6 +25,8 @@ export default function AuditLogsPage() {
   
   const [viewMonth, setViewMonth] = useState<Date>(new Date());
   const [exportMonth, setExportMonth] = useState<Date>(new Date());
+  const [filterActorId, setFilterActorId] = useState<string>('all');
+  const [filterActionType, setFilterActionType] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'view' | 'export' | 'hide'>('view');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isExporting, setIsExporting] = useState(false);
@@ -88,6 +91,18 @@ export default function AuditLogsPage() {
     return `使用者 ${actorId.slice(0, 4)}`;
   };
 
+  const getActionTypeName = (type: string) => {
+    switch (type) {
+      case 'transaction_created': return '新增交易';
+      case 'transaction_updated': return '修改交易';
+      case 'transaction_deleted': return '刪除交易';
+      case 'member_joined': return '加入帳本';
+      case 'member_left': return '退出帳本';
+      case 'settlement': return '帳本結算';
+      default: return type;
+    }
+  };
+
   const handleExport = async () => {
     if (!activeLedgerId) return;
     setIsExporting(true);
@@ -116,17 +131,7 @@ export default function AuditLogsPage() {
         '日期': format(new Date(item.timestamp), 'yyyy-MM-dd'),
         '時間': format(new Date(item.timestamp), 'HH:mm:ss'),
         '操作人員': getActorName(item.actorId),
-        '操作類型': (() => {
-          switch (item.type) {
-            case 'transaction_created': return '新增交易';
-            case 'transaction_updated': return '修改交易';
-            case 'transaction_deleted': return '刪除交易';
-            case 'member_joined': return '加入帳本';
-            case 'member_left': return '退出帳本';
-            case 'settlement': return '帳本結算';
-            default: return item.type;
-          }
-        })(),
+        '操作類型': getActionTypeName(item.type),
         '詳細內容': item.type === 'member_joined' 
           ? item.details 
           : item.type === 'transaction_created'
@@ -233,6 +238,39 @@ export default function AuditLogsPage() {
               />
             </div>
 
+            {/* Filters */}
+            {!loading && logs.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                <SearchableSelect
+                  value={filterActorId}
+                  onChange={setFilterActorId}
+                  options={[
+                    { value: 'all', label: '所有操作人員' },
+                    ...Array.from(new Set(logs.map(l => l.actorId))).map(actorId => ({
+                      value: actorId,
+                      label: getActorName(actorId)
+                    }))
+                  ]}
+                  placeholder="篩選操作人員..."
+                  searchPlaceholder="搜尋名稱..."
+                />
+
+                <SearchableSelect
+                  value={filterActionType}
+                  onChange={setFilterActionType}
+                  options={[
+                    { value: 'all', label: '所有操作類型' },
+                    ...Array.from(new Set(logs.map(l => l.type))).map(type => ({
+                      value: type,
+                      label: getActionTypeName(type)
+                    }))
+                  ]}
+                  placeholder="篩選操作類型..."
+                  searchPlaceholder="搜尋類型..."
+                />
+              </div>
+            )}
+
             <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
           {loading ? (
             <div className="p-8 text-center text-sm text-zinc-500">載入日誌中...</div>
@@ -258,11 +296,15 @@ export default function AuditLogsPage() {
                       </div>
                     </th>
                     <th className="px-6 py-3 font-medium">操作人員</th>
+                    <th className="px-6 py-3 font-medium">操作類型</th>
                     <th className="px-6 py-3 font-medium w-full">詳細內容</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {[...logs].sort((a, b) => sortOrder === 'desc' ? b.timestamp - a.timestamp : a.timestamp - b.timestamp).map(log => (
+                  {[...logs]
+                    .filter(log => (filterActorId === 'all' || log.actorId === filterActorId) && (filterActionType === 'all' || log.type === filterActionType))
+                    .sort((a, b) => sortOrder === 'desc' ? b.timestamp - a.timestamp : a.timestamp - b.timestamp)
+                    .map(log => (
                     <tr key={log.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                       <td className="px-6 py-4 text-zinc-500">
                         {format(new Date(log.timestamp), 'yyyy-MM-dd')}
@@ -272,6 +314,11 @@ export default function AuditLogsPage() {
                       </td>
                       <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
                         {getActorName(log.actorId)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                          {getActionTypeName(log.type)}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-zinc-600 dark:text-zinc-300 whitespace-normal min-w-[300px]">
                         {log.type === 'member_joined' 
