@@ -1,8 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface PageHeaderProps {
   title: string;
@@ -12,13 +12,32 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, rightAction, backHref }: PageHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
+
+  const { targetPath, backText } = useMemo(() => {
+    let finalPath = '/';
+
+    if (backHref) {
+      finalPath = backHref;
+    } else if (!pathname || pathname === '/') {
+      finalPath = '/';
+    } else {
+      const segments = pathname.split('/').filter(Boolean);
+      if (segments.length <= 1) {
+        finalPath = '/';
+      } else {
+        finalPath = '/' + segments.slice(0, -1).join('/');
+      }
+    }
+
+    return { 
+      targetPath: finalPath, 
+      backText: finalPath === '/' ? '返回首頁' : '返回' 
+    };
+  }, [pathname, backHref]);
 
   const handleBack = () => {
-    if (backHref) {
-      router.push(backHref);
-    } else {
-      router.back();
-    }
+    router.push(targetPath);
   };
 
   return (
@@ -28,7 +47,7 @@ export function PageHeader({ title, rightAction, backHref }: PageHeaderProps) {
         className="flex items-center gap-1 p-2 -ml-2 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
       >
         <ChevronLeft className="h-5 w-5" />
-        <span className="text-sm font-medium">返回</span>
+        <span className="text-sm font-medium">{backText}</span>
       </button>
       
       <span className="font-bold text-base absolute left-1/2 -translate-x-1/2 truncate max-w-[50%]">
