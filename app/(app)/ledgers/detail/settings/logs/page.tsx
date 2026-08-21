@@ -137,11 +137,11 @@ export default function AuditLogsPage() {
         '詳細內容': item.type === 'member_joined' 
           ? item.details 
           : item.type === 'transaction_created'
-            ? `新增了一筆交易：${item.details}`
+            ? `新增了一筆交易，金額為 ${item.details}。`
             : item.type === 'transaction_updated'
-              ? `修改了一筆交易：金額變更為 ${item.details}`
+              ? `修改了一筆交易，金額為 ${item.details}。`
               : item.type === 'transaction_deleted'
-                ? `刪除了一筆交易${item.details ? ` (${item.details})` : ''}`
+                ? `刪除了一筆交易${item.details ? `，金額為 ${item.details}` : ''}。`
                 : item.details
       }));
 
@@ -351,11 +351,11 @@ export default function AuditLogsPage() {
                         {log.type === 'member_joined' 
                           ? log.details 
                           : log.type === 'transaction_created'
-                            ? `新增了一筆交易：${log.details}`
+                            ? `新增了一筆交易，金額為 ${log.details}。`
                             : log.type === 'transaction_updated'
-                              ? `修改了一筆交易：金額變更為 ${log.details}`
+                              ? `修改了一筆交易，金額為 ${log.details}。`
                               : log.type === 'transaction_deleted'
-                                ? `刪除了一筆交易${log.details ? ` (${log.details})` : ''}`
+                                ? `刪除了一筆交易${log.details ? `，金額為 ${log.details}` : ''}。`
                                 : log.details}
                       </td>
                     </tr>

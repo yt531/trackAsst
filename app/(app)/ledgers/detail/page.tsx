@@ -119,11 +119,11 @@ export default function LedgerFeedPage() {
                   {item.type === 'member_joined' 
                     ? item.details 
                     : item.type === 'transaction_created'
-                      ? `${getActorName(item.actorId)} 新增了一筆交易：${item.details}`
+                      ? `${getActorName(item.actorId)}：新增了一筆交易，金額為 ${item.details}。`
                       : item.type === 'transaction_updated'
-                        ? `${getActorName(item.actorId)} 修改了一筆交易：金額變更為 ${item.details}`
+                        ? `${getActorName(item.actorId)}：修改了一筆交易，金額為 ${item.details}。`
                         : item.type === 'transaction_deleted'
-                          ? `${getActorName(item.actorId)} 刪除了一筆交易${item.details ? ` (${item.details})` : ''}`
+                          ? `${getActorName(item.actorId)}：刪除了一筆交易${item.details ? `，金額為 ${item.details}` : ''}。`
                           : `${getActorName(item.actorId)} ${item.details}`}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
