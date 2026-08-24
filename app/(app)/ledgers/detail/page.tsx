@@ -97,6 +97,9 @@ export default function LedgerFeedPage() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">動態時報</h1>
+      </div>
       {feed.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 py-12 text-center dark:border-zinc-700 dark:bg-zinc-800/50 mt-4">
           <div className="mb-3 rounded-full bg-zinc-200 p-4 dark:bg-zinc-700">

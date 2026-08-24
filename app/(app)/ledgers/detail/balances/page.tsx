@@ -116,7 +116,10 @@ export default function LedgerBalancesPage() {
 
   if (activeLedger?.mode === 'shared_fund') {
     return (
-      <div className="mt-4">
+      <div className="mt-2">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">公積金總覽</h1>
+        </div>
         {loading ? (
           <div className="p-8 text-center text-sm text-zinc-500">計算中...</div>
         ) : (
@@ -138,6 +141,9 @@ export default function LedgerBalancesPage() {
 
   return (
     <div className="space-y-6 pb-20">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">結算餘額</h1>
+      </div>
       {/* My Status Card */}
       <div className={`rounded-2xl p-6 text-white shadow-sm ${
         myBalance > 0 ? 'bg-emerald-600' : myBalance < 0 ? 'bg-rose-600' : 'bg-zinc-600'

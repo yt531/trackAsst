@@ -138,6 +138,9 @@ function LedgerTransactionsList() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">帳本明細</h1>
+      </div>
       {/* Filter and Stats Area */}
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700">
         <div className="flex flex-col items-center justify-center gap-4 mb-4">
