@@ -31,7 +31,6 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LedgerPrivacyText } from '@/components/LedgerPrivacyProvider';
 
 interface SortableBudgetCardProps {
   budget: Budget;
@@ -192,10 +191,10 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
           <div className="mt-4">
             <div className="flex justify-between items-baseline mb-2">
               <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 flex items-baseline gap-1">
-                $<LedgerPrivacyText text={spent} />
+                ${spent.toLocaleString()}
               </div>
               <div className="text-sm text-zinc-500 dark:text-zinc-400 flex items-baseline gap-1">
-                / $<LedgerPrivacyText text={targetAmount} />
+                / ${targetAmount.toLocaleString()}
               </div>
             </div>
             
