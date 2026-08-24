@@ -3,7 +3,7 @@
 import { useLedger } from '@/components/LedgerProvider';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Plus, ChevronLeft, List, Calculator, Settings, ReceiptText } from 'lucide-react';
+import { Plus, ChevronLeft, List, Calculator, Settings, ReceiptText, Wallet } from 'lucide-react';
 import { useEffect, useState, Suspense } from 'react';
 import { Ledger } from '@/types';
 import { getLedger } from '@/lib/ledger';
@@ -61,7 +61,7 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
     { name: '帳本明細', href: `/ledgers/detail/transactions?id=${ledgerId}`, icon: ReceiptText },
     { name: '記帳', href: `/ledgers/detail/transactions/new?id=${ledgerId}`, icon: Plus, highlight: true },
     { name: ledger.mode === 'shared_fund' ? '公積金總覽' : '結算餘額', href: `/ledgers/detail/balances?id=${ledgerId}`, icon: Calculator },
-    { name: '帳本設定', href: `/ledgers/detail/settings?id=${ledgerId}`, icon: Settings },
+    { name: '帳本預算', href: `/ledgers/detail/budgets?id=${ledgerId}`, icon: Wallet },
   ];
 
   return (
@@ -70,7 +70,14 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
       <PageHeader 
         title={ledger.name} 
         backHref={backHref}
-        rightAction={isTransactionsPage ? <LedgerPrivacyDropdown variant="icon" /> : null}
+        rightAction={
+          <div className="flex items-center gap-1">
+            {isTransactionsPage && <LedgerPrivacyDropdown variant="icon" />}
+            <Link href={`/ledgers/detail/settings?id=${ledgerId}`} className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors">
+              <Settings className="h-5 w-5" />
+            </Link>
+          </div>
+        }
       />
       <div className="hidden md:block mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -88,8 +95,11 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
               </p>
             </div>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             {isTransactionsPage && <LedgerPrivacyDropdown variant="icon" />}
+            <Link href={`/ledgers/detail/settings?id=${ledgerId}`} className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <Settings className="h-5 w-5" />
+            </Link>
           </div>
         </div>
 

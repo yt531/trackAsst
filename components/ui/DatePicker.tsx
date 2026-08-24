@@ -60,6 +60,9 @@ export function DatePicker({ type = 'date', value, onChange, required, className
           type={type === 'year' ? 'number' : type}
           required={required}
           value={value}
+          min={type === 'year' ? 2000 : undefined}
+          max={type === 'year' ? 2100 : undefined}
+          step={type === 'year' ? 1 : undefined}
           onChange={(e) => onChange(e.target.value)}
           className="w-full min-w-0 rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />

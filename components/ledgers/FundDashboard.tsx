@@ -17,8 +17,7 @@ interface FundDashboardProps {
 export function FundDashboard({ ledger, transactions, onSettleReimbursement }: FundDashboardProps) {
   const [members, setMembers] = useState<LedgerMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditingBudget, setIsEditingBudget] = useState(false);
-  const [budgetInput, setBudgetInput] = useState(ledger.fundSettings?.budgetAmount?.toString() || '');
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
   const [memberTargetInput, setMemberTargetInput] = useState(ledger.fundSettings?.memberTargetAmount?.toString() || '');
 
   useEffect(() => {
@@ -93,12 +92,10 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       await updateLedger(ledger.id, {
         fundSettings: {
           ...ledger.fundSettings,
-          budgetAmount: Number(budgetInput) || 0,
-          memberTargetAmount: Number(memberTargetInput) || 0,
-          budgetPeriod: 'monthly'
+          memberTargetAmount: Number(memberTargetInput) || 0
         }
       });
-      setIsEditingBudget(false);
+      setIsEditingSettings(false);
       window.location.reload(); 
     } catch (err) {
       console.error('Failed to update ledger', err);
@@ -110,8 +107,6 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
     return <div className="p-8 text-center text-zinc-500">載入中...</div>;
   }
 
-  const targetBudget = ledger.fundSettings?.budgetAmount || 0;
-  const budgetPercentage = targetBudget > 0 ? Math.min(100, Math.round((totalSpent / targetBudget) * 100)) : 0;
   const memberTarget = ledger.fundSettings?.memberTargetAmount || 0;
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -126,25 +121,15 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
             <div className="text-4xl font-bold">${totalBalance.toLocaleString()}</div>
           </div>
           <button 
-            onClick={() => setIsEditingBudget(!isEditingBudget)}
+            onClick={() => setIsEditingSettings(!isEditingSettings)}
             className="p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 transition-colors"
           >
             <Settings2 className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
           </button>
         </div>
 
-        {isEditingBudget ? (
+        {isEditingSettings ? (
           <div className="bg-zinc-50 dark:bg-white/10 rounded-xl p-4 space-y-4 dark:backdrop-blur-md border border-zinc-200 dark:border-white/10 mb-4">
-            <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">總預算目標 (月)</label>
-              <input 
-                type="number" 
-                value={budgetInput} 
-                onChange={e => setBudgetInput(e.target.value)}
-                className="w-full bg-white dark:bg-black/30 border border-zinc-300 dark:border-white/20 rounded-lg px-3 py-2 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="例如: 10000"
-              />
-            </div>
             <div>
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">每人應繳額度</label>
               <input 
@@ -162,22 +147,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
               儲存設定
             </button>
           </div>
-        ) : (
-          targetBudget > 0 && (
-            <div>
-              <div className="flex justify-between text-sm mb-2 text-zinc-600 dark:text-zinc-300">
-                <span>預算消耗 ({budgetPercentage}%)</span>
-                <span>${totalSpent.toLocaleString()} / ${targetBudget.toLocaleString()}</span>
-              </div>
-              <div className="h-2 w-full bg-zinc-200 dark:bg-black/50 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-1000 ${budgetPercentage > 90 ? 'bg-rose-500' : budgetPercentage > 75 ? 'bg-amber-500' : 'bg-blue-500'}`}
-                  style={{ width: `${budgetPercentage}%` }}
-                />
-              </div>
-            </div>
-          )
-        )}
+        ) : null}
       </div>
 
       {/* Grid Layout for Desktop, Stack for Mobile */}

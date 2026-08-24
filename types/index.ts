@@ -80,9 +80,10 @@ export interface Invoice {
 export interface Budget {
   id: string; // e.g., userId_month_categoryId
   userId: string;
+  ledgerId?: string;
   amount: number;
-  period: 'daily' | 'monthly';
-  month: string; // e.g., '2024-05'
+  period: 'daily' | 'monthly' | 'yearly';
+  month: string; // e.g., '2024-05' or '2024' for yearly
   categoryId?: string; // Optional, if not provided it's the total budget
   order?: number;
   categoryRules?: Record<string, 'deduction' | 'addition' | 'none'>; // Rules for total budget calculation
@@ -134,8 +135,6 @@ export interface Tag {
 export type LedgerMode = 'shared_fund' | 'split';
 
 export interface LedgerFundSettings {
-  budgetAmount?: number;
-  budgetPeriod?: 'monthly' | 'yearly';
   memberTargetAmount?: number;
   contributionPeriod?: 'monthly' | 'yearly' | 'one-time';
 }

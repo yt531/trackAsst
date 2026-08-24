@@ -12,6 +12,8 @@ import { Plus, Trash2, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, 
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { useSearchParams } from 'next/navigation';
+import { startOfYear, endOfYear, addYears, subYears } from 'date-fns';
 import { getLedgerMembers } from '@/lib/ledger';
 import { deleteTransaction } from '@/lib/transactions';
 
@@ -24,15 +26,21 @@ function LedgerTransactionsList() {
   const [members, setMembers] = useState<Record<string, LedgerMember>>({});
   const [loading, setLoading] = useState(true);
 
-  const [filterMode, setFilterMode] = useState<'month' | 'day'>('month');
-  const [filterDate, setFilterDate] = useState<Date>(new Date());
+  const searchParams = useSearchParams();
+  const initialFilterMode = (searchParams.get('filterMode') as 'month' | 'day' | 'year') || 'month';
+  const initialDateStr = searchParams.get('date');
+  const initialCategoryId = searchParams.get('categoryId') || null;
+
+  const [filterMode, setFilterMode] = useState<'month' | 'day' | 'year'>(initialFilterMode);
+  const [filterDate, setFilterDate] = useState<Date>(initialDateStr ? new Date(initialDateStr) : new Date());
+  const [filterCategoryId, setFilterCategoryId] = useState<string | null>(initialCategoryId);
   const [totals, setTotals] = useState({ income: 0, expense: 0 });
 
   useEffect(() => {
     if (user && activeLedgerId) {
       loadData();
     }
-  }, [user, activeLedgerId, filterMode, filterDate]);
+  }, [user, activeLedgerId, filterMode, filterDate, filterCategoryId]);
 
   const loadData = async () => {
     if (!user || !activeLedgerId) return;
@@ -61,15 +69,19 @@ function LedgerTransactionsList() {
       }
 
       // Load Transactions based on filter
-      const start = filterMode === 'month' ? startOfMonth(filterDate).getTime() : startOfDay(filterDate).getTime();
-      const end = filterMode === 'month' ? endOfMonth(filterDate).getTime() : endOfDay(filterDate).getTime();
+      const start = filterMode === 'year' ? startOfYear(filterDate).getTime() : filterMode === 'month' ? startOfMonth(filterDate).getTime() : startOfDay(filterDate).getTime();
+      const end = filterMode === 'year' ? endOfYear(filterDate).getTime() : filterMode === 'month' ? endOfMonth(filterDate).getTime() : endOfDay(filterDate).getTime();
 
-      const q = query(
+      let q = query(
         collection(db, 'ledgers', activeLedgerId, 'transactions'),
         where('date', '>=', start),
         where('date', '<=', end),
         orderBy('date', 'desc')
       );
+
+      if (filterCategoryId) {
+        q = query(q, where('categoryId', '==', filterCategoryId));
+      }
 
       const snapshot = await getDocs(q);
       const txs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Transaction));
@@ -105,11 +117,11 @@ function LedgerTransactionsList() {
   };
 
   const handlePrev = () => {
-    setFilterDate(prev => filterMode === 'month' ? subMonths(prev, 1) : subDays(prev, 1));
+    setFilterDate(prev => filterMode === 'year' ? subYears(prev, 1) : filterMode === 'month' ? subMonths(prev, 1) : subDays(prev, 1));
   };
 
   const handleNext = () => {
-    setFilterDate(prev => filterMode === 'month' ? addMonths(prev, 1) : addDays(prev, 1));
+    setFilterDate(prev => filterMode === 'year' ? addYears(prev, 1) : filterMode === 'month' ? addMonths(prev, 1) : addDays(prev, 1));
   };
 
   const grouped = transactions.reduce((acc, tx) => {
@@ -132,6 +144,12 @@ function LedgerTransactionsList() {
           {/* Mode Switcher */}
           <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
             <button
+              onClick={() => setFilterMode('year')}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'year' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
+            >
+              按年
+            </button>
+            <button
               onClick={() => setFilterMode('month')}
               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filterMode === 'month' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'}`}
             >
@@ -145,12 +163,26 @@ function LedgerTransactionsList() {
             </button>
           </div>
 
+          {filterCategoryId && (
+            <div className="w-full flex justify-center">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-medium dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                篩選分類：{categories[filterCategoryId]?.name || '未知'}
+                <button 
+                  onClick={() => setFilterCategoryId(null)}
+                  className="hover:bg-blue-200 dark:hover:bg-blue-800 p-0.5 rounded-full transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            </div>
+          )}
+
           {/* Date Selector */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full">
             <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
             <DatePicker
-              type={filterMode === 'month' ? 'month' : 'date'}
-              value={filterMode === 'month' ? format(filterDate, 'yyyy-MM') : format(filterDate, 'yyyy-MM-dd')}
+              type={filterMode === 'year' ? 'year' : filterMode === 'month' ? 'month' : 'date'}
+              value={filterMode === 'year' ? format(filterDate, 'yyyy') : filterMode === 'month' ? format(filterDate, 'yyyy-MM') : format(filterDate, 'yyyy-MM-dd')}
               onChange={(val) => setFilterDate(val ? new Date(val) : new Date())}
               className="w-32 sm:w-48"
               showTodayButton={false}
@@ -160,7 +192,7 @@ function LedgerTransactionsList() {
               onClick={() => setFilterDate(new Date())}
               className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-[10px] text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
             >
-              {filterMode === 'month' ? '本月' : '今天'}
+              {filterMode === 'year' ? '今年' : filterMode === 'month' ? '本月' : '今天'}
             </button>
           </div>
         </div>
