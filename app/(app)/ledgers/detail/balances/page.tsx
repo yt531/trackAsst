@@ -10,6 +10,7 @@ import { Transaction } from '@/types';
 import { calculateBalances, calculateSettlements, UserBalance, SettlementPlan } from '@/lib/settlements';
 import { createTransaction } from '@/lib/transactions';
 import { useRouter } from 'next/navigation';
+import { FundDashboard } from '@/components/ledgers/FundDashboard';
 
 export default function LedgerBalancesPage() {
   const { activeLedger, activeLedgerId } = useLedger();
@@ -19,6 +20,7 @@ export default function LedgerBalancesPage() {
   const [loading, setLoading] = useState(true);
   const [balances, setBalances] = useState<UserBalance[]>([]);
   const [plans, setPlans] = useState<SettlementPlan[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isSettling, setIsSettling] = useState(false);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function LedgerBalancesPage() {
         const balancesRecord = calculateBalances(txs);
         const calculatedPlans = calculateSettlements(balancesRecord);
         
+        setTransactions(txs);
         setBalances(Object.values(balancesRecord));
         setPlans(calculatedPlans);
       } catch (err) {
@@ -80,16 +83,49 @@ export default function LedgerBalancesPage() {
     }
   };
 
+  const handleSettleReimbursement = async (tx: Transaction) => {
+    if (!user || !activeLedger) return;
+    if (!confirm(`確定要核准撥款這筆代墊嗎？\n金額: ${tx.amount}`)) return;
+    
+    setIsSettling(true);
+    try {
+      await createTransaction(user.uid, {
+        userId: tx.userId,
+        ledgerId: activeLedger.id,
+        type: 'settlement',
+        amount: tx.amount,
+        baseAmount: tx.baseAmount,
+        currency: tx.currency,
+        exchangeRate: tx.exchangeRate,
+        categoryId: 'settlement',
+        paymentMethodId: 'cash',
+        date: Date.now(),
+        details: `代墊撥款：${tx.details}`,
+        notes: `核准代墊交易 ID: ${tx.id}`,
+      }, true);
+      
+      alert('撥款紀錄已新增！');
+      window.location.reload();
+    } catch (err) {
+      console.error('Error settling reimbursement', err);
+      alert('撥款失敗');
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
   if (activeLedger?.mode === 'shared_fund') {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 py-12 text-center dark:border-zinc-700 dark:bg-zinc-800/50 mt-4">
-        <div className="mb-3 rounded-full bg-zinc-200 p-4 dark:bg-zinc-700">
-          <Scale className="h-8 w-8 text-zinc-500 dark:text-zinc-400" />
-        </div>
-        <h3 className="text-lg font-bold">公積金模式</h3>
-        <p className="max-w-sm text-sm text-zinc-500">
-          本帳本為公積金模式，僅記錄共同支出，不計算個人間的欠款與結算。
-        </p>
+      <div className="mt-4">
+        {loading ? (
+          <div className="p-8 text-center text-sm text-zinc-500">計算中...</div>
+        ) : (
+          <FundDashboard 
+            ledger={activeLedger} 
+            transactions={transactions} 
+            onSettleReimbursement={handleSettleReimbursement} 
+          />
+        )}
       </div>
     );
   }

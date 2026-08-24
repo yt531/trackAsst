@@ -60,7 +60,7 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
     { name: '動態時報', href: `/ledgers/detail?id=${ledgerId}`, icon: List },
     { name: '帳本明細', href: `/ledgers/detail/transactions?id=${ledgerId}`, icon: ReceiptText },
     { name: '記帳', href: `/ledgers/detail/transactions/new?id=${ledgerId}`, icon: Plus, highlight: true },
-    { name: '結算餘額', href: `/ledgers/detail/balances?id=${ledgerId}`, icon: Calculator },
+    { name: ledger.mode === 'shared_fund' ? '公積金總覽' : '結算餘額', href: `/ledgers/detail/balances?id=${ledgerId}`, icon: Calculator },
     { name: '帳本設定', href: `/ledgers/detail/settings?id=${ledgerId}`, icon: Settings },
   ];
 

@@ -133,6 +133,13 @@ export interface Tag {
 
 export type LedgerMode = 'shared_fund' | 'split';
 
+export interface LedgerFundSettings {
+  budgetAmount?: number;
+  budgetPeriod?: 'monthly' | 'yearly';
+  memberTargetAmount?: number;
+  contributionPeriod?: 'monthly' | 'yearly' | 'one-time';
+}
+
 export interface Ledger {
   id: string;
   name: string;
@@ -146,6 +153,7 @@ export interface Ledger {
     allowMembersToCreateCategories: boolean;
     allowMembersToCreateTags: boolean;
   };
+  fundSettings?: LedgerFundSettings;
 }
 
 export type LedgerRole = 'admin' | 'editor' | 'viewer';
