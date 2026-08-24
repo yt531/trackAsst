@@ -112,6 +112,8 @@ function LedgerTransactionsList() {
         return;
       }
       if (!confirm('刪除已通過的交易需要經過審核，確定要提出刪除申請嗎？')) return;
+    } else if (tx.approvalStatus === 'pending') {
+      if (!confirm('確定要取消這筆申請嗎？')) return;
     } else {
       if (!confirm('確定要刪除這筆共享交易嗎？')) return;
     }
@@ -119,11 +121,13 @@ function LedgerTransactionsList() {
     try {
       await deleteTransaction(user.uid, tx.id, true, activeLedgerId, tx);
       setTotals(prev => ({
-        income: prev.income - (tx.type === 'income' ? (tx.baseAmount || tx.amount) : 0),
-        expense: prev.expense - (tx.type === 'expense' ? (tx.baseAmount || tx.amount) : 0),
+        income: prev.income - (tx.type === 'income' && tx.approvalStatus === 'approved' ? (tx.baseAmount || tx.amount) : 0),
+        expense: prev.expense - (tx.type === 'expense' && tx.approvalStatus === 'approved' ? (tx.baseAmount || tx.amount) : 0),
       }));
       if (tx.approvalStatus === 'approved') {
         setTransactions(transactions.map(t => t.id === tx.id ? { ...t, approvalStatus: 'pending_delete' } : t));
+      } else if (tx.approvalStatus === 'pending') {
+        setTransactions(transactions.map(t => t.id === tx.id ? { ...t, approvalStatus: 'cancelled' } : t));
       } else {
         setTransactions(transactions.filter(t => t.id !== tx.id));
       }
@@ -267,7 +271,17 @@ function LedgerTransactionsList() {
                   const isCreator = tx.userId === user?.uid;
                   const currentUserRole = members[user?.uid || '']?.role || 'viewer';
                   const isAdmin = currentUserRole === 'admin';
-                  const canEdit = isCreator || isAdmin;
+                  
+                  // pending transactions can only be edited/deleted by their creator
+                  let canEdit = isCreator || isAdmin;
+                  let canDelete = isCreator || isAdmin;
+                  if (tx.approvalStatus === 'pending') {
+                    canEdit = isCreator;
+                    canDelete = isCreator;
+                  } else if (tx.approvalStatus === 'cancelled') {
+                    canEdit = false;
+                    canDelete = false;
+                  }
 
                   return (
                     <div key={tx.id} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors group">
@@ -276,7 +290,12 @@ function LedgerTransactionsList() {
                         {isExpense ? <ArrowDownRight className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate" title={cat?.name || '未知分類'}>{cat?.name || '未知分類'}</div>
+                        <div className="font-medium truncate" title={cat?.name || '未知分類'}>
+                          {cat?.name || '未知分類'}
+                          {tx.approvalStatus === 'pending' && <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/20">審核中</span>}
+                          {tx.approvalStatus === 'cancelled' && <span className="ml-2 inline-flex items-center rounded-full bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/10 dark:bg-zinc-400/10 dark:text-zinc-400 dark:ring-zinc-400/20">已取消</span>}
+                          {tx.approvalStatus === 'pending_delete' && <span className="ml-2 inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-700 ring-1 ring-inset ring-red-600/10 dark:bg-red-400/10 dark:text-red-400 dark:ring-red-400/20">刪除審核中</span>}
+                        </div>
                         <div className="text-xs mt-0.5 text-zinc-500 dark:text-zinc-400">
                           <span className="font-medium text-zinc-700 dark:text-zinc-300">{payerName}</span>{' '}
                           {isExpense 
@@ -298,12 +317,11 @@ function LedgerTransactionsList() {
                             <Link href={`/ledgers/detail/transactions/edit?id=${activeLedgerId}&txId=${tx.id}`} className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-300">
                               <Pencil className="h-4 w-4" />
                             </Link>
-                            <button
-                              onClick={() => handleDelete(tx)}
-                              className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {canDelete && (
+                              <button onClick={() => handleDelete(tx)} className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>

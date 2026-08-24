@@ -33,7 +33,7 @@ export interface TransactionSplit {
 }
 
 export interface TransactionAuditLog {
-  type: 'approved' | 'rejected' | 'resubmitted' | 'pending_delete';
+  type: 'approved' | 'rejected' | 'resubmitted' | 'pending_delete' | 'cancelled';
   by: string;
   at: number;
   reason?: string;
@@ -60,7 +60,7 @@ export interface Transaction {
   isAdvancePayment?: boolean;
   advancePaymentStatus?: 'unsettled' | 'settled';
   settledTransactionId?: string; // ID of the transaction that settled this advance payment
-  approvalStatus?: 'pending' | 'approved' | 'rejected' | 'pending_delete';
+  approvalStatus?: 'pending' | 'approved' | 'rejected' | 'pending_delete' | 'cancelled';
   approvedBy?: string;
   rejectionReason?: string;
   rejectedAt?: number;

@@ -352,6 +352,16 @@ export const deleteTransaction = async (
         updatedAt: Date.now()
       });
       await notifyTransactionEvent(userId, ledgerId, { ...deletedTxData, approvalStatus: 'pending_delete', lastModifiedBy: userId }, 'updated');
+    } else if (deletedTxData?.approvalStatus === 'pending') {
+      // 審核中的交易，建立者自己取消，轉為 cancelled
+      const newLog = { type: 'cancelled' as const, by: userId, at: Date.now() };
+      await updateDoc(docRef, {
+        approvalStatus: 'cancelled',
+        lastModifiedBy: userId,
+        updatedAt: Date.now(),
+        auditLogs: [...(deletedTxData.auditLogs || []), newLog]
+      });
+      await notifyTransactionEvent(userId, ledgerId, { ...deletedTxData, approvalStatus: 'cancelled', lastModifiedBy: userId }, 'updated');
     } else {
       await deleteDoc(docRef);
 
