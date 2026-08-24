@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import { Noto_Sans_TC } from 'next/font/google';
 import './globals.css'; // Global styles
 import { AuthProvider } from '@/components/AuthProvider';
 import { ThemeProvider } from 'next-themes';
@@ -12,10 +13,15 @@ export const metadata: Metadata = {
   description: '簡單、無壓力的個人記帳與發票存摺應用程式',
 };
 
+const notoSansTC = Noto_Sans_TC({
+  subsets: ['latin'],
+  display: 'swap',
+});
+
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased select-none">
+      <body suppressHydrationWarning className={`${notoSansTC.className} bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased select-none`}>
         <UserInteractionLock />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
