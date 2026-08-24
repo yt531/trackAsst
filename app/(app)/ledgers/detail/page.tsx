@@ -1,153 +1,241 @@
 'use client';
 
 import { useLedger } from '@/components/LedgerProvider';
-import { Clock } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, query, orderBy, limit, getDocs, where, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
-import { ActivityFeedItem, LedgerMember } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
-import { getLedgerMembers } from '@/lib/ledger';
+import { Scale, CheckCircle2, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, query, getDocs } from 'firebase/firestore';
+import { Transaction } from '@/types';
+import { calculateBalances, calculateSettlements, UserBalance, SettlementPlan } from '@/lib/settlements';
+import { createTransaction } from '@/lib/transactions';
+import { useRouter } from 'next/navigation';
+import { FundDashboard } from '@/components/ledgers/FundDashboard';
 
-export default function LedgerFeedPage() {
-  const { activeLedgerId, activeLedger } = useLedger();
+export default function LedgerBalancesPage() {
+  const { activeLedger, activeLedgerId } = useLedger();
   const { user } = useAuth();
-  const [feed, setFeed] = useState<ActivityFeedItem[]>([]);
-  const [members, setMembers] = useState<Record<string, LedgerMember>>({});
+  const router = useRouter();
+
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [balances, setBalances] = useState<UserBalance[]>([]);
+  const [plans, setPlans] = useState<SettlementPlan[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isSettling, setIsSettling] = useState(false);
 
   useEffect(() => {
-    const fetchFeed = async () => {
+    const fetchTransactions = async () => {
       if (!activeLedgerId) return;
       setLoading(true);
       try {
-        const conditions: any[] = [orderBy('timestamp', 'desc'), limit(20)];
-        if (activeLedger?.feedHiddenUntil) {
-          conditions.unshift(where('timestamp', '>=', activeLedger.feedHiddenUntil));
-        }
-
-        const q = query(
-          collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
-          ...conditions
-        );
+        const q = query(collection(db, 'ledgers', activeLedgerId, 'transactions'));
         const snap = await getDocs(q);
-        setFeed(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem)));
-        setLastVisible(snap.docs[snap.docs.length - 1] || null);
-        setHasMore(snap.docs.length === 20);
-
-        const ledgerMembers = await getLedgerMembers(activeLedgerId);
-        const membersMap = ledgerMembers.reduce((acc, m) => {
-          acc[m.userId] = m;
-          return acc;
-        }, {} as Record<string, LedgerMember>);
-        setMembers(membersMap);
+        const txs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Transaction));
+        
+        const balancesRecord = calculateBalances(txs);
+        const calculatedPlans = calculateSettlements(balancesRecord);
+        
+        setTransactions(txs);
+        setBalances(Object.values(balancesRecord));
+        setPlans(calculatedPlans);
       } catch (err) {
-        console.error('Error fetching feed:', err);
+        console.error('Error fetching transactions:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchFeed();
-  }, [activeLedgerId, activeLedger?.feedHiddenUntil]);
+    
+    fetchTransactions();
+  }, [activeLedgerId]);
 
-  const handleLoadMore = async () => {
-    if (!activeLedgerId || !lastVisible) return;
-    setLoadingMore(true);
+  const handleSettle = async (plan: SettlementPlan) => {
+    if (!user || !activeLedger) return;
+    if (!confirm(`確定要記錄這筆還款嗎？\n金額: ${plan.amount}`)) return;
+
+    setIsSettling(true);
     try {
-      const conditions: any[] = [
-        orderBy('timestamp', 'desc'),
-        startAfter(lastVisible),
-        limit(20)
-      ];
-      if (activeLedger?.feedHiddenUntil) {
-        conditions.unshift(where('timestamp', '>=', activeLedger.feedHiddenUntil));
-      }
+      // Create a settlement transaction
+      // fromUser paid, and it entirely benefits toUser
+      await createTransaction(user.uid, {
+        userId: plan.fromUser,
+        ledgerId: activeLedger.id,
+        type: 'settlement',
+        amount: plan.amount,
+        baseAmount: plan.amount,
+        currency: activeLedger.currency,
+        exchangeRate: 1,
+        categoryId: 'settlement',
+        paymentMethodId: 'cash',
+        date: Date.now(),
+        details: '結清帳款',
+        notes: '',
+        splits: [{ userId: plan.toUser, paidAmount: 0, owedAmount: plan.amount }]
+      }, true);
 
-      const q = query(
-        collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
-        ...conditions
-      );
-      const snap = await getDocs(q);
-      const newItems = snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem));
-      
-      setFeed(prev => [...prev, ...newItems]);
-      setLastVisible(snap.docs[snap.docs.length - 1] || null);
-      setHasMore(snap.docs.length === 20);
+      alert('結清紀錄已新增！');
+      // Reload the page to refresh balances
+      window.location.reload();
     } catch (err) {
-      console.error('Error fetching more feed:', err);
+      console.error('Error settling up', err);
+      alert('結清失敗');
     } finally {
-      setLoadingMore(false);
+      setIsSettling(false);
     }
   };
 
-  if (loading && feed.length === 0) {
-    return <div className="p-8 text-center text-sm text-zinc-500">載入動態中...</div>;
-  }
-
-  const getActorName = (actorId: string) => {
-    if (actorId === user?.uid) return '您';
-    const member = members[actorId];
-    if (member?.nickname) return member.nickname;
-    if (member?.role === 'admin') return '管理員';
-    return `使用者 ${actorId.slice(0, 4)}`;
+  const handleSettleReimbursement = async (tx: Transaction) => {
+    if (!user || !activeLedger) return;
+    if (!confirm(`確定要核准撥款這筆代墊嗎？\n金額: ${tx.amount}`)) return;
+    
+    setIsSettling(true);
+    try {
+      await createTransaction(user.uid, {
+        userId: tx.userId,
+        ledgerId: activeLedger.id,
+        type: 'settlement',
+        amount: tx.amount,
+        baseAmount: tx.baseAmount,
+        currency: tx.currency,
+        exchangeRate: tx.exchangeRate,
+        categoryId: 'settlement',
+        paymentMethodId: 'cash',
+        date: Date.now(),
+        details: `代墊撥款：${tx.details}`,
+        notes: `核准代墊交易 ID: ${tx.id}`,
+      }, true);
+      
+      alert('撥款紀錄已新增！');
+      window.location.reload();
+    } catch (err) {
+      console.error('Error settling reimbursement', err);
+      alert('撥款失敗');
+    } finally {
+      setIsSettling(false);
+    }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">動態時報</h1>
-      </div>
-      {feed.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 py-12 text-center dark:border-zinc-700 dark:bg-zinc-800/50 mt-4">
-          <div className="mb-3 rounded-full bg-zinc-200 p-4 dark:bg-zinc-700">
-            <Clock className="h-8 w-8 text-zinc-500 dark:text-zinc-400" />
-          </div>
-          <h3 className="text-lg font-bold">目前沒有任何動態</h3>
-          <p className="max-w-sm text-sm text-zinc-500">
-            新增一筆共享交易或邀請成員加入，這裡就會顯示最新的活動紀錄。
-          </p>
+  if (activeLedger?.mode === 'shared_fund') {
+    return (
+      <div className="mt-2">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">公積金總覽</h1>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {feed.map(item => (
-            <div key={item.id} className="flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
-                {item.actorId === user?.uid ? '我' : getActorName(item.actorId).charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {item.type === 'member_joined' 
-                    ? item.details 
-                    : item.type === 'transaction_created'
-                      ? `${getActorName(item.actorId)}：新增了一筆交易，金額為 ${item.details}。`
-                      : item.type === 'transaction_updated'
-                        ? `${getActorName(item.actorId)}：修改了一筆交易，金額為 ${item.details}。`
-                        : item.type === 'transaction_deleted'
-                          ? `${getActorName(item.actorId)}：刪除了一筆交易${item.details ? `，金額為 ${item.details}` : ''}。`
-                          : `${getActorName(item.actorId)} ${item.details}`}
-                </p>
-                <p className="text-xs text-zinc-500 mt-1">
-                  {new Date(item.timestamp).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          ))}
-          {hasMore && (
-            <div className="pt-4 text-center">
-              <button 
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
-              >
-                {loadingMore ? '載入中...' : '載入更多動態'}
-              </button>
-            </div>
+        {loading ? (
+          <div className="p-8 text-center text-sm text-zinc-500">計算中...</div>
+        ) : (
+          <FundDashboard 
+            ledger={activeLedger} 
+            transactions={transactions} 
+            onSettleReimbursement={handleSettleReimbursement} 
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="p-8 text-center text-sm text-zinc-500">計算中...</div>;
+  }
+
+  const myBalance = balances.find(b => b.userId === user?.uid)?.netBalance || 0;
+
+  return (
+    <div className="space-y-6 pb-20">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">結算餘額</h1>
+      </div>
+      {/* My Status Card */}
+      <div className={`rounded-2xl p-6 text-white shadow-sm ${
+        myBalance > 0 ? 'bg-emerald-600' : myBalance < 0 ? 'bg-rose-600' : 'bg-zinc-600'
+      }`}>
+        <h3 className="text-sm font-medium opacity-90 mb-1">您的目前狀態</h3>
+        <div className="text-3xl font-bold">
+          {myBalance > 0 ? (
+            <>別人欠您 ${Math.abs(myBalance)}</>
+          ) : myBalance < 0 ? (
+            <>您總共欠款 ${Math.abs(myBalance)}</>
+          ) : (
+            <>無欠款，一身輕！</>
           )}
         </div>
-      )}
+      </div>
+
+      {/* Suggested Settlements */}
+      <section>
+        <h3 className="text-lg font-bold mb-3">建議結算方案</h3>
+        {plans.length === 0 ? (
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500 mb-2" />
+            <p className="font-medium text-zinc-900 dark:text-zinc-100">目前帳目已結清</p>
+            <p className="text-sm text-zinc-500">群組內沒有任何欠款需要處理。</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {plans.map((plan, idx) => {
+              const isMeFrom = plan.fromUser === user?.uid;
+              const isMeTo = plan.toUser === user?.uid;
+              const involved = isMeFrom || isMeTo;
+
+              return (
+                <div key={idx} className={`flex items-center justify-between rounded-xl border p-4 shadow-sm ${
+                  involved 
+                    ? 'border-blue-200 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10' 
+                    : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {isMeFrom ? '您' : `使用者 ${plan.fromUser.slice(0,4)}`}
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-zinc-400" />
+                    <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {isMeTo ? '您' : `使用者 ${plan.toUser.slice(0,4)}`}
+                    </div>
+                    <div className="ml-2 font-bold text-lg text-zinc-900 dark:text-zinc-100">
+                      ${plan.amount}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleSettle(plan)}
+                    disabled={isSettling}
+                    className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    結清
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* All Members Balances */}
+      <section>
+        <h3 className="text-lg font-bold mb-3">群組成員餘額</h3>
+        <div className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-700 dark:border-zinc-700 dark:bg-zinc-800">
+          {balances.map(b => {
+            const isMe = b.userId === user?.uid;
+            return (
+              <div key={b.userId} className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium ${
+                    isMe ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
+                  }`}>
+                    {isMe ? '我' : '友'}
+                  </div>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {isMe ? '您 (You)' : `使用者 ${b.userId.slice(0,4)}`}
+                  </span>
+                </div>
+                <div className={`font-bold ${
+                  b.netBalance > 0 ? 'text-emerald-600 dark:text-emerald-400' : b.netBalance < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500'
+                }`}>
+                  {b.netBalance > 0 ? '+' : ''}{b.netBalance}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

@@ -57,10 +57,10 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
   }
 
   const tabs = [
-    { name: '動態時報', href: `/ledgers/detail?id=${ledgerId}`, icon: List },
-    { name: '帳本明細', href: `/ledgers/detail/transactions?id=${ledgerId}`, icon: ReceiptText },
+    { name: ledger.mode === 'shared_fund' ? '公積金總覽' : '結算餘額', href: `/ledgers/detail?id=${ledgerId}`, icon: Calculator },
+    { name: '動態時報', href: `/ledgers/detail/timeline?id=${ledgerId}`, icon: List },
     { name: '記帳', href: `/ledgers/detail/transactions/new?id=${ledgerId}`, icon: Plus, highlight: true },
-    { name: ledger.mode === 'shared_fund' ? '公積金總覽' : '結算餘額', href: `/ledgers/detail/balances?id=${ledgerId}`, icon: Calculator },
+    { name: '帳本明細', href: `/ledgers/detail/transactions?id=${ledgerId}`, icon: ReceiptText },
     { name: '帳本預算', href: `/ledgers/detail/budgets?id=${ledgerId}`, icon: Wallet },
   ];
 
