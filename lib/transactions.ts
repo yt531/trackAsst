@@ -8,7 +8,7 @@ import {
   getDoc,
   getDocs,
 } from 'firebase/firestore';
-import type { Transaction, ActivityFeedItem, ActivityType, AppNotification } from '../types';
+import type { Transaction, ActivityFeedItem, ActivityType, AppNotification, NotificationType } from '../types';
 
 export const createActivityFeedItem = async (
   ledgerId: string,
