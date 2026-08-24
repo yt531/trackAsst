@@ -50,10 +50,13 @@ function LedgerDetailLayoutContent({ children }: { children: React.ReactNode }) 
   
   const isEditing = pathname?.includes('/edit');
   const isNew = pathname?.includes('/new');
+  const isSettings = pathname?.includes('/settings');
   
   let backHref = '/ledgers';
   if (isEditing || isNew) {
     backHref = `/ledgers/detail/transactions?id=${ledgerId}`;
+  } else if (isSettings) {
+    backHref = `/ledgers/detail?id=${ledgerId}`;
   }
 
   const tabs = [
