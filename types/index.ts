@@ -118,6 +118,8 @@ export interface UserSettings {
   biometricEnabled: boolean;
   calendarSyncEnabled?: boolean;
   defaultPrivacyLevel?: number;
+  homePrivacyLevel?: number;
+  transactionsPrivacyLevel?: number;
   ledgerPrivacyLevel?: number;
   allowScreenshot?: boolean;
   personalVisibleBudgetPeriods?: ('daily' | 'weekly' | 'monthly' | 'yearly')[];

@@ -39,7 +39,7 @@ export default function SecurityPage() {
       // Clean up the URL to prevent reopening on reload
       router.replace('/settings/security');
     }
-    
+
     // Load default privacy level and screenshot setting
     if (auth.currentUser) {
       getUserSettings(auth.currentUser.uid).then(settings => {
@@ -98,8 +98,8 @@ export default function SecurityPage() {
       setBiometricCredentialId(null);
     } else {
       if (!hasPin) {
-         setErrorMsg('請先設定安全鎖範圍 (設定 PIN 碼) 後，才能啟用生物辨識。');
-         return;
+        setErrorMsg('請先設定安全鎖範圍 (設定 PIN 碼) 後，才能啟用生物辨識。');
+        return;
       }
       try {
         const credentialId = await registerBiometric('FinTrack User');
@@ -122,7 +122,7 @@ export default function SecurityPage() {
     setLockScope('none');
     setHasBiometric(false);
     setBiometricCredentialId(null);
-    
+
     if (auth.currentUser) {
       try {
         await setSecuritySettings(auth.currentUser.uid, {
@@ -141,14 +141,14 @@ export default function SecurityPage() {
     }
     try {
       await signInWithPopup(auth, googleProvider);
-      
+
       await setSecuritySettings(auth.currentUser.uid, {
         pinHash: deleteField()
       });
 
       localStorage.removeItem('pinHash');
       localStorage.removeItem('lockScope');
-      
+
       alert('已成功清除 PIN 碼，請重新設定。');
       setIsPinSetupOpen(true);
     } catch (e) {
@@ -191,15 +191,13 @@ export default function SecurityPage() {
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">每次開啟程式時的防窺狀態</div>
               </div>
             </div>
-            <select 
+            <select
               value={defaultPrivacyLevel}
               onChange={(e) => handlePrivacyLevelChange(Number(e.target.value))}
               className="bg-zinc-100 dark:bg-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value={0}>👀 顯示全部</option>
-              <option value={1}>🫣 隱藏預算</option>
-              <option value={2}>😎 隱藏預算與收支</option>
-              <option value={3}>🙈 隱藏所有金額</option>
+              <option value={0}>👀 顯示全部金額</option>
+              <option value={3}>🙈 隱藏全部金額</option>
             </select>
           </div>
         </div>
@@ -227,9 +225,9 @@ export default function SecurityPage() {
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">安全鎖定範圍</h2>
-        
+
         <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-700 dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
-          
+
           <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
@@ -240,11 +238,11 @@ export default function SecurityPage() {
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">每次開啟應用程式皆需解鎖</div>
               </div>
             </div>
-            <input 
-              type="radio" 
-              checked={lockScope === 'global'} 
+            <input
+              type="radio"
+              checked={lockScope === 'global'}
               onChange={() => handleToggleLockScope('global')}
-              className="w-5 h-5 accent-blue-600" 
+              className="w-5 h-5 accent-blue-600"
             />
           </label>
 
@@ -258,16 +256,16 @@ export default function SecurityPage() {
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">僅在進入設定等頁面時鎖定</div>
               </div>
             </div>
-            <input 
-              type="radio" 
-              checked={lockScope === 'sensitive'} 
+            <input
+              type="radio"
+              checked={lockScope === 'sensitive'}
               onChange={() => handleToggleLockScope('sensitive')}
-              className="w-5 h-5 accent-blue-600" 
+              className="w-5 h-5 accent-blue-600"
             />
           </label>
 
           <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-             <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
                 <Key className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
               </div>
@@ -276,11 +274,11 @@ export default function SecurityPage() {
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">不啟用任何鎖定機制</div>
               </div>
             </div>
-            <input 
-              type="radio" 
-              checked={lockScope === 'none'} 
+            <input
+              type="radio"
+              checked={lockScope === 'none'}
               onChange={() => handleToggleLockScope('none')}
-              className="w-5 h-5 accent-blue-600" 
+              className="w-5 h-5 accent-blue-600"
             />
           </label>
 
@@ -290,7 +288,7 @@ export default function SecurityPage() {
           <section className="space-y-4 pt-4">
             <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">PIN 碼管理</h2>
             <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-700 dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
-              
+
               <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors" onClick={handleForgotPin}>
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
@@ -335,7 +333,7 @@ export default function SecurityPage() {
                     <div className="text-sm text-zinc-500 dark:text-zinc-400">經過一段時間後自動鎖定</div>
                   </div>
                 </div>
-                <select 
+                <select
                   value={idleTimeout}
                   onChange={(e) => setIdleTimeout(Number(e.target.value))}
                   className="bg-zinc-100 dark:bg-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -374,9 +372,9 @@ export default function SecurityPage() {
         </>
       )}
 
-      <PinSetupDialog 
-        isOpen={isPinSetupOpen} 
-        onClose={() => setIsPinSetupOpen(false)} 
+      <PinSetupDialog
+        isOpen={isPinSetupOpen}
+        onClose={() => setIsPinSetupOpen(false)}
         onSuccess={() => {
           setIsPinSetupOpen(false);
           // 預設切換為全域

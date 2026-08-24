@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthProvider';
-import { getUserSettings } from '@/lib/db';
+import { getUserSettings, setUserSettings } from '@/lib/db';
 
 interface PrivacyContextType {
   privacyLevel: number;
@@ -18,28 +18,45 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
-    const cachedLevel = localStorage.getItem('cachedDefaultPrivacyLevel');
+    const cachedLevel = localStorage.getItem('cachedHomePrivacyLevel');
     if (cachedLevel !== null) {
       setPrivacyLevel(parseInt(cachedLevel, 10));
+    } else {
+      const cachedDefault = localStorage.getItem('cachedDefaultPrivacyLevel');
+      if (cachedDefault !== null) {
+        setPrivacyLevel(parseInt(cachedDefault, 10));
+      }
     }
   }, []);
 
   useEffect(() => {
     if (user) {
       getUserSettings(user.uid).then(settings => {
-        const level = settings?.defaultPrivacyLevel ?? 0;
+        const level = settings?.homePrivacyLevel ?? settings?.defaultPrivacyLevel ?? 0;
         setPrivacyLevel(level);
-        localStorage.setItem('cachedDefaultPrivacyLevel', level.toString());
+        localStorage.setItem('cachedHomePrivacyLevel', level.toString());
+        if (settings?.defaultPrivacyLevel !== undefined) {
+          localStorage.setItem('cachedDefaultPrivacyLevel', settings.defaultPrivacyLevel.toString());
+        }
       });
     } else if (user === null) {
       // User logged out, clear cache
+      localStorage.removeItem('cachedHomePrivacyLevel');
       localStorage.removeItem('cachedDefaultPrivacyLevel');
       setPrivacyLevel(0);
     }
   }, [user]);
 
-  const setLevel = (value: number) => {
+  const setLevel = async (value: number) => {
     setPrivacyLevel(value);
+    localStorage.setItem('cachedHomePrivacyLevel', value.toString());
+    if (user) {
+      try {
+        await setUserSettings(user.uid, { homePrivacyLevel: value });
+      } catch (e) {
+        console.error('Failed to save home privacy level', e);
+      }
+    }
   };
 
   if (!isMounted) {

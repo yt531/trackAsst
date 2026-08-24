@@ -27,7 +27,7 @@ export function LedgerPrivacyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       getUserSettings(user.uid).then(settings => {
-        const level = settings?.ledgerPrivacyLevel ?? 0;
+        const level = settings?.ledgerPrivacyLevel ?? settings?.defaultPrivacyLevel ?? 0;
         setLedgerPrivacyLevelState(level);
         localStorage.setItem('cachedLedgerPrivacyLevel', level.toString());
       });

@@ -16,10 +16,10 @@ import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 
 const transactionPrivacyOptions = [
-  { value: 0, emoji: '👀', label: '顯示所有金額', description: '顯示所有明細與總收支' },
-  { value: 1, emoji: '🫣', label: '僅隱藏明細金額', description: '隱藏每一筆的交易金額' },
-  { value: 2, emoji: '😎', label: '僅隱藏總收支', description: '隱藏上方總收入與總支出' },
-  { value: 3, emoji: '🙈', label: '隱藏所有金額', description: '隱藏所有明細與總收支金額' },
+  { value: 0, emoji: '👀', label: '顯示全部金額', description: '顯示交易明細與總收支等金額' },
+  { value: 1, emoji: '🫣', label: '隱藏交易明細金額', description: '只隱藏交易明細金額' },
+  { value: 2, emoji: '😎', label: '隱藏總收支金額', description: '只隱藏總收支金額' },
+  { value: 3, emoji: '🙈', label: '隱藏全部金額', description: '隱藏交易明細與總收支等金額' },
 ];
 
 function TransactionPrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | 'full' }) {
@@ -62,17 +62,16 @@ function TransactionPrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | '
               <span>{currentOption.label}</span>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-              <path d="m6 9 6 6 6-6"/>
+              <path d="m6 9 6 6 6-6" />
             </svg>
           </>
         )}
       </button>
 
       {isOpen && (
-        <div 
-          className={`absolute z-50 mt-2 w-56 rounded-xl border border-zinc-200 bg-white/95 backdrop-blur-md shadow-xl dark:border-zinc-700 dark:bg-zinc-800/95 overflow-hidden ${
-            variant === 'icon' ? 'right-0 top-full origin-top-right' : 'bottom-full mb-2 left-0 origin-bottom-left'
-          }`}
+        <div
+          className={`absolute z-50 mt-2 w-56 rounded-xl border border-zinc-200 bg-white/95 backdrop-blur-md shadow-xl dark:border-zinc-700 dark:bg-zinc-800/95 overflow-hidden ${variant === 'icon' ? 'right-0 top-full origin-top-right' : 'bottom-full mb-2 left-0 origin-bottom-left'
+            }`}
         >
           <div className="p-2 space-y-1">
             <div className="px-2 py-1.5 mb-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
@@ -85,11 +84,10 @@ function TransactionPrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | '
                   setPrivacyLevel(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${
-                  privacyLevel === option.value
-                    ? 'bg-blue-50/80 dark:bg-blue-900/30'
-                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'
-                }`}
+                className={`w-full text-left flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${privacyLevel === option.value
+                  ? 'bg-blue-50/80 dark:bg-blue-900/30'
+                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'
+                  }`}
               >
                 <span className="text-xl mt-0.5">{option.emoji}</span>
                 <div className="flex flex-col">
@@ -111,16 +109,16 @@ function TransactionPrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | '
 
 function TransactionPrivacyText({ type = 'item', text, className = '' }: { type?: 'summary' | 'item'; text: string | number; className?: string }) {
   const { privacyLevel } = usePrivacy();
-  
+
   let shouldBlur = false;
   if (privacyLevel === 3) shouldBlur = true;
   else if (privacyLevel === 1 && type === 'item') shouldBlur = true;
   else if (privacyLevel === 2 && type === 'summary') shouldBlur = true;
-  
+
   if (shouldBlur) {
     return <span className={`filter blur-sm select-none opacity-80 ${className}`}>****</span>;
   }
-  
+
   return <span className={className}>{text}</span>;
 }
 
@@ -239,9 +237,9 @@ function TransactionsList() {
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="交易紀錄" 
-        backHref="/" 
+      <PageHeader
+        title="交易紀錄"
+        backHref="/"
         rightAction={
           <div className="flex items-center gap-1 sm:gap-2">
             <TransactionPrivacyDropdown variant="icon" />
@@ -403,25 +401,52 @@ function TransactionsList() {
 }
 
 function LocalPrivacyProvider({ children }: { children: React.ReactNode }) {
-  const globalPrivacy = usePrivacy();
-  const [localLevel, setLocalLevel] = useState<number | null>(null);
+  const { user } = useAuth();
+  const [localLevel, setLocalLevel] = useState<number>(0);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const saved = localStorage.getItem('transactionsPrivacyLevel');
     if (saved !== null) {
       setLocalLevel(parseInt(saved, 10));
+    } else {
+      const defaultSaved = localStorage.getItem('cachedDefaultPrivacyLevel');
+      if (defaultSaved !== null) {
+        setLocalLevel(parseInt(defaultSaved, 10));
+      }
     }
-  }, []);
 
-  const setLevel = (val: number) => {
+    if (user) {
+      import('@/lib/db').then(({ getUserSettings }) => {
+        getUserSettings(user.uid).then(settings => {
+          const level = settings?.transactionsPrivacyLevel ?? settings?.defaultPrivacyLevel ?? 0;
+          setLocalLevel(level);
+          localStorage.setItem('transactionsPrivacyLevel', level.toString());
+        });
+      });
+    } else if (user === null) {
+      localStorage.removeItem('transactionsPrivacyLevel');
+    }
+  }, [user]);
+
+  const setLevel = async (val: number) => {
     setLocalLevel(val);
     localStorage.setItem('transactionsPrivacyLevel', val.toString());
+    if (user) {
+      try {
+        const { setUserSettings } = await import('@/lib/db');
+        await setUserSettings(user.uid, { transactionsPrivacyLevel: val });
+      } catch (e) {
+        console.error('Failed to save transactions privacy level', e);
+      }
+    }
   };
 
-  const activeLevel = localLevel !== null ? localLevel : globalPrivacy.privacyLevel;
+  if (!isMounted) return <>{children}</>;
 
   return (
-    <PrivacyContext.Provider value={{ privacyLevel: activeLevel, setPrivacyLevel: setLevel }}>
+    <PrivacyContext.Provider value={{ privacyLevel: localLevel, setPrivacyLevel: setLevel }}>
       {children}
     </PrivacyContext.Provider>
   );

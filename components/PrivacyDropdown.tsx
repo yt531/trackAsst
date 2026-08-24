@@ -4,10 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { usePrivacy } from '@/components/PrivacyProvider';
 
 const options = [
-  { value: 0, emoji: '👀', label: '顯示全部', description: '顯示所有金額' },
-  { value: 1, emoji: '🫣', label: '隱藏預算', description: '僅隱藏預算金額' },
-  { value: 2, emoji: '😎', label: '隱藏預算與收支', description: '僅顯示明細金額' },
-  { value: 3, emoji: '🙈', label: '隱藏全部', description: '隱藏所有金額' },
+  { value: 0, emoji: '👀', label: '顯示全部金額', description: '顯示預算、收支、交易明細等金額' },
+  { value: 1, emoji: '🫣', label: '隱藏預算金額', description: '只隱藏預算金額' },
+  { value: 2, emoji: '😎', label: '隱藏預算與總收支金額', description: '只顯示交易明細金額' },
+  { value: 3, emoji: '🙈', label: '隱藏全部金額', description: '隱藏預算、總收支、交易明細等金額' },
 ];
 
 export function PrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | 'full' }) {
@@ -73,8 +73,8 @@ export function PrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | 'full
                   setIsOpen(false);
                 }}
                 className={`w-full text-left flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${privacyLevel === option.value
-                    ? 'bg-blue-50/80 dark:bg-blue-900/30'
-                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'
+                  ? 'bg-blue-50/80 dark:bg-blue-900/30'
+                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'
                   }`}
               >
                 <span className="text-xl mt-0.5">{option.emoji}</span>
