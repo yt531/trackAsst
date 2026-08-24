@@ -400,7 +400,12 @@ function SharedTransactionForm() {
                   checked={isSubmitOnBehalf}
                   onChange={(e) => {
                     setIsSubmitOnBehalf(e.target.checked);
-                    if (!e.target.checked && user) setPayerId(user.uid);
+                    if (!e.target.checked && user) {
+                      setPayerId(user.uid);
+                    } else if (e.target.checked && user) {
+                      const otherMember = members.find(m => m.userId !== user.uid);
+                      if (otherMember) setPayerId(otherMember.userId);
+                    }
                   }}
                   className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
                 />
@@ -416,9 +421,9 @@ function SharedTransactionForm() {
                     onChange={(e) => setPayerId(e.target.value)}
                     className="w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm dark:border-blue-800 dark:bg-zinc-900"
                   >
-                    {members.map(m => (
+                    {members.filter(m => m.userId !== user?.uid).map(m => (
                       <option key={m.userId} value={m.userId}>
-                        {m.nickname || `User ${m.userId.slice(0,4)}`} {m.userId === user?.uid ? '(我)' : ''}
+                        {m.nickname || `User ${m.userId.slice(0,4)}`}
                       </option>
                     ))}
                   </select>
