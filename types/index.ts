@@ -82,7 +82,7 @@ export interface Budget {
   userId: string;
   ledgerId?: string;
   amount: number;
-  period: 'daily' | 'monthly' | 'yearly';
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
   month: string; // e.g., '2024-05' or '2024' for yearly
   categoryId?: string; // Optional, if not provided it's the total budget
   order?: number;

@@ -8,7 +8,7 @@ import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { format, subMonths, addMonths, subYears, addYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { format, subMonths, addMonths, subYears, addYears, startOfMonth, endOfMonth, startOfYear, endOfYear, getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, setISOWeek, setISOWeekYear } from 'date-fns';
 import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { SearchableCategorySelect } from '@/components/ui/SearchableCategorySelect';
@@ -60,7 +60,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const filterMode = budget.period === 'daily' ? 'day' : budget.period === 'yearly' ? 'year' : 'month';
+  const filterMode = budget.period === 'daily' ? 'day' : budget.period === 'yearly' ? 'year' : budget.period === 'weekly' ? 'week' : 'month';
   const catQuery = budget.categoryId ? `&categoryId=${budget.categoryId}` : '';
   
   const isCurrentMonth = selectedMonth === format(new Date(), 'yyyy-MM');
@@ -70,6 +70,8 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
     dateQuery = selectedMonth.substring(0, 4);
   } else if (budget.period === 'daily') {
     dateQuery = isCurrentMonth ? format(new Date(), 'yyyy-MM-dd') : `${selectedMonth}-01`;
+  } else if (budget.period === 'weekly') {
+    dateQuery = selectedMonth;
   }
   
   const txUrl = `/ledgers/detail/transactions?id=${ledgerId}&filterMode=${filterMode}&date=${dateQuery}${catQuery}`;
@@ -113,7 +115,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
     }
   } else {
     const categoryTxs = transactions.filter(t => t.type === 'expense' && t.categoryId === budget.categoryId);
-    if (budget.period === 'monthly' || budget.period === 'yearly') {
+    if (budget.period === 'monthly' || budget.period === 'yearly' || budget.period === 'weekly') {
       spent = categoryTxs.reduce((sum, t) => sum + (t.baseAmount || t.amount), 0);
     } else {
       const today = new Date();
@@ -182,7 +184,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
                   {categoryName}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {budget.period === 'monthly' ? '每月預算' : budget.period === 'yearly' ? '每年預算' : '每日預算'}
+                  {budget.period === 'monthly' ? '每月預算' : budget.period === 'yearly' ? '每年預算' : budget.period === 'weekly' ? '每週預算' : '每日預算'}
                 </p>
               </div>
             </div>
@@ -225,17 +227,26 @@ export default function LedgerBudgetsPage() {
   const [periodTransactions, setPeriodTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const currentMonth = format(new Date(), 'yyyy-MM');
-  const currentYear = format(new Date(), 'yyyy');
+  const now = new Date();
+  const currentMonth = format(now, 'yyyy-MM');
+  const currentYear = format(now, 'yyyy');
+  const currentWeek = `${getISOWeekYear(now)}-W${String(getISOWeek(now)).padStart(2, '0')}`;
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedWeek, setSelectedWeek] = useState(currentWeek);
 
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly' | 'yearly'>('monthly');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 
   const handlePrevPeriod = () => {
     if (viewMode === 'yearly') {
       const prev = subYears(new Date(Number(selectedYear), 0, 1), 1);
       setSelectedYear(format(prev, 'yyyy'));
+    } else if (viewMode === 'weekly') {
+      const [y, w] = selectedWeek.split('-W');
+      let d = setISOWeekYear(new Date(), parseInt(y, 10));
+      d = setISOWeek(d, parseInt(w, 10));
+      d.setDate(d.getDate() - 7);
+      setSelectedWeek(`${getISOWeekYear(d)}-W${String(getISOWeek(d)).padStart(2, '0')}`);
     } else {
       const [year, month] = selectedMonth.split('-');
       const prev = subMonths(new Date(Number(year), Number(month) - 1, 1), 1);
@@ -247,6 +258,12 @@ export default function LedgerBudgetsPage() {
     if (viewMode === 'yearly') {
       const next = addYears(new Date(Number(selectedYear), 0, 1), 1);
       setSelectedYear(format(next, 'yyyy'));
+    } else if (viewMode === 'weekly') {
+      const [y, w] = selectedWeek.split('-W');
+      let d = setISOWeekYear(new Date(), parseInt(y, 10));
+      d = setISOWeek(d, parseInt(w, 10));
+      d.setDate(d.getDate() + 7);
+      setSelectedWeek(`${getISOWeekYear(d)}-W${String(getISOWeek(d)).padStart(2, '0')}`);
     } else {
       const [year, month] = selectedMonth.split('-');
       const next = addMonths(new Date(Number(year), Number(month) - 1, 1), 1);
@@ -257,7 +274,7 @@ export default function LedgerBudgetsPage() {
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [amount, setAmount] = useState('');
-  const [period, setPeriod] = useState<'daily' | 'monthly' | 'yearly'>('monthly');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [categoryId, setCategoryId] = useState<string>(''); // empty means 'total'
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
   
@@ -299,7 +316,7 @@ export default function LedgerBudgetsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const queryPeriod = viewMode === 'yearly' ? selectedYear : selectedMonth;
+        const queryPeriod = viewMode === 'yearly' ? selectedYear : viewMode === 'weekly' ? selectedWeek : selectedMonth;
         const fetchedBudgets = await getLedgerBudgetsByMonth(ledgerId, queryPeriod);
         
         fetchedBudgets.forEach((b, idx) => {
@@ -320,6 +337,12 @@ export default function LedgerBudgetsPage() {
           const yearDate = new Date(Number(selectedYear), 0, 1);
           start = startOfYear(yearDate).getTime();
           end = endOfYear(yearDate).getTime();
+        } else if (viewMode === 'weekly') {
+          const [y, w] = selectedWeek.split('-W');
+          let d = setISOWeekYear(new Date(), parseInt(y, 10));
+          d = setISOWeek(d, parseInt(w, 10));
+          start = startOfISOWeek(d).getTime();
+          end = endOfISOWeek(d).getTime();
         } else {
           const [yearStr, monthStr] = selectedMonth.split('-');
           const monthDate = new Date(Number(yearStr), Number(monthStr) - 1, 1);
@@ -343,7 +366,7 @@ export default function LedgerBudgetsPage() {
     };
 
     fetchData();
-  }, [user, ledgerId, viewMode, selectedMonth, selectedYear]);
+  }, [user, ledgerId, viewMode, selectedMonth, selectedYear, selectedWeek]);
 
   const handleOpenForm = (budget?: Budget) => {
     if (budget) {
@@ -417,7 +440,7 @@ export default function LedgerBudgetsPage() {
         }
       }
 
-      const saveMonth = period === 'yearly' ? selectedYear : selectedMonth;
+      const saveMonth = period === 'yearly' ? selectedYear : period === 'weekly' ? selectedWeek : selectedMonth;
 
       const newBudget = await saveLedgerBudget(ledgerId, {
         userId: user.uid,
@@ -489,7 +512,7 @@ export default function LedgerBudgetsPage() {
       </div>
 
       <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl mb-4">
-        {(['daily', 'monthly', 'yearly'] as const).map(mode => (
+        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(mode => (
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
@@ -499,7 +522,7 @@ export default function LedgerBudgetsPage() {
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
             }`}
           >
-            {mode === 'daily' ? '日預算' : mode === 'monthly' ? '月預算' : '年預算'}
+              {mode === 'daily' ? '日預算' : mode === 'weekly' ? '週預算' : mode === 'monthly' ? '月預算' : '年預算'}
           </button>
         ))}
       </div>
@@ -513,11 +536,13 @@ export default function LedgerBudgetsPage() {
         </button>
         
         <DatePicker 
-          type={viewMode === 'yearly' ? 'year' : 'month'}
-          value={viewMode === 'yearly' ? selectedYear : selectedMonth}
+          type={viewMode === 'yearly' ? 'year' : viewMode === 'weekly' ? 'week' : 'month'}
+          value={viewMode === 'yearly' ? selectedYear : viewMode === 'weekly' ? selectedWeek : selectedMonth}
           onChange={(val) => {
             if (viewMode === 'yearly') {
               setSelectedYear(val || format(new Date(), 'yyyy'));
+            } else if (viewMode === 'weekly') {
+              setSelectedWeek(val || `${getISOWeekYear(new Date())}-W${String(getISOWeek(new Date())).padStart(2, '0')}`);
             } else {
               setSelectedMonth(val || format(new Date(), 'yyyy-MM'));
             }
@@ -537,15 +562,31 @@ export default function LedgerBudgetsPage() {
           onClick={() => {
             if (viewMode === 'yearly') {
               setSelectedYear(format(new Date(), 'yyyy'));
+            } else if (viewMode === 'weekly') {
+              setSelectedWeek(`${getISOWeekYear(new Date())}-W${String(getISOWeek(new Date())).padStart(2, '0')}`);
             } else {
               setSelectedMonth(format(new Date(), 'yyyy-MM'));
             }
           }}
           className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-[10px] text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
         >
-          {viewMode === 'yearly' ? '今年' : '本月'}
+          {viewMode === 'yearly' ? '今年' : viewMode === 'weekly' ? '本週' : '本月'}
         </button>
       </div>
+
+      {viewMode === 'weekly' && selectedWeek && (
+        <div className="flex justify-center w-full mb-6 -mt-4">
+          <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full">
+            {(() => {
+              const [y, w] = selectedWeek.split('-W');
+              if (!y || !w) return '';
+              let d = setISOWeekYear(new Date(), parseInt(y, 10));
+              d = setISOWeek(d, parseInt(w, 10));
+              return `${format(startOfISOWeek(d), 'yyyy/MM/dd')} - ${format(endOfISOWeek(d), 'yyyy/MM/dd')}`;
+            })()}
+          </div>
+        </div>
+      )}
 
       {isFormOpen && (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 mb-6">
@@ -566,10 +607,11 @@ export default function LedgerBudgetsPage() {
                 <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">預算週期</label>
                 <select
                   value={period}
-                  onChange={(e) => setPeriod(e.target.value as 'daily' | 'monthly' | 'yearly')}
+                  onChange={(e) => setPeriod(e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly')}
                   className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
                 >
                   <option value="daily">每日</option>
+                  <option value="weekly">每週</option>
                   <option value="monthly">每月</option>
                   <option value="yearly">每年</option>
                 </select>
@@ -696,7 +738,7 @@ export default function LedgerBudgetsPage() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
             <Wallet className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">尚未設定{viewMode === 'daily' ? '日預算' : viewMode === 'monthly' ? '月預算' : '年預算'}</h3>
+          <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">尚未設定{viewMode === 'daily' ? '日預算' : viewMode === 'weekly' ? '週預算' : viewMode === 'monthly' ? '月預算' : '年預算'}</h3>
           <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
             建立預算目標，隨時掌握公積金的花費進度
           </p>
@@ -723,7 +765,7 @@ export default function LedgerBudgetsPage() {
                   key={budget.id}
                   budget={budget}
                   categoryName={getCategoryName(budget.categoryId)}
-                  selectedMonth={viewMode === 'yearly' ? selectedYear : selectedMonth}
+                  selectedMonth={viewMode === 'yearly' ? selectedYear : viewMode === 'weekly' ? selectedWeek : selectedMonth}
                   transactions={periodTransactions}
                   onEdit={handleOpenForm}
                   onDelete={handleDeleteBudget}

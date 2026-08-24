@@ -9,7 +9,7 @@ import { mergeCategories } from '@/lib/utils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection } from '@/lib/db';
-import { format, subMonths, addMonths } from 'date-fns';
+import { format, subMonths, addMonths, subYears, addYears, startOfMonth, endOfMonth, startOfYear, endOfYear, getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, setISOWeek, setISOWeekYear } from 'date-fns';
 import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -60,9 +60,20 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const filterMode = budget.period === 'daily' ? 'day' : 'month';
+  const filterMode = budget.period === 'daily' ? 'day' : budget.period === 'yearly' ? 'year' : budget.period === 'weekly' ? 'week' : 'month';
   const catQuery = budget.categoryId ? `&categoryId=${budget.categoryId}` : '';
-  const txUrl = `/transactions?filterMode=${filterMode}&date=${selectedMonth}${catQuery}`;
+  
+  const isCurrentMonth = selectedMonth === format(new Date(), 'yyyy-MM');
+  let dateQuery = selectedMonth;
+  if (budget.period === 'yearly') {
+    dateQuery = selectedMonth.substring(0, 4);
+  } else if (budget.period === 'daily') {
+    dateQuery = isCurrentMonth ? format(new Date(), 'yyyy-MM-dd') : `${selectedMonth}-01`;
+  } else if (budget.period === 'weekly') {
+    dateQuery = selectedMonth;
+  }
+  
+  const txUrl = `/transactions?filterMode=${filterMode}&date=${dateQuery}${catQuery}`;
 
   let spent = 0;
   let targetAmount = budget.amount;
@@ -103,7 +114,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
     }
   } else {
     const categoryTxs = transactions.filter(t => t.type === 'expense' && t.categoryId === budget.categoryId);
-    if (budget.period === 'monthly') {
+    if (budget.period === 'monthly' || budget.period === 'yearly' || budget.period === 'weekly') {
       spent = categoryTxs.reduce((sum, t) => sum + t.baseAmount, 0);
     } else {
       const today = new Date();
@@ -173,7 +184,7 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
                   {categoryName}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {budget.period === 'monthly' ? '每月預算' : '每日預算'}
+                  {budget.period === 'monthly' ? '每月預算' : budget.period === 'yearly' ? '每年預算' : budget.period === 'weekly' ? '每週預算' : '每日預算'}
                 </p>
               </div>
             </div>
@@ -211,30 +222,58 @@ export default function BudgetsPage() {
   const { user } = useAuth();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
-  const [monthTransactions, setMonthTransactions] = useState<Transaction[]>([]);
+  const [periodTransactions, setPeriodTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const currentMonth = format(new Date(), 'yyyy-MM');
+  const now = new Date();
+  const currentMonth = format(now, 'yyyy-MM');
+  const currentYear = format(now, 'yyyy');
+  const currentWeek = `${getISOWeekYear(now)}-W${String(getISOWeek(now)).padStart(2, '0')}`;
+
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedWeek, setSelectedWeek] = useState(currentWeek);
 
-  const [viewMode, setViewMode] = useState<'monthly' | 'daily'>('monthly');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 
-  const handlePrevMonth = () => {
-    const [year, month] = selectedMonth.split('-');
-    const prev = subMonths(new Date(Number(year), Number(month) - 1, 1), 1);
-    setSelectedMonth(format(prev, 'yyyy-MM'));
+  const handlePrevPeriod = () => {
+    if (viewMode === 'yearly') {
+      const prev = subYears(new Date(Number(selectedYear), 0, 1), 1);
+      setSelectedYear(format(prev, 'yyyy'));
+    } else if (viewMode === 'weekly') {
+      const [y, w] = selectedWeek.split('-W');
+      let d = setISOWeekYear(new Date(), parseInt(y, 10));
+      d = setISOWeek(d, parseInt(w, 10));
+      d.setDate(d.getDate() - 7);
+      setSelectedWeek(`${getISOWeekYear(d)}-W${String(getISOWeek(d)).padStart(2, '0')}`);
+    } else {
+      const [year, month] = selectedMonth.split('-');
+      const prev = subMonths(new Date(Number(year), Number(month) - 1, 1), 1);
+      setSelectedMonth(format(prev, 'yyyy-MM'));
+    }
   };
 
-  const handleNextMonth = () => {
-    const [year, month] = selectedMonth.split('-');
-    const next = addMonths(new Date(Number(year), Number(month) - 1, 1), 1);
-    setSelectedMonth(format(next, 'yyyy-MM'));
+  const handleNextPeriod = () => {
+    if (viewMode === 'yearly') {
+      const next = addYears(new Date(Number(selectedYear), 0, 1), 1);
+      setSelectedYear(format(next, 'yyyy'));
+    } else if (viewMode === 'weekly') {
+      const [y, w] = selectedWeek.split('-W');
+      let d = setISOWeekYear(new Date(), parseInt(y, 10));
+      d = setISOWeek(d, parseInt(w, 10));
+      d.setDate(d.getDate() + 7);
+      setSelectedWeek(`${getISOWeekYear(d)}-W${String(getISOWeek(d)).padStart(2, '0')}`);
+    } else {
+      const [year, month] = selectedMonth.split('-');
+      const next = addMonths(new Date(Number(year), Number(month) - 1, 1), 1);
+      setSelectedMonth(format(next, 'yyyy-MM'));
+    }
   };
 
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [amount, setAmount] = useState('');
-  const [period, setPeriod] = useState<'daily' | 'monthly'>('monthly');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [categoryId, setCategoryId] = useState<string>(''); // empty means 'total'
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
   
@@ -284,8 +323,9 @@ export default function BudgetsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
+        const queryPeriod = viewMode === 'yearly' ? selectedYear : viewMode === 'weekly' ? selectedWeek : selectedMonth;
         // Fetch budgets
-        const fetchedBudgets = await getBudgetsByMonth(user.uid, selectedMonth);
+        const fetchedBudgets = await getBudgetsByMonth(user.uid, queryPeriod);
         // Ensure order is preserved or initialized
         fetchedBudgets.forEach((b, idx) => {
           if (b.order === undefined) b.order = idx;
@@ -299,10 +339,26 @@ export default function BudgetsPage() {
         const customCats = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
         setCategories(mergeCategories(DEFAULT_CATEGORIES as Category[], customCats));
 
-        // Fetch transactions for the selected month to calculate spent amount
-        const [year, monthStr] = selectedMonth.split('-');
-        const start = new Date(Number(year), Number(monthStr) - 1, 1).getTime();
-        const end = new Date(Number(year), Number(monthStr), 0, 23, 59, 59, 999).getTime();
+        // Fetch transactions for the selected period
+        let start: number;
+        let end: number;
+
+        if (viewMode === 'yearly') {
+          const yearDate = new Date(Number(selectedYear), 0, 1);
+          start = startOfYear(yearDate).getTime();
+          end = endOfYear(yearDate).getTime();
+        } else if (viewMode === 'weekly') {
+          const [y, w] = selectedWeek.split('-W');
+          let d = setISOWeekYear(new Date(), parseInt(y, 10));
+          d = setISOWeek(d, parseInt(w, 10));
+          start = startOfISOWeek(d).getTime();
+          end = endOfISOWeek(d).getTime();
+        } else {
+          const [yearStr, monthStr] = selectedMonth.split('-');
+          const monthDate = new Date(Number(yearStr), Number(monthStr) - 1, 1);
+          start = startOfMonth(monthDate).getTime();
+          end = endOfMonth(monthDate).getTime();
+        }
 
         const txQuery = query(
           collection(db, 'users', user.uid, 'transactions'),
@@ -310,7 +366,7 @@ export default function BudgetsPage() {
           where('date', '<=', end)
         );
         const txSnap = await getDocs(txQuery);
-        setMonthTransactions(txSnap.docs.map(d => d.data() as Transaction));
+        setPeriodTransactions(txSnap.docs.map(d => d.data() as Transaction));
 
       } catch (error) {
         console.error('Error fetching budgets:', error);
@@ -320,7 +376,7 @@ export default function BudgetsPage() {
     };
 
     fetchData();
-  }, [user, selectedMonth]);
+  }, [user, selectedMonth, selectedYear, selectedWeek, viewMode]);
 
   const handleOpenForm = (budget?: Budget) => {
     if (budget) {
@@ -330,7 +386,7 @@ export default function BudgetsPage() {
       setEditingBudgetId(budget.id);
     } else {
       setAmount('');
-      setPeriod('monthly');
+      setPeriod(viewMode);
       setCategoryId('');
       setEditingBudgetId(null);
     }
@@ -394,11 +450,13 @@ export default function BudgetsPage() {
         }
       }
 
+      const saveMonth = period === 'yearly' ? selectedYear : period === 'weekly' ? selectedWeek : selectedMonth;
+
       const newBudget = await saveBudget(user.uid, {
         userId: user.uid,
         amount: Number(amount),
         period,
-        month: selectedMonth,
+        month: saveMonth,
         categoryId: categoryId || undefined,
         order: currentOrder,
       });
@@ -407,21 +465,23 @@ export default function BudgetsPage() {
         await deleteBudget(user.uid, editingBudgetId);
       }
 
-      setBudgets(prev => {
-        const filtered = prev.filter(b => 
-          b.id !== newBudget.id && 
-          b.id !== editingBudgetId &&
-          !(b.categoryId === newBudget.categoryId && b.period === newBudget.period)
-        );
-        const newArray = [...filtered, newBudget];
-        newArray.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        return newArray;
-      });
+      if (period === viewMode) {
+        setBudgets(prev => {
+          const filtered = prev.filter(b => 
+            b.id !== newBudget.id && 
+            b.id !== editingBudgetId &&
+            !(b.categoryId === newBudget.categoryId && b.period === newBudget.period)
+          );
+          const newArray = [...filtered, newBudget];
+          newArray.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          return newArray;
+        });
+      }
 
       setIsFormOpen(false);
       setAmount('');
       setCategoryId('');
-      setPeriod('monthly');
+      setPeriod(viewMode);
       setEditingBudgetId(null);
     } catch (error) {
       console.error('Error saving budget:', error);
@@ -447,6 +507,13 @@ export default function BudgetsPage() {
 
   const monthlyBudgets = budgets.filter(b => b.period === 'monthly');
   const dailyBudgets = budgets.filter(b => b.period === 'daily');
+  const weeklyBudgets = budgets.filter(b => b.period === 'weekly');
+  const yearlyBudgets = budgets.filter(b => b.period === 'yearly');
+  
+  const currentViewBudgets = 
+    viewMode === 'monthly' ? monthlyBudgets :
+    viewMode === 'daily' ? dailyBudgets :
+    viewMode === 'weekly' ? weeklyBudgets : yearlyBudgets;
 
   return (
     <div className="space-y-6">
@@ -495,11 +562,13 @@ export default function BudgetsPage() {
                 <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">預算週期</label>
                 <select
                   value={period}
-                  onChange={(e) => setPeriod(e.target.value as 'daily' | 'monthly')}
+                  onChange={(e) => setPeriod(e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly')}
                   className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
                 >
-                  <option value="monthly">每月</option>
                   <option value="daily">每日</option>
+                  <option value="weekly">每週</option>
+                  <option value="monthly">每月</option>
+                  <option value="yearly">每年</option>
                 </select>
               </div>
 
@@ -619,39 +688,72 @@ export default function BudgetsPage() {
       <div className="rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700">
         <div className="flex flex-col items-center justify-center gap-4">
           {/* View Mode Switcher */}
-          <div className="flex w-full sm:w-64 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
-            <button
-              onClick={() => setViewMode('monthly')}
-              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'monthly' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-            >
-              月預算
-            </button>
-            <button
-              onClick={() => setViewMode('daily')}
-              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'daily' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'}`}
-            >
-              日預算
-            </button>
+          <div className="flex w-full sm:w-80 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900">
+            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  viewMode === mode
+                    ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+                }`}
+              >
+                {mode === 'daily' ? '日預算' : mode === 'weekly' ? '週預算' : mode === 'monthly' ? '月預算' : '年預算'}
+              </button>
+            ))}
           </div>
 
           {/* Date Selector */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full">
-            <button onClick={handlePrevMonth} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5" /></button>
+            <button onClick={handlePrevPeriod} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
             <DatePicker 
-              type="month" 
-              value={selectedMonth}
-              onChange={(val) => setSelectedMonth(val || format(new Date(), 'yyyy-MM'))}
+              type={viewMode === 'yearly' ? 'year' : viewMode === 'weekly' ? 'week' : 'month'}
+              value={viewMode === 'yearly' ? selectedYear : viewMode === 'weekly' ? selectedWeek : selectedMonth}
+              onChange={(val) => {
+                if (viewMode === 'yearly') {
+                  setSelectedYear(val || format(new Date(), 'yyyy'));
+                } else if (viewMode === 'weekly') {
+                  setSelectedWeek(val || `${getISOWeekYear(new Date())}-W${String(getISOWeek(new Date())).padStart(2, '0')}`);
+                } else {
+                  setSelectedMonth(val || format(new Date(), 'yyyy-MM'));
+                }
+              }}
               className="w-32 sm:w-48"
               showTodayButton={false}
             />
-            <button onClick={handleNextMonth} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5" /></button>
+            <button onClick={handleNextPeriod} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+              <ChevronRight className="w-5 h-5" />
+            </button>
             <button
-              onClick={() => setSelectedMonth(format(new Date(), 'yyyy-MM'))}
+              onClick={() => {
+                if (viewMode === 'yearly') {
+                  setSelectedYear(format(new Date(), 'yyyy'));
+                } else if (viewMode === 'weekly') {
+                  setSelectedWeek(`${getISOWeekYear(new Date())}-W${String(getISOWeek(new Date())).padStart(2, '0')}`);
+                } else {
+                  setSelectedMonth(format(new Date(), 'yyyy-MM'));
+                }
+              }}
               className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-[10px] text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
             >
-              本月
+              {viewMode === 'yearly' ? '今年' : viewMode === 'weekly' ? '本週' : '本月'}
             </button>
           </div>
+          
+          {viewMode === 'weekly' && selectedWeek && (
+            <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full -mt-2">
+              {(() => {
+                const [y, w] = selectedWeek.split('-W');
+                if (!y || !w) return '';
+                let d = setISOWeekYear(new Date(), parseInt(y, 10));
+                d = setISOWeek(d, parseInt(w, 10));
+                return `${format(startOfISOWeek(d), 'yyyy/MM/dd')} - ${format(endOfISOWeek(d), 'yyyy/MM/dd')}`;
+              })()}
+            </div>
+          )}
         </div>
       </div>
 
@@ -664,60 +766,30 @@ export default function BudgetsPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {viewMode === 'monthly' && (
-            monthlyBudgets.length > 0 ? (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <SortableContext items={monthlyBudgets.map(b => b.id)} strategy={rectSortingStrategy}>
-                    {monthlyBudgets.map(budget => (
-                      <SortableBudgetCard
-                        key={budget.id}
-                        budget={budget}
-                        categoryName={getCategoryName(budget.categoryId)}
-                        selectedMonth={selectedMonth}
-                        transactions={monthTransactions}
-                        onEdit={handleOpenForm}
-                        onDelete={handleDeleteBudget}
-                        onConfigRules={handleOpenConfig}
-                      />
-                    ))}
-                  </SortableContext>
-                </div>
-              </DndContext>
-            ) : (
-              <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
-                <Wallet className="mb-2 h-8 w-8 text-zinc-400" />
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">尚無月預算設定</p>
+          {currentViewBudgets.length > 0 ? (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <SortableContext items={currentViewBudgets.map(b => b.id)} strategy={rectSortingStrategy}>
+                  {currentViewBudgets.map(budget => (
+                    <SortableBudgetCard
+                      key={budget.id}
+                      budget={budget}
+                      categoryName={getCategoryName(budget.categoryId)}
+                      selectedMonth={viewMode === 'yearly' ? selectedYear : viewMode === 'weekly' ? selectedWeek : selectedMonth}
+                      transactions={periodTransactions}
+                      onEdit={handleOpenForm}
+                      onDelete={handleDeleteBudget}
+                      onConfigRules={handleOpenConfig}
+                    />
+                  ))}
+                </SortableContext>
               </div>
-            )
-          )}
-
-          {viewMode === 'daily' && (
-            dailyBudgets.length > 0 ? (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <SortableContext items={dailyBudgets.map(b => b.id)} strategy={rectSortingStrategy}>
-                    {dailyBudgets.map(budget => (
-                      <SortableBudgetCard
-                        key={budget.id}
-                        budget={budget}
-                        categoryName={getCategoryName(budget.categoryId)}
-                        selectedMonth={selectedMonth}
-                        transactions={monthTransactions}
-                        onEdit={handleOpenForm}
-                        onDelete={handleDeleteBudget}
-                        onConfigRules={handleOpenConfig}
-                      />
-                    ))}
-                  </SortableContext>
-                </div>
-              </DndContext>
-            ) : (
-              <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
-                <Wallet className="mb-2 h-8 w-8 text-zinc-400" />
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">尚無日預算設定</p>
-              </div>
-            )
+            </DndContext>
+          ) : (
+            <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+              <Wallet className="mb-2 h-8 w-8 text-zinc-400" />
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">尚無{viewMode === 'daily' ? '日' : viewMode === 'weekly' ? '週' : viewMode === 'monthly' ? '月' : '年'}預算設定</p>
+            </div>
           )}
         </div>
       )}
