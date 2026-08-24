@@ -522,3 +522,5 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
     </div>
   );
 }
+
+export default FundDashboard;

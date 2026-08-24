@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
-import { getMessaging, isSupported } from 'firebase/messaging';
+
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -36,13 +36,15 @@ try {
 const googleProvider = new GoogleAuthProvider();
 
 // Initialize Messaging only on client side
-let messaging: ReturnType<typeof getMessaging> | null = null;
+let messaging: any = null;
 if (typeof window !== 'undefined') {
-  isSupported().then((supported) => {
-    if (supported) {
-      messaging = getMessaging(app);
-    }
-  });
+  import('firebase/messaging').then(({ getMessaging, isSupported }) => {
+    isSupported().then((supported) => {
+      if (supported) {
+        messaging = getMessaging(app);
+      }
+    });
+  }).catch(console.error);
 }
 
 export { app, auth, db, googleProvider, messaging };

@@ -10,8 +10,8 @@ import { Transaction } from '@/types';
 import { calculateBalances, calculateSettlements, UserBalance, SettlementPlan } from '@/lib/settlements';
 import { createTransaction } from '@/lib/transactions';
 import { useRouter } from 'next/navigation';
-import { FundDashboard } from '@/components/ledgers/FundDashboard';
-
+import dynamic from 'next/dynamic';
+const FundDashboard = dynamic(() => import('@/components/ledgers/FundDashboard'), { ssr: false });
 export default function LedgerBalancesPage() {
   const { activeLedger, activeLedgerId } = useLedger();
   const { user } = useAuth();
