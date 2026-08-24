@@ -9,7 +9,7 @@ interface PrivacyContextType {
   setPrivacyLevel: (value: number) => void;
 }
 
-const PrivacyContext = createContext<PrivacyContextType | undefined>(undefined);
+export const PrivacyContext = createContext<PrivacyContextType | undefined>(undefined);
 
 export function PrivacyProvider({ children }: { children: ReactNode }) {
   const [privacyLevel, setPrivacyLevel] = useState<number>(0);

@@ -5,9 +5,9 @@ import { usePrivacy } from '@/components/PrivacyProvider';
 
 const options = [
   { value: 0, emoji: '👀', label: '顯示全部', description: '顯示所有金額' },
-  { value: 1, emoji: '🫣', label: '隱藏預算', description: '隱藏首頁的預算' },
-  { value: 2, emoji: '😎', label: '隱藏預算與收支', description: '隱藏預算及當月總收支' },
-  { value: 3, emoji: '🙈', label: '隱藏所有金額', description: '隱藏所有明細與金額' },
+  { value: 1, emoji: '🫣', label: '隱藏預算', description: '僅隱藏預算金額' },
+  { value: 2, emoji: '😎', label: '隱藏預算與收支', description: '僅顯示明細金額' },
+  { value: 3, emoji: '🙈', label: '隱藏全部', description: '隱藏所有金額' },
 ];
 
 export function PrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | 'full' }) {
@@ -50,17 +50,16 @@ export function PrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | 'full
               <span>{currentOption.label}</span>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-              <path d="m6 9 6 6 6-6"/>
+              <path d="m6 9 6 6 6-6" />
             </svg>
           </>
         )}
       </button>
 
       {isOpen && (
-        <div 
-          className={`absolute z-50 mt-2 w-56 rounded-xl border border-zinc-200 bg-white/95 backdrop-blur-md shadow-xl dark:border-zinc-700 dark:bg-zinc-800/95 overflow-hidden ${
-            variant === 'icon' ? 'right-0 top-full origin-top-right' : 'bottom-full mb-2 left-0 origin-bottom-left'
-          }`}
+        <div
+          className={`absolute z-50 mt-2 w-56 rounded-xl border border-zinc-200 bg-white/95 backdrop-blur-md shadow-xl dark:border-zinc-700 dark:bg-zinc-800/95 overflow-hidden ${variant === 'icon' ? 'right-0 top-full origin-top-right' : 'bottom-full mb-2 left-0 origin-bottom-left'
+            }`}
         >
           <div className="p-2 space-y-1">
             <div className="px-2 py-1.5 mb-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
@@ -73,11 +72,10 @@ export function PrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | 'full
                   setPrivacyLevel(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${
-                  privacyLevel === option.value
+                className={`w-full text-left flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${privacyLevel === option.value
                     ? 'bg-blue-50/80 dark:bg-blue-900/30'
                     : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'
-                }`}
+                  }`}
               >
                 <span className="text-xl mt-0.5">{option.emoji}</span>
                 <div className="flex flex-col">

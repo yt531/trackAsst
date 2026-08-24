@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { PrivacyText } from '@/components/PrivacyProvider';
+import { usePrivacy, PrivacyContext } from '@/components/PrivacyProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { Transaction, Category, PaymentMethod } from '@/types';
@@ -14,6 +14,115 @@ import { mergeCategories } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
+
+const transactionPrivacyOptions = [
+  { value: 0, emoji: '👀', label: '顯示所有金額', description: '顯示所有明細與總收支' },
+  { value: 1, emoji: '🫣', label: '僅隱藏明細金額', description: '隱藏每一筆的交易金額' },
+  { value: 2, emoji: '😎', label: '僅隱藏總收支', description: '隱藏上方總收入與總支出' },
+  { value: 3, emoji: '🙈', label: '隱藏所有金額', description: '隱藏所有明細與總收支金額' },
+];
+
+function TransactionPrivacyDropdown({ variant = 'icon' }: { variant?: 'icon' | 'full' }) {
+  const { privacyLevel, setPrivacyLevel } = usePrivacy();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const currentOption = transactionPrivacyOptions.find((opt) => opt.value === privacyLevel) || transactionPrivacyOptions[0];
+
+  return (
+    <div className={`relative ${variant === 'full' ? 'w-full' : ''}`} ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={
+          variant === 'icon'
+            ? 'flex items-center justify-center p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none'
+            : 'w-full flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 focus:outline-none transition-colors'
+        }
+        title="切換防窺模式"
+      >
+        {variant === 'icon' ? (
+          <span className="text-xl leading-none">{currentOption.emoji}</span>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="text-lg leading-none">{currentOption.emoji}</span>
+              <span>{currentOption.label}</span>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </>
+        )}
+      </button>
+
+      {isOpen && (
+        <div 
+          className={`absolute z-50 mt-2 w-56 rounded-xl border border-zinc-200 bg-white/95 backdrop-blur-md shadow-xl dark:border-zinc-700 dark:bg-zinc-800/95 overflow-hidden ${
+            variant === 'icon' ? 'right-0 top-full origin-top-right' : 'bottom-full mb-2 left-0 origin-bottom-left'
+          }`}
+        >
+          <div className="p-2 space-y-1">
+            <div className="px-2 py-1.5 mb-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              防窺程度
+            </div>
+            {transactionPrivacyOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  setPrivacyLevel(option.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${
+                  privacyLevel === option.value
+                    ? 'bg-blue-50/80 dark:bg-blue-900/30'
+                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'
+                }`}
+              >
+                <span className="text-xl mt-0.5">{option.emoji}</span>
+                <div className="flex flex-col">
+                  <span className={`text-sm font-medium ${privacyLevel === option.value ? 'text-blue-700 dark:text-blue-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                    {option.label}
+                  </span>
+                  <span className={`text-xs mt-0.5 ${privacyLevel === option.value ? 'text-blue-600/80 dark:text-blue-400/80' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                    {option.description}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TransactionPrivacyText({ type = 'item', text, className = '' }: { type?: 'summary' | 'item'; text: string | number; className?: string }) {
+  const { privacyLevel } = usePrivacy();
+  
+  let shouldBlur = false;
+  if (privacyLevel === 3) shouldBlur = true;
+  else if (privacyLevel === 1 && type === 'item') shouldBlur = true;
+  else if (privacyLevel === 2 && type === 'summary') shouldBlur = true;
+  
+  if (shouldBlur) {
+    return <span className={`filter blur-sm select-none opacity-80 ${className}`}>****</span>;
+  }
+  
+  return <span className={className}>{text}</span>;
+}
 
 function TransactionsList() {
   const { user } = useAuth();
@@ -134,9 +243,12 @@ function TransactionsList() {
         title="交易紀錄" 
         backHref="/" 
         rightAction={
-          <Link href="/transactions/new" className="p-2 text-blue-600 dark:text-blue-400">
-            <Plus className="h-5 w-5" />
-          </Link>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <TransactionPrivacyDropdown variant="icon" />
+            <Link href="/transactions/new" className="p-2 text-blue-600 dark:text-blue-400">
+              <Plus className="h-5 w-5" />
+            </Link>
+          </div>
         }
       />
       <header className="hidden md:flex items-center justify-between">
@@ -149,13 +261,16 @@ function TransactionsList() {
             </p>
           )}
         </div>
-        <Link
-          href="/transactions/new"
-          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">新增</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <TransactionPrivacyDropdown variant="icon" />
+          <Link
+            href="/transactions/new"
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">新增</span>
+          </Link>
+        </div>
       </header>
 
       {/* Filter and Stats Area */}
@@ -201,11 +316,11 @@ function TransactionsList() {
         <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
           <div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-green-500" /> 總收入</div>
-            <div className="text-lg font-semibold mt-1"><PrivacyText type="summary" text={`NT$ ${totals.income.toLocaleString()}`} /></div>
+            <div className="text-lg font-semibold mt-1"><TransactionPrivacyText type="summary" text={`NT$ ${totals.income.toLocaleString()}`} /></div>
           </div>
           <div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> 總支出</div>
-            <div className="text-lg font-semibold mt-1"><PrivacyText type="summary" text={`NT$ ${totals.expense.toLocaleString()}`} /></div>
+            <div className="text-lg font-semibold mt-1"><TransactionPrivacyText type="summary" text={`NT$ ${totals.expense.toLocaleString()}`} /></div>
           </div>
         </div>
       </div>
@@ -251,10 +366,10 @@ function TransactionsList() {
                       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                         <div className={`text-right font-medium whitespace-nowrap ${isExpense ? 'text-zinc-900 dark:text-zinc-100' : 'text-green-600 dark:text-green-400'
                           }`}>
-                          <PrivacyText text={`${isExpense ? '-' : '+'} ${tx.amount.toLocaleString()} ${tx.currency}`} />
+                          <TransactionPrivacyText text={`${isExpense ? '-' : '+'} ${tx.amount.toLocaleString()} ${tx.currency}`} />
                           {tx.currency !== 'TWD' && (
                             <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                              <PrivacyText text={`(≈ ${tx.baseAmount.toLocaleString()} TWD)`} />
+                              <TransactionPrivacyText text={`(≈ ${tx.baseAmount.toLocaleString()} TWD)`} />
                             </div>
                           )}
                         </div>
@@ -287,10 +402,37 @@ function TransactionsList() {
   );
 }
 
+function LocalPrivacyProvider({ children }: { children: React.ReactNode }) {
+  const globalPrivacy = usePrivacy();
+  const [localLevel, setLocalLevel] = useState<number | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('transactionsPrivacyLevel');
+    if (saved !== null) {
+      setLocalLevel(parseInt(saved, 10));
+    }
+  }, []);
+
+  const setLevel = (val: number) => {
+    setLocalLevel(val);
+    localStorage.setItem('transactionsPrivacyLevel', val.toString());
+  };
+
+  const activeLevel = localLevel !== null ? localLevel : globalPrivacy.privacyLevel;
+
+  return (
+    <PrivacyContext.Provider value={{ privacyLevel: activeLevel, setPrivacyLevel: setLevel }}>
+      {children}
+    </PrivacyContext.Provider>
+  );
+}
+
 export default function TransactionsPage() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">載入中...</div>}>
-      <TransactionsList />
+      <LocalPrivacyProvider>
+        <TransactionsList />
+      </LocalPrivacyProvider>
     </Suspense>
   );
 }
