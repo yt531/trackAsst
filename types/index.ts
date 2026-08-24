@@ -219,7 +219,8 @@ export type NotificationType = 'split_assigned'  | 'ledger_expense_update'
   | 'collection_notice'
   | 'fund_pending_approval'
   | 'fund_approved'
-  | 'fund_rejected';
+  | 'fund_rejected'
+  | 'large_expense';
 
 export interface AppNotification {
   id: string;
