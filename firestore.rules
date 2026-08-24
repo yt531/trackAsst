@@ -56,6 +56,10 @@ service cloud.firestore {
         allow read, write: if isLedgerMember(ledgerId);
       }
       
+      match /collections/{collectionId} {
+        allow read, write: if isLedgerMember(ledgerId);
+      }
+      
       match /budgets/{budgetId} {
         allow read, write: if isLedgerMember(ledgerId);
       }

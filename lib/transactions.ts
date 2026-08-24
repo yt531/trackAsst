@@ -119,7 +119,7 @@ const notifyTransactionEvent = async (
           isIncluded = false;
         }
         if (isIncluded) {
-          if (tx.type === 'income') currentBalance += tx.amount;
+          if (tx.type === 'income' && tx.approvalStatus !== 'pending') currentBalance += tx.amount;
           else if (tx.type === 'expense' || tx.type === 'settlement') currentBalance -= tx.amount;
         }
       });
@@ -128,7 +128,7 @@ const notifyTransactionEvent = async (
       let prevBalance = currentBalance;
       if (eventType === 'created' && txData.amount) {
         let eff = 0;
-        if (txData.type === 'income') eff = txData.amount;
+        if (txData.type === 'income' && txData.approvalStatus !== 'pending') eff = txData.amount;
         else if (txData.type === 'expense' || txData.type === 'settlement') {
           if (!(txData.type === 'expense' && txData.isAdvancePayment && txData.advancePaymentStatus === 'unsettled')) {
             eff = -txData.amount;
@@ -259,5 +259,28 @@ export const deleteTransaction = async (
   } else {
     const docRef = doc(db, 'users', userId, 'transactions', txId);
     await deleteDoc(docRef);
+  }
+};
+
+export const approveTransaction = async (
+  ledgerId: string,
+  txId: string,
+  userId: string,
+  approvedByUserId: string
+) => {
+  const docRef = doc(db, 'ledgers', ledgerId, 'transactions', txId);
+  const txSnap = await getDoc(docRef);
+  
+  if (txSnap.exists()) {
+    const txData = txSnap.data() as Transaction;
+    await updateDoc(docRef, {
+      approvalStatus: 'approved',
+      approvedBy: approvedByUserId,
+      updatedAt: Date.now()
+    });
+
+    // We can also trigger notifyTransactionEvent here as an 'updated' event
+    // so it recalculates balance and potentially triggers fund_empty if somehow relevant
+    await notifyTransactionEvent(userId, ledgerId, { ...txData, approvalStatus: 'approved' }, 'updated');
   }
 };

@@ -262,7 +262,10 @@ function LedgerTransactionsList() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate" title={cat?.name || '未知分類'}>{cat?.name || '未知分類'}</div>
                         <div className="text-xs mt-0.5 text-zinc-500 dark:text-zinc-400">
-                          <span className="font-medium text-zinc-700 dark:text-zinc-300">{payerName}</span> 代墊
+                          <span className="font-medium text-zinc-700 dark:text-zinc-300">{payerName}</span>{' '}
+                          {isExpense 
+                            ? (activeLedger?.mode === 'shared_fund' && tx.isAdvancePayment ? '代墊' : '支付') 
+                            : '繳款'}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">

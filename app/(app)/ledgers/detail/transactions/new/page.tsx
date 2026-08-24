@@ -10,8 +10,9 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
-import { Search, X, Users, User } from 'lucide-react';
-import { getLedgerMembers, getLedgerCategories, getLedgerTags } from '@/lib/ledger';
+import { Search, X, Users, User, Info } from 'lucide-react';
+import { getLedgerMembers, getLedgerCategories, getLedgerTags, getFundCollections } from '@/lib/ledger';
+import type { FundCollection } from '@/types';
 import { createTransaction } from '@/lib/transactions';
 
 function SharedTransactionForm() {
@@ -31,6 +32,11 @@ function SharedTransactionForm() {
   
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
+
+  // Collections Logic
+  const [collections, setCollections] = useState<FundCollection[]>([]);
+  const [collectionId, setCollectionId] = useState<string>('');
+  const [isFundContribution, setIsFundContribution] = useState(true);
 
   // Tags Logic
   const [tags, setTags] = useState<Tag[]>([]);
@@ -95,6 +101,16 @@ function SharedTransactionForm() {
       const fetchedTags = await getLedgerTags(activeLedgerId);
       setTags(fetchedTags);
 
+      // Load Collections for Income
+      if (activeLedger?.mode === 'shared_fund') {
+        const fetchedCollections = await getFundCollections(activeLedgerId);
+        const activeCollections = fetchedCollections.filter(c => c.status === 'active');
+        setCollections(activeCollections);
+        if (activeCollections.length > 0) {
+          setCollectionId(activeCollections[0].id);
+        }
+      }
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -104,9 +120,17 @@ function SharedTransactionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !activeLedgerId || !amount || !categoryId || !payerId) return;
+    if (!user || !activeLedgerId || !amount || !payerId) return;
     
-    // Validate splits if split mode
+    // Validations
+    if (!(type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) && !categoryId) {
+      alert('請選擇分類');
+      return;
+    }
+    if (activeLedger?.mode === 'shared_fund' && type === 'income' && isFundContribution && !collectionId) {
+      alert('請選擇要繳交的期數');
+      return;
+    }
     if (activeLedger?.mode === 'split' && splitWithIds.length === 0) {
       alert('請至少選擇一位分攤對象');
       return;
@@ -141,7 +165,6 @@ function SharedTransactionForm() {
         baseAmount,
         currency: activeLedger?.currency || 'TWD',
         exchangeRate: 1,
-        categoryId,
         paymentMethodId: 'cash', // Shared ledgers may not use personal PMs
         date: new Date(date).getTime(),
         details,
@@ -150,6 +173,11 @@ function SharedTransactionForm() {
         splits,
         isAdvancePayment: isAdvancePayment && activeLedger?.mode === 'shared_fund',
         advancePaymentStatus: (isAdvancePayment && activeLedger?.mode === 'shared_fund') ? 'unsettled' : undefined,
+        collectionId: (type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) ? collectionId : undefined,
+        approvalStatus: (type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) ? 'pending' : undefined,
+        categoryId: (type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) 
+          ? (categories.find(c => c.type === 'income')?.id || 'default_income') 
+          : categoryId,
       }, true);
 
       // If we are settling an advance payment, we should also update the original transaction
@@ -186,6 +214,77 @@ function SharedTransactionForm() {
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
         <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* Type Toggle */}
+          <div className="flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+            <button
+              type="button"
+              onClick={() => setType('expense')}
+              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+                type === 'expense'
+                  ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+              }`}
+            >
+              支出
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('income')}
+              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+                type === 'income'
+                  ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+              }`}
+            >
+              收入 (繳款)
+            </button>
+          </div>
+
+          {/* Fund Contribution Toggle and Selector for Income */}
+          {activeLedger?.mode === 'shared_fund' && type === 'income' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-4 rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
+                <input 
+                  type="checkbox" 
+                  id="isFundContribution"
+                  checked={isFundContribution}
+                  onChange={(e) => setIsFundContribution(e.target.checked)}
+                  className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="isFundContribution" className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                  這是一筆公積金繳款（將進入成員繳費進度）
+                </label>
+              </div>
+
+              {isFundContribution && (
+                <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-900/5">
+                  <label className="mb-2 block text-sm font-bold text-blue-900 dark:text-blue-200">
+                    這是繳交哪一期的公積金？
+                  </label>
+              {collections.length > 0 ? (
+                <select
+                  required
+                  value={collectionId}
+                  onChange={(e) => setCollectionId(e.target.value)}
+                  className="w-full rounded-lg border border-blue-300 bg-white p-3 text-sm text-blue-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-blue-700 dark:bg-zinc-900 dark:text-blue-100"
+                >
+                  <option value="" disabled>請選擇收款期數...</option>
+                  {collections.map(c => (
+                    <option key={c.id} value={c.id}>{c.title} (應繳: {c.targetAmount})</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  目前沒有開放的收款期數，請管理員先發起收款。
+                </div>
+              )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Amount */}
           <div>
             <label className="mb-1 block text-sm font-medium">金額</label>
@@ -224,11 +323,12 @@ function SharedTransactionForm() {
                 onChange={(val) => setDate(val)}
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">分類</label>
-              <button
-                type="button"
-                onClick={() => setIsCategoryModalOpen(true)}
+            {!(type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">分類</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(true)}
                 className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white p-3 text-sm text-left dark:border-zinc-700 dark:bg-zinc-900"
               >
                 <span className={!categoryId ? "text-zinc-500" : "truncate"}>
@@ -236,7 +336,8 @@ function SharedTransactionForm() {
                 </span>
                 <Search className="h-4 w-4 shrink-0 text-zinc-400" />
               </button>
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Tags */}

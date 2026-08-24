@@ -186,3 +186,46 @@ export const deleteLedgerTag = async (ledgerId: string, tagId: string) => {
   await deleteDoc(docRef);
 };
 
+// ==========================================
+// Fund Collections
+// ==========================================
+
+import type { FundCollection, AppNotification } from '../types';
+
+export const getFundCollections = async (ledgerId: string): Promise<FundCollection[]> => {
+  const collectionsRef = collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections');
+  const snap = await getDocs(collectionsRef);
+  return snap.docs.map(doc => doc.data() as FundCollection).sort((a, b) => b.createdAt - a.createdAt);
+};
+
+export const createFundCollection = async (ledgerId: string, data: FundCollection) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections', data.id);
+  await setDoc(docRef, data);
+
+  // Send collection_notice to all members
+  const members = await getLedgerMembers(ledgerId);
+  const ledger = await getLedger(ledgerId);
+  
+  if (ledger) {
+    for (const member of members) {
+      if (member.userId !== data.createdBy) {
+        await setDoc(doc(collection(db, 'users', member.userId, 'notifications')), {
+          userId: member.userId,
+          type: 'collection_notice',
+          title: '📢 新的收款通知',
+          message: `帳本「${ledger.name}」發起了新的收款「${data.title}」，金額為 ${data.targetAmount} 元。`,
+          link: `/ledgers/detail?id=${ledgerId}`,
+          isRead: false,
+          createdAt: Date.now(),
+        } as Omit<AppNotification, 'id'>);
+      }
+    }
+  }
+};
+
+export const updateFundCollection = async (ledgerId: string, collectionId: string, data: Partial<FundCollection>) => {
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections', collectionId);
+  await updateDoc(docRef, data);
+};
+
+

@@ -49,9 +49,12 @@ export interface Transaction {
   invoiceId?: string; // Link to the scanned/imported invoice
   tagIds?: string[];
   splits?: TransactionSplit[];
+  collectionId?: string;
   isAdvancePayment?: boolean;
   advancePaymentStatus?: 'unsettled' | 'settled';
   settledTransactionId?: string; // ID of the transaction that settled this advance payment
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -139,6 +142,16 @@ export interface Tag {
   createdBy?: string;
 }
 
+export interface FundCollection {
+  id: string;
+  ledgerId: string;
+  title: string;
+  targetAmount: number;
+  createdAt: number;
+  createdBy: string;
+  status: 'active' | 'closed';
+}
+
 export type LedgerMode = 'shared_fund' | 'split';
 
 export interface LedgerFundSettings {
@@ -196,7 +209,10 @@ export interface LedgerInvitation {
   createdAt: number;
 }
 
-export type NotificationType = 'split_assigned' | 'large_expense' | 'system' | 'member_joined' | 'fund_empty';
+export type NotificationType = 'split_assigned'  | 'ledger_expense_update'
+  | 'ledger_expense_delete'
+  | 'fund_empty'
+  | 'collection_notice';
 
 export interface AppNotification {
   id: string;

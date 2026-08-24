@@ -4,9 +4,11 @@ import { Ledger, Transaction, LedgerMember, Category } from '@/types';
 import { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { Settings2, Wallet, Users, CheckCircle2, AlertCircle, PieChart as PieChartIcon } from 'lucide-react';
+import { Settings2, Wallet, Users, CheckCircle2, AlertCircle, PieChart as PieChartIcon, Plus, X, Check } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { updateLedger } from '@/lib/ledger';
+import { updateLedger, getFundCollections, createFundCollection, updateFundCollection } from '@/lib/ledger';
+import { approveTransaction } from '@/lib/transactions';
+import type { FundCollection } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 
 interface FundDashboardProps {
@@ -21,56 +23,75 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
   const [loading, setLoading] = useState(true);
   const [isEditingSettings, setIsEditingSettings] = useState(false);
   const [memberTargetInput, setMemberTargetInput] = useState(ledger.fundSettings?.memberTargetAmount?.toString() || '');
+  const [collections, setCollections] = useState<FundCollection[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
+  
+  // Start Collection Modal State
+  const [isStartCollectionModalOpen, setIsStartCollectionModalOpen] = useState(false);
+  const [newCollectionTitle, setNewCollectionTitle] = useState('');
+  const [newCollectionAmount, setNewCollectionAmount] = useState('');
+  const [isStartingCollection, setIsStartingCollection] = useState(false);
 
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchData = async () => {
       try {
         const q = query(collection(db, 'ledgers', ledger.id, 'members'));
         const snap = await getDocs(q);
         const membersData = snap.docs.map(d => d.data() as LedgerMember);
         setMembers(membersData);
+
+        if (ledger.mode === 'shared_fund') {
+          const fetchedCollections = await getFundCollections(ledger.id);
+          setCollections(fetchedCollections);
+          if (fetchedCollections.length > 0) {
+            setSelectedCollectionId(fetchedCollections[0].id); // default to most recent
+          }
+        }
       } catch (err) {
-        console.error('Failed to fetch members', err);
+        console.error('Failed to fetch data', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchMembers();
-  }, [ledger.id]);
+    fetchData();
+  }, [ledger.id, ledger.mode]);
 
-  const {
+    const {
     totalBalance,
     totalSpent,
     reimbursements,
+    pendingApprovals,
     categoryData,
     memberStats
   } = useMemo(() => {
     let balance = 0;
     let spent = 0;
     const reimbursementsList: Transaction[] = [];
+    const pendingList: Transaction[] = [];
     const categoryTotals: Record<string, number> = {};
-    const memberPayments: Record<string, number> = {};
+    const memberPayments: Record<string, number> = {}; // Tracks payments for the SELECTED collection
 
     transactions.forEach(tx => {
-      // 1. Calculate balance
       if (tx.type === 'income') {
-        balance += tx.amount;
-        memberPayments[tx.userId] = (memberPayments[tx.userId] || 0) + tx.amount;
+        if (tx.approvalStatus === 'pending') {
+          pendingList.push(tx);
+        } else {
+          balance += tx.amount;
+          if (tx.collectionId === selectedCollectionId) {
+            memberPayments[tx.userId] = (memberPayments[tx.userId] || 0) + tx.amount;
+          }
+        }
       } else if (tx.type === 'expense') {
-        // Is it a reimbursement/代墊?
         const isReimbursement = tx.isAdvancePayment && tx.advancePaymentStatus === 'unsettled';
         
         if (isReimbursement) {
           reimbursementsList.push(tx);
-          // Don't deduct from balance yet until it's settled.
         } else {
           balance -= tx.amount;
           spent += tx.amount;
-          
           categoryTotals[tx.categoryId] = (categoryTotals[tx.categoryId] || 0) + tx.amount;
         }
       } else if (tx.type === 'settlement') {
-        // Settlements deduct from balance (reimbursing a member)
         balance -= tx.amount;
       }
     });
@@ -84,36 +105,106 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       totalBalance: balance,
       totalSpent: spent,
       reimbursements: reimbursementsList,
+      pendingApprovals: pendingList,
       categoryData: catData,
       memberStats: memberPayments
     };
-  }, [transactions]);
+  }, [transactions, selectedCollectionId]);
 
   const handleSaveSettings = async () => {
-    try {
-      await updateLedger(ledger.id, {
-        fundSettings: {
-          ...ledger.fundSettings,
-          memberTargetAmount: Number(memberTargetInput) || 0
-        }
-      });
-      setIsEditingSettings(false);
-      window.location.reload(); 
-    } catch (err) {
-      console.error('Failed to update ledger', err);
-      alert('更新失敗');
+    // Deprecated for memberTargetAmount, but keeping for future settings
+    setIsEditingSettings(false);
+  };
+
+  const currentUserRole = members.find(m => m.userId === user?.uid)?.role;
+
+  const handleStartCollection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newCollectionTitle || !newCollectionAmount) return;
+    
+    const numAmount = Number(newCollectionAmount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      alert('請輸入有效的金額');
+      return;
     }
+
+    if (members.length > 2 && !members.some(m => m.role === 'vice_admin')) {
+      alert('請先至設定指派至少一位副管理員，才可發起收款');
+      return;
+    }
+
+    setIsStartingCollection(true);
+    try {
+      const newRef = doc(collection(db, 'ledgers')); // just to generate ID
+      await createFundCollection(ledger.id, {
+        id: newRef.id,
+        ledgerId: ledger.id,
+        title: newCollectionTitle,
+        targetAmount: numAmount,
+        createdAt: Date.now(),
+        createdBy: user.uid,
+        status: 'active'
+      });
+      setIsStartCollectionModalOpen(false);
+      setNewCollectionTitle('');
+      setNewCollectionAmount('');
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('發起收款失敗');
+    } finally {
+      setIsStartingCollection(false);
+    }
+  };
+
+  const handleCloseCollection = async (id: string) => {
+    if (!confirm('確定要關閉此收款期數嗎？關閉後成員將無法再繳交此期款項。')) return;
+    try {
+      await updateFundCollection(ledger.id, id, { status: 'closed' });
+      window.location.reload();
+    } catch (err) {
+      alert('關閉失敗');
+    }
+  };
+
+  const handleApproveTransaction = async (txId: string) => {
+    if (!user) return;
+    if (!confirm('確定收到款項並核准嗎？')) return;
+    try {
+      await approveTransaction(ledger.id, txId, user.uid, user.uid);
+      window.location.reload();
+    } catch (err) {
+      alert('核准失敗');
+    }
+  };
+
+  const canApprove = (tx: Transaction) => {
+    const submitterRole = members.find(m => m.userId === tx.userId)?.role || 'viewer';
+    if (submitterRole === 'editor' || submitterRole === 'viewer') {
+      return currentUserRole === 'admin' || currentUserRole === 'vice_admin';
+    }
+    if (submitterRole === 'vice_admin') {
+      return currentUserRole === 'admin';
+    }
+    if (submitterRole === 'admin') {
+      if (members.length > 2) {
+        return currentUserRole === 'vice_admin';
+      } else {
+        return currentUserRole !== 'admin';
+      }
+    }
+    return false;
   };
 
   if (loading) {
     return <div className="p-8 text-center text-zinc-500">載入中...</div>;
   }
 
-  const memberTarget = ledger.fundSettings?.memberTargetAmount || 0;
+  const selectedCollection = collections.find(c => c.id === selectedCollectionId);
+  const memberTarget = selectedCollection?.targetAmount || 0;
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-  const currentUserRole = members.find(m => m.userId === user?.uid)?.role;
   const showWarning = totalBalance <= 0 && (currentUserRole === 'admin' || currentUserRole === 'editor' || currentUserRole === 'vice_admin');
 
   return (
@@ -135,34 +226,16 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
             <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">公積金總餘額</h3>
             <div className="text-4xl font-bold">${totalBalance.toLocaleString()}</div>
           </div>
-          <button 
-            onClick={() => setIsEditingSettings(!isEditingSettings)}
-            className="p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 transition-colors"
-          >
-            <Settings2 className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
-          </button>
-        </div>
-
-        {isEditingSettings ? (
-          <div className="bg-zinc-50 dark:bg-white/10 rounded-xl p-4 space-y-4 dark:backdrop-blur-md border border-zinc-200 dark:border-white/10 mb-4">
-            <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">每人應繳額度</label>
-              <input 
-                type="number" 
-                value={memberTargetInput} 
-                onChange={e => setMemberTargetInput(e.target.value)}
-                className="w-full bg-white dark:bg-black/30 border border-zinc-300 dark:border-white/20 rounded-lg px-3 py-2 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="例如: 1000"
-              />
-            </div>
+          {ledger.mode === 'shared_fund' && (currentUserRole === 'admin' || currentUserRole === 'vice_admin') && (
             <button 
-              onClick={handleSaveSettings}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors"
+              onClick={() => setIsStartCollectionModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
             >
-              儲存設定
+              <Plus className="w-4 h-4" />
+              發起收款
             </button>
-          </div>
-        ) : null}
+          )}
+        </div>
       </div>
 
       {/* Grid Layout for Desktop, Stack for Mobile */}
@@ -170,12 +243,40 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
         
         {/* Members Status */}
         <section className="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-blue-500" />
-            <h3 className="text-lg font-bold">成員繳費進度</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-bold">成員繳費進度</h3>
+            </div>
+            {collections.length > 0 && (
+              <select
+                value={selectedCollectionId}
+                onChange={e => setSelectedCollectionId(e.target.value)}
+                className="rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+              >
+                {collections.map(c => (
+                  <option key={c.id} value={c.id}>{c.title} {c.status === 'closed' ? '(已關閉)' : ''}</option>
+                ))}
+              </select>
+            )}
           </div>
-          <div className="space-y-3">
-            {members.map(member => {
+          
+          {collections.length === 0 ? (
+            <div className="text-center py-8 text-zinc-500 text-sm">
+              尚未發起任何收款
+            </div>
+          ) : (
+            <>
+              {selectedCollection?.status === 'active' && (currentUserRole === 'admin' || currentUserRole === 'vice_admin') && (
+                <button
+                  onClick={() => handleCloseCollection(selectedCollection.id)}
+                  className="mb-4 w-full py-1.5 text-xs text-rose-600 border border-rose-200 bg-rose-50 rounded-lg hover:bg-rose-100 dark:bg-rose-900/20 dark:border-rose-900/50 transition-colors"
+                >
+                  關閉此收款期數
+                </button>
+              )}
+              <div className="space-y-3">
+                {members.map(member => {
               const paid = memberStats[member.userId] || 0;
               const isPaid = paid >= memberTarget;
               return (
@@ -202,7 +303,40 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
               );
             })}
           </div>
+          </>
+          )}
         </section>
+
+        {/* Pending Approvals */}
+        {ledger.mode === 'shared_fund' && pendingApprovals.some(canApprove) && (
+          <section className="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-blue-200 dark:border-blue-900/30 md:col-span-2 lg:col-span-1">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle2 className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-bold">待審核繳款</h3>
+            </div>
+            <div className="space-y-3">
+              {pendingApprovals.filter(canApprove).map(tx => (
+                <div key={tx.id} className="flex flex-col gap-3 p-3 rounded-xl border border-blue-100 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium text-zinc-900 dark:text-zinc-100">繳款：{tx.details || '無明細'}</div>
+                      <div className="text-xs text-zinc-500">繳款人: User {tx.userId.slice(0,4)}</div>
+                    </div>
+                    <div className="font-bold text-blue-600 dark:text-blue-400">
+                      +${tx.amount.toLocaleString()}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleApproveTransaction(tx.id)}
+                    className="w-full flex items-center justify-center gap-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors mt-2"
+                  >
+                    <Check className="w-4 h-4" /> 核准收款
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Reimbursements */}
         <section className="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800">
@@ -285,6 +419,50 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
             ))}
           </div>
         </section>
+      )}
+
+      {/* Start Collection Modal */}
+      {isStartCollectionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">發起新收款</h2>
+              <button onClick={() => setIsStartCollectionModalOpen(false)} className="text-zinc-400 hover:text-zinc-600"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleStartCollection} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">收款名稱</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newCollectionTitle} 
+                  onChange={e => setNewCollectionTitle(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white p-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="例如: 9月公積金"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">每人應繳額度</label>
+                <input 
+                  type="number" 
+                  required
+                  min="1"
+                  value={newCollectionAmount} 
+                  onChange={e => setNewCollectionAmount(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white p-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="例如: 1000"
+                />
+              </div>
+              <button 
+                type="submit"
+                disabled={isStartingCollection}
+                className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isStartingCollection ? '處理中...' : '確認發起'}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
