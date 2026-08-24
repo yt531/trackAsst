@@ -49,6 +49,9 @@ export interface Transaction {
   invoiceId?: string; // Link to the scanned/imported invoice
   tagIds?: string[];
   splits?: TransactionSplit[];
+  isAdvancePayment?: boolean;
+  advancePaymentStatus?: 'unsettled' | 'settled';
+  settledTransactionId?: string; // ID of the transaction that settled this advance payment
   createdAt: number;
   updatedAt: number;
 }
@@ -159,7 +162,7 @@ export interface Ledger {
   fundSettings?: LedgerFundSettings;
 }
 
-export type LedgerRole = 'admin' | 'editor' | 'viewer';
+export type LedgerRole = 'admin' | 'vice_admin' | 'editor' | 'viewer';
 
 export interface LedgerMember {
   id: string;
@@ -193,7 +196,7 @@ export interface LedgerInvitation {
   createdAt: number;
 }
 
-export type NotificationType = 'split_assigned' | 'large_expense' | 'system' | 'member_joined';
+export type NotificationType = 'split_assigned' | 'large_expense' | 'system' | 'member_joined' | 'fund_empty';
 
 export interface AppNotification {
   id: string;

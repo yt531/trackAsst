@@ -85,33 +85,7 @@ export default function LedgerBalancesPage() {
 
   const handleSettleReimbursement = async (tx: Transaction) => {
     if (!user || !activeLedger) return;
-    if (!confirm(`確定要核准撥款這筆代墊嗎？\n金額: ${tx.amount}`)) return;
-    
-    setIsSettling(true);
-    try {
-      await createTransaction(user.uid, {
-        userId: tx.userId,
-        ledgerId: activeLedger.id,
-        type: 'settlement',
-        amount: tx.amount,
-        baseAmount: tx.baseAmount,
-        currency: tx.currency,
-        exchangeRate: tx.exchangeRate,
-        categoryId: 'settlement',
-        paymentMethodId: 'cash',
-        date: Date.now(),
-        details: `代墊撥款：${tx.details}`,
-        notes: `核准代墊交易 ID: ${tx.id}`,
-      }, true);
-      
-      alert('撥款紀錄已新增！');
-      window.location.reload();
-    } catch (err) {
-      console.error('Error settling reimbursement', err);
-      alert('撥款失敗');
-    } finally {
-      setIsSettling(false);
-    }
+    router.push(`/ledgers/detail/transactions/new?settleReimbursement=${tx.id}&amount=${tx.amount}&date=${tx.date}&details=${encodeURIComponent(tx.details)}`);
   };
 
   if (activeLedger?.mode === 'shared_fund') {

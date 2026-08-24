@@ -108,6 +108,54 @@ const notifyTransactionEvent = async (
           } as Omit<AppNotification, 'id'>);
         }
       }
+
+      // Check balance for fund_empty warning
+      const txSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'transactions'));
+      let currentBalance = 0;
+      txSnap.docs.forEach(d => {
+        const tx = d.data() as Transaction;
+        let isIncluded = true;
+        if (tx.type === 'expense' && tx.isAdvancePayment && tx.advancePaymentStatus === 'unsettled') {
+          isIncluded = false;
+        }
+        if (isIncluded) {
+          if (tx.type === 'income') currentBalance += tx.amount;
+          else if (tx.type === 'expense' || tx.type === 'settlement') currentBalance -= tx.amount;
+        }
+      });
+
+      // Rough estimation of previous balance (assumes creation or non-amount updates for simplicity)
+      let prevBalance = currentBalance;
+      if (eventType === 'created' && txData.amount) {
+        let eff = 0;
+        if (txData.type === 'income') eff = txData.amount;
+        else if (txData.type === 'expense' || txData.type === 'settlement') {
+          if (!(txData.type === 'expense' && txData.isAdvancePayment && txData.advancePaymentStatus === 'unsettled')) {
+            eff = -txData.amount;
+          }
+        }
+        prevBalance -= eff;
+      }
+
+      // Only notify if it went from > 0 to <= 0, or if it's creation of an expense and already <= 0 (avoiding spam on every update)
+      const justDropped = prevBalance > 0 && currentBalance <= 0;
+      if (justDropped) {
+        for (const memberDoc of membersSnap.docs) {
+          const mData = memberDoc.data();
+          if (['admin', 'vice_admin', 'editor'].includes(mData.role)) {
+             await addDoc(collection(db, 'users', mData.userId, 'notifications'), {
+               userId: mData.userId,
+               type: 'fund_empty',
+               title: '⚠️ 公積金餘額見底',
+               message: `帳本「${ledgerData.name}」的公積金餘額已不足，請盡快存入款項！`,
+               link: `/ledgers/detail?id=${ledgerId}`,
+               isRead: false,
+               createdAt: timestamp,
+             } as Omit<AppNotification, 'id'>);
+          }
+        }
+      }
+
     }
   } catch (err) {
     console.error(`Failed to send notifications for ${eventType}`, err);

@@ -7,6 +7,7 @@ import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { Settings2, Wallet, Users, CheckCircle2, AlertCircle, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { updateLedger } from '@/lib/ledger';
+import { useAuth } from '@/components/AuthProvider';
 
 interface FundDashboardProps {
   ledger: Ledger;
@@ -15,6 +16,7 @@ interface FundDashboardProps {
 }
 
 export function FundDashboard({ ledger, transactions, onSettleReimbursement }: FundDashboardProps) {
+  const { user } = useAuth();
   const [members, setMembers] = useState<LedgerMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -56,7 +58,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
         memberPayments[tx.userId] = (memberPayments[tx.userId] || 0) + tx.amount;
       } else if (tx.type === 'expense') {
         // Is it a reimbursement/代墊?
-        const isReimbursement = tx.paymentMethodId === 'reimbursement_pending' || tx.notes?.includes('代墊');
+        const isReimbursement = tx.isAdvancePayment && tx.advancePaymentStatus === 'unsettled';
         
         if (isReimbursement) {
           reimbursementsList.push(tx);
@@ -111,8 +113,21 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+  const currentUserRole = members.find(m => m.userId === user?.uid)?.role;
+  const showWarning = totalBalance <= 0 && (currentUserRole === 'admin' || currentUserRole === 'editor' || currentUserRole === 'vice_admin');
+
   return (
     <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {showWarning && (
+        <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-r-lg flex gap-3 items-start shadow-sm">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-red-800 dark:text-red-300">⚠️ 公積金餘額已見底</h4>
+            <p className="text-sm text-red-700 dark:text-red-400 mt-1">目前公積金餘額為 0 或更低，請提醒成員存入款項以維持運作！</p>
+          </div>
+        </div>
+      )}
+
       {/* Overview & Budget Card */}
       <div className="rounded-2xl p-6 bg-white dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-800 text-zinc-900 dark:text-white shadow-xl border border-zinc-200 dark:border-zinc-800/50">
         <div className="flex justify-between items-start mb-6">
@@ -212,12 +227,18 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                       ${tx.amount.toLocaleString()}
                     </div>
                   </div>
-                  <button 
-                    onClick={() => onSettleReimbursement(tx)}
-                    className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    核准並撥款
-                  </button>
+                  {(currentUserRole === 'admin' || currentUserRole === 'vice_admin') ? (
+                    <button 
+                      onClick={() => onSettleReimbursement(tx)}
+                      className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors mt-2"
+                    >
+                      核准並撥款
+                    </button>
+                  ) : (
+                    <div className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center py-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                      等待管理員核准
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -114,6 +114,7 @@ export default function InviteMemberPage() {
   const getRoleLabel = (role: LedgerRole) => {
     switch(role) {
       case 'admin': return '管理員';
+      case 'vice_admin': return '副管理員';
       case 'editor': return '編輯者';
       case 'viewer': return '檢視者';
       default: return '一般成員';
@@ -201,6 +202,7 @@ export default function InviteMemberPage() {
                   className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-900"
                 >
                   <option value="admin">管理員</option>
+                  <option value="vice_admin">副管理員</option>
                   <option value="editor">編輯者</option>
                   <option value="viewer">檢視者</option>
                 </select>

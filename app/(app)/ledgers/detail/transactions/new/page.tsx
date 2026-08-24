@@ -3,8 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Category, LedgerMember, TransactionSplit, Tag } from '@/types';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
@@ -16,6 +18,7 @@ function SharedTransactionForm() {
   const { user } = useAuth();
   const { activeLedgerId, activeLedger } = useLedger();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
@@ -23,6 +26,8 @@ function SharedTransactionForm() {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [details, setDetails] = useState('');
   const [notes, setNotes] = useState('');
+  const [isAdvancePayment, setIsAdvancePayment] = useState(false);
+  const [settledTransactionId, setSettledTransactionId] = useState<string | null>(null);
   
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
@@ -46,6 +51,23 @@ function SharedTransactionForm() {
       router.push('/transactions/new');
     }
   }, [user, activeLedgerId]);
+
+  useEffect(() => {
+    // Check for settlement auto-fill
+    const settleId = searchParams.get('settleReimbursement');
+    if (settleId) {
+      setSettledTransactionId(settleId);
+      const settleAmount = searchParams.get('amount');
+      const settleDate = searchParams.get('date'); // Original date for notes
+      const settleDetails = searchParams.get('details');
+      
+      if (settleAmount) setAmount(settleAmount);
+      if (settleDetails && settleDate) {
+        setDetails(`代墊核銷：${settleDetails}`);
+        setNotes(`[代墊核銷] 原日期: ${format(new Date(Number(settleDate)), 'yyyy-MM-dd')}, 項目: ${settleDetails}, 金額: ${settleAmount}`);
+      }
+    }
+  }, [searchParams]);
 
   const loadData = async () => {
     if (!user || !activeLedgerId) return;
@@ -126,7 +148,19 @@ function SharedTransactionForm() {
         notes,
         tagIds: selectedTags.length > 0 ? selectedTags : undefined,
         splits,
+        isAdvancePayment: isAdvancePayment && activeLedger?.mode === 'shared_fund',
+        advancePaymentStatus: (isAdvancePayment && activeLedger?.mode === 'shared_fund') ? 'unsettled' : undefined,
       }, true);
+
+      // If we are settling an advance payment, we should also update the original transaction
+      if (settledTransactionId) {
+        // Need to update the original advance payment to 'settled'
+        const txRef = doc(db, 'ledgers', activeLedgerId, 'transactions', settledTransactionId);
+        await updateDoc(txRef, {
+          advancePaymentStatus: 'settled',
+          settledTransactionId: 'settled_by_new_tx' // Optionally we could get the newly created tx ID, but createTransaction doesn't return it currently.
+        });
+      }
 
       router.push(`/ledgers/detail?id=${activeLedgerId}`);
     } catch (error) {
@@ -236,6 +270,33 @@ function SharedTransactionForm() {
               </div>
             </div>
           )}
+
+          {/* Advance Payment Field */}
+          {activeLedger?.mode === 'shared_fund' && type === 'expense' && !settledTransactionId && (
+            <div className="flex items-center gap-2 p-4 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/30 dark:bg-amber-900/10">
+              <input 
+                type="checkbox" 
+                id="isAdvancePayment"
+                checked={isAdvancePayment}
+                onChange={(e) => setIsAdvancePayment(e.target.checked)}
+                className="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+              />
+              <label htmlFor="isAdvancePayment" className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                這是代墊款（暫不扣除公積金，將列入待撥款）
+              </label>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <label className="mb-1 block text-sm font-medium">備註</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="field-sizing-content w-full min-h-[60px] rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              placeholder="新增備註..."
+            />
+          </div>
 
           {/* Split Mode Fields */}
           {activeLedger?.mode === 'split' && (

@@ -52,6 +52,7 @@ export default function MembersListPage() {
   const getRoleLabel = (role: LedgerRole) => {
     switch(role) {
       case 'admin': return '管理員';
+      case 'vice_admin': return '副管理員';
       case 'editor': return '編輯者';
       case 'viewer': return '檢視者';
       default: return '一般成員';
@@ -211,6 +212,8 @@ export default function MembersListPage() {
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     member.role === 'admin' 
                       ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                      : member.role === 'vice_admin'
+                      ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
                       : member.role === 'editor'
                       ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
                       : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300'
@@ -237,6 +240,13 @@ export default function MembersListPage() {
                           >
                             管理員
                             {member.role === 'admin' && <span className="text-blue-600">✓</span>}
+                          </button>
+                          <button
+                            onClick={() => handleUpdateRole(member.userId, 'vice_admin')}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between"
+                          >
+                            副管理員
+                            {member.role === 'vice_admin' && <span className="text-blue-600">✓</span>}
                           </button>
                           <button
                             onClick={() => handleUpdateRole(member.userId, 'editor')}
