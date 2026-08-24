@@ -28,6 +28,30 @@ export const createActivityFeedItem = async (
   } as ActivityFeedItem);
 };
 
+// Helper for calculating who can approve
+const getApproverIds = (submitterId: string, membersSnap: any) => {
+  const members = membersSnap.docs.map((d: any) => d.data());
+  const submitterRole = members.find((m: any) => m.userId === submitterId)?.role || 'viewer';
+  
+  return members.filter((m: any) => {
+    const role = m.role;
+    if (submitterRole === 'editor' || submitterRole === 'viewer') {
+      return role === 'admin' || role === 'vice_admin';
+    }
+    if (submitterRole === 'vice_admin') {
+      return role === 'admin';
+    }
+    if (submitterRole === 'admin') {
+      if (members.length > 2) {
+        return role === 'vice_admin';
+      } else {
+        return role !== 'admin';
+      }
+    }
+    return false;
+  }).map((m: any) => m.userId);
+};
+
 // Helper for sending notifications on create, update, delete
 const notifyTransactionEvent = async (
   userId: string,
@@ -78,7 +102,41 @@ const notifyTransactionEvent = async (
           }
         }
       }
-    } else if (mode === 'shared_fund' && txData.amount && txData.amount >= 1000) {
+    } else if (mode === 'shared_fund') {
+      const membersSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'members'));
+      
+      // 1. Pending Approval Notifications
+      if (eventType === 'created' && txData.approvalStatus === 'pending' && txData.userId) {
+        const approverIds = getApproverIds(txData.userId, membersSnap);
+        
+        const submitter = membersSnap.docs.find(d => d.data().userId === txData.userId)?.data();
+        const payer = txData.payerId ? membersSnap.docs.find(d => d.data().userId === txData.payerId)?.data() : submitter;
+        
+        const submitterName = submitter?.nickname || submitter?.userId.slice(0, 4);
+        const payerName = payer?.nickname || payer?.userId.slice(0, 4);
+
+        const msg = txData.payerId && txData.payerId !== txData.userId 
+          ? `${submitterName} 代 ${payerName} 送出了一筆 $${txData.amount} 的繳款，等待您的審核。`
+          : `${submitterName} 送出了一筆 $${txData.amount} 的繳款，等待您的審核。`;
+
+        for (const aId of approverIds) {
+          if (aId === txData.userId) continue;
+          await addDoc(collection(db, 'users', aId, 'notifications'), {
+            userId: aId,
+            type: 'fund_pending_approval',
+            title: '待審核繳款',
+            message: msg,
+            link: `/ledgers/detail?id=${ledgerId}`,
+            isRead: false,
+            createdAt: timestamp,
+            submitterNickname: submitterName,
+            payerNickname: payerName
+          } as Omit<AppNotification, 'id'>);
+        }
+      }
+
+      // 2. Large Expense Notifications
+      if (txData.amount && txData.amount >= 1000) {
       const titleLargeMap = {
         created: '大筆公積金支出',
         updated: '大筆支出已修改',
@@ -154,8 +212,8 @@ const notifyTransactionEvent = async (
              } as Omit<AppNotification, 'id'>);
           }
         }
+        }
       }
-
     }
   } catch (err) {
     console.error(`Failed to send notifications for ${eventType}`, err);
@@ -279,8 +337,79 @@ export const approveTransaction = async (
       updatedAt: Date.now()
     });
 
+    const membersSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'members'));
+    const submitter = membersSnap.docs.find(d => d.data().userId === txData.userId)?.data();
+    const payer = txData.payerId ? membersSnap.docs.find(d => d.data().userId === txData.payerId)?.data() : submitter;
+    const approver = membersSnap.docs.find(d => d.data().userId === approvedByUserId)?.data();
+    
+    const approverName = approver?.nickname || approver?.userId.slice(0, 4);
+    const msg = txData.payerId && txData.payerId !== txData.userId
+      ? `您代 ${payer?.nickname || payer?.userId.slice(0,4)} 送出的繳款已由 ${approverName} 核准。`
+      : `您的繳款已由 ${approverName} 核准。`;
+      
+    await addDoc(collection(db, 'users', txData.userId, 'notifications'), {
+      userId: txData.userId,
+      type: 'fund_approved',
+      title: '繳款已核准',
+      message: msg,
+      link: `/ledgers/detail?id=${ledgerId}`,
+      isRead: false,
+      createdAt: Date.now()
+    } as Omit<AppNotification, 'id'>);
+
     // We can also trigger notifyTransactionEvent here as an 'updated' event
     // so it recalculates balance and potentially triggers fund_empty if somehow relevant
     await notifyTransactionEvent(userId, ledgerId, { ...txData, approvalStatus: 'approved' }, 'updated');
+  }
+};
+
+export const rejectTransaction = async (
+  ledgerId: string,
+  txId: string,
+  userId: string,
+  rejectedByUserId: string,
+  reason: string
+) => {
+  const docRef = doc(db, 'ledgers', ledgerId, 'transactions', txId);
+  const txSnap = await getDoc(docRef);
+  
+  if (txSnap.exists()) {
+    const txData = txSnap.data() as Transaction;
+    const rejectedAt = Date.now();
+    await updateDoc(docRef, {
+      approvalStatus: 'rejected',
+      rejectedBy: rejectedByUserId,
+      rejectionReason: reason,
+      rejectedAt,
+      updatedAt: rejectedAt
+    });
+
+    const membersSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'members'));
+    const submitter = membersSnap.docs.find(d => d.data().userId === txData.userId)?.data();
+    const payer = txData.payerId ? membersSnap.docs.find(d => d.data().userId === txData.payerId)?.data() : submitter;
+    const rejecter = membersSnap.docs.find(d => d.data().userId === rejectedByUserId)?.data();
+    
+    const rejecterName = rejecter?.nickname || rejecter?.userId.slice(0, 4);
+    const submitterName = submitter?.nickname || submitter?.userId.slice(0, 4);
+    const payerName = payer?.nickname || payer?.userId.slice(0, 4);
+    
+    const msg = txData.payerId && txData.payerId !== txData.userId
+      ? `您代 ${payerName} 送出的繳款被 ${rejecterName} 退回了。`
+      : `您的繳款被 ${rejecterName} 退回了。`;
+
+    await addDoc(collection(db, 'users', txData.userId, 'notifications'), {
+      userId: txData.userId,
+      type: 'fund_rejected',
+      title: '繳款被退回',
+      message: msg,
+      link: `/ledgers/detail?id=${ledgerId}`,
+      isRead: false,
+      createdAt: rejectedAt,
+      rejectionReason: reason,
+      rejectedAt,
+      rejectedByNickname: rejecterName,
+      submitterNickname: submitterName,
+      payerNickname: payerName
+    } as Omit<AppNotification, 'id'>);
   }
 };

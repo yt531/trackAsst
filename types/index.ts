@@ -55,6 +55,10 @@ export interface Transaction {
   settledTransactionId?: string; // ID of the transaction that settled this advance payment
   approvalStatus?: 'pending' | 'approved' | 'rejected';
   approvedBy?: string;
+  rejectionReason?: string;
+  rejectedAt?: number;
+  rejectedBy?: string;
+  payerId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -212,7 +216,10 @@ export interface LedgerInvitation {
 export type NotificationType = 'split_assigned'  | 'ledger_expense_update'
   | 'ledger_expense_delete'
   | 'fund_empty'
-  | 'collection_notice';
+  | 'collection_notice'
+  | 'fund_pending_approval'
+  | 'fund_approved'
+  | 'fund_rejected';
 
 export interface AppNotification {
   id: string;
@@ -223,6 +230,11 @@ export interface AppNotification {
   link?: string;
   isRead: boolean;
   createdAt: number;
+  rejectionReason?: string;
+  rejectedAt?: number;
+  rejectedByNickname?: string;
+  payerNickname?: string;
+  submitterNickname?: string;
 }
 
 export type ActivityType = 'transaction_created' | 'transaction_updated' | 'transaction_deleted' | 'member_joined' | 'member_left' | 'settlement';

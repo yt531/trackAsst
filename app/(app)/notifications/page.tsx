@@ -73,7 +73,12 @@ export default function NotificationsPage() {
       }
     }
 
-    if (notification.link) {
+    if (notification.type === 'fund_rejected') {
+      const timeStr = notification.rejectedAt ? new Date(notification.rejectedAt).toLocaleString() : '未知時間';
+      const reason = notification.rejectionReason || '無提供說明';
+      const rejecter = notification.rejectedByNickname || '管理員';
+      alert(`退回人: ${rejecter}\n退回時間: ${timeStr}\n退回說明: ${reason}`);
+    } else if (notification.link) {
       router.push(notification.link);
     }
   };

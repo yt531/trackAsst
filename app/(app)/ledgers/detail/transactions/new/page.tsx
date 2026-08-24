@@ -46,6 +46,7 @@ function SharedTransactionForm() {
   const [members, setMembers] = useState<LedgerMember[]>([]);
   const [payerId, setPayerId] = useState<string>('');
   const [splitWithIds, setSplitWithIds] = useState<string[]>([]);
+  const [isSubmitOnBehalf, setIsSubmitOnBehalf] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -171,6 +172,7 @@ function SharedTransactionForm() {
         notes,
         tagIds: selectedTags.length > 0 ? selectedTags : undefined,
         splits,
+        payerId: (activeLedger?.mode === 'shared_fund' && isSubmitOnBehalf) ? payerId : user.uid,
         isAdvancePayment: isAdvancePayment && activeLedger?.mode === 'shared_fund',
         advancePaymentStatus: (isAdvancePayment && activeLedger?.mode === 'shared_fund') ? 'unsettled' : undefined,
         collectionId: (type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) ? collectionId : undefined,
@@ -385,6 +387,43 @@ function SharedTransactionForm() {
               <label htmlFor="isAdvancePayment" className="text-sm font-medium text-amber-900 dark:text-amber-200">
                 這是代墊款（暫不扣除公積金，將列入待撥款）
               </label>
+            </div>
+          )}
+
+          {/* Submit on Behalf Field (Shared Fund) */}
+          {activeLedger?.mode === 'shared_fund' && (
+            <div className="space-y-3 p-4 rounded-xl border border-blue-100 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="isSubmitOnBehalf"
+                  checked={isSubmitOnBehalf}
+                  onChange={(e) => {
+                    setIsSubmitOnBehalf(e.target.checked);
+                    if (!e.target.checked && user) setPayerId(user.uid);
+                  }}
+                  className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="isSubmitOnBehalf" className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                  代為送出審核
+                </label>
+              </div>
+              {isSubmitOnBehalf && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-blue-900 dark:text-blue-200">實際繳款人</label>
+                  <select
+                    value={payerId}
+                    onChange={(e) => setPayerId(e.target.value)}
+                    className="w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm dark:border-blue-800 dark:bg-zinc-900"
+                  >
+                    {members.map(m => (
+                      <option key={m.userId} value={m.userId}>
+                        {m.nickname || `User ${m.userId.slice(0,4)}`} {m.userId === user?.uid ? '(我)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
