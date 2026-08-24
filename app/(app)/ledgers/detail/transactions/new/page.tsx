@@ -410,7 +410,7 @@ function SharedTransactionForm() {
               </div>
               {isSubmitOnBehalf && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-blue-900 dark:text-blue-200">實際繳款人</label>
+                  <label className="mb-1 block text-sm font-medium text-blue-900 dark:text-blue-200">實際付款人</label>
                   <select
                     value={payerId}
                     onChange={(e) => setPayerId(e.target.value)}
