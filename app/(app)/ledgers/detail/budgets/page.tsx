@@ -8,6 +8,7 @@ import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getUserSettings, setUserSettings } from '@/lib/db';
 import { format, subMonths, addMonths, subYears, addYears, startOfMonth, endOfMonth, startOfYear, endOfYear, getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, setISOWeek, setISOWeekYear } from 'date-fns';
 import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
@@ -235,7 +236,29 @@ export default function LedgerBudgetsPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedWeek, setSelectedWeek] = useState(currentWeek);
 
+  const [visiblePeriods, setVisiblePeriods] = useState<('daily' | 'weekly' | 'monthly' | 'yearly')[]>(['daily', 'weekly', 'monthly', 'yearly']);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempVisiblePeriods, setTempVisiblePeriods] = useState<('daily' | 'weekly' | 'monthly' | 'yearly')[]>(['daily', 'weekly', 'monthly', 'yearly']);
+
   const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+
+  useEffect(() => {
+    if (!user || !ledgerId) return;
+    const fetchSettings = async () => {
+      try {
+        const settings = await getUserSettings(user.uid);
+        if (settings?.ledgerVisibleBudgetPeriods?.[ledgerId] && settings.ledgerVisibleBudgetPeriods[ledgerId].length > 0) {
+          const p = settings.ledgerVisibleBudgetPeriods[ledgerId];
+          setVisiblePeriods(p);
+          setTempVisiblePeriods(p);
+          setViewMode(prev => p.includes(prev) ? prev : p[0]);
+        }
+      } catch (e) {
+        console.error('Error fetching settings:', e);
+      }
+    };
+    fetchSettings();
+  }, [user, ledgerId]);
 
   const handlePrevPeriod = () => {
     if (viewMode === 'yearly') {
@@ -511,20 +534,31 @@ export default function LedgerBudgetsPage() {
         </button>
       </div>
 
-      <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl mb-4">
-        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(mode => (
-          <button
-            key={mode}
-            onClick={() => setViewMode(mode)}
-            className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              viewMode === mode
-                ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-            }`}
-          >
-              {mode === 'daily' ? '日預算' : mode === 'weekly' ? '週預算' : mode === 'monthly' ? '月預算' : '年預算'}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex flex-1 bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl">
+          {(['daily', 'weekly', 'monthly', 'yearly'] as const)
+            .filter(mode => visiblePeriods.includes(mode))
+            .map(mode => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                viewMode === mode
+                  ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+              }`}
+            >
+                {mode === 'daily' ? '日預算' : mode === 'weekly' ? '週預算' : mode === 'monthly' ? '月預算' : '年預算'}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+          title="設定顯示週期"
+        >
+          <Settings className="h-5 w-5" />
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full mb-6">
@@ -723,6 +757,75 @@ export default function LedgerBudgetsPage() {
                 className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
               >
                 儲存設定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-800">
+            <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-zinc-50">自訂顯示預算週期</h2>
+            <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">此設定僅套用於目前的共用帳本。資料不會被刪除，重新勾選即可恢復顯示。</p>
+            <div className="space-y-3 mb-6">
+              {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(mode => (
+                <label key={mode} className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={tempVisiblePeriods.includes(mode)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setTempVisiblePeriods([...tempVisiblePeriods, mode]);
+                      } else {
+                        if (tempVisiblePeriods.length <= 1) {
+                          alert('至少需保留一個預算週期');
+                          return;
+                        }
+                        setTempVisiblePeriods(tempVisiblePeriods.filter(p => p !== mode));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-900"
+                  />
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    {mode === 'daily' ? '日預算' : mode === 'weekly' ? '週預算' : mode === 'monthly' ? '月預算' : '年預算'}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+              <button
+                onClick={() => {
+                  setTempVisiblePeriods(visiblePeriods);
+                  setIsSettingsOpen(false);
+                }}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              >
+                取消
+              </button>
+              <button
+                onClick={async () => {
+                  if (!user || !ledgerId) return;
+                  try {
+                    const settings = await getUserSettings(user.uid) || {};
+                    const newLedgerSettings = {
+                      ...(settings.ledgerVisibleBudgetPeriods || {}),
+                      [ledgerId]: tempVisiblePeriods
+                    };
+                    await setUserSettings(user.uid, { ledgerVisibleBudgetPeriods: newLedgerSettings });
+                    setVisiblePeriods(tempVisiblePeriods);
+                    if (!tempVisiblePeriods.includes(viewMode)) {
+                      setViewMode(tempVisiblePeriods[0]);
+                    }
+                    setIsSettingsOpen(false);
+                  } catch (e) {
+                    console.error(e);
+                    alert('儲存失敗');
+                  }
+                }}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                儲存
               </button>
             </div>
           </div>

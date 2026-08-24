@@ -120,6 +120,8 @@ export interface UserSettings {
   defaultPrivacyLevel?: number;
   ledgerPrivacyLevel?: number;
   allowScreenshot?: boolean;
+  personalVisibleBudgetPeriods?: ('daily' | 'weekly' | 'monthly' | 'yearly')[];
+  ledgerVisibleBudgetPeriods?: Record<string, ('daily' | 'weekly' | 'monthly' | 'yearly')[]>;
 }
 
 export interface Tag {
