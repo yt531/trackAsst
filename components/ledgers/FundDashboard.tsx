@@ -352,9 +352,27 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                       )}
                     </div>
                     <div className="font-bold text-blue-600 dark:text-blue-400">
-                      +${tx.amount.toLocaleString()}
+                      {tx.type === 'expense' ? '-' : '+'}${tx.amount.toLocaleString()}
                     </div>
                   </div>
+                  {tx.auditLogs && tx.auditLogs.length > 0 && (
+                    <div className="mt-2 text-xs border-t border-blue-200/50 dark:border-blue-800/50 pt-2 space-y-1">
+                      <div className="text-zinc-500 font-medium mb-1">審核紀錄：</div>
+                      {tx.auditLogs.map((log, idx) => {
+                        const actor = members.find(m => m.userId === log.by);
+                        const actorName = actor?.nickname || `User ${log.by.slice(0,4)}`;
+                        const logDate = new Date(log.at).toLocaleString();
+                        return (
+                          <div key={idx} className="text-zinc-600 dark:text-zinc-400">
+                            [{logDate}] {actorName}{' '}
+                            {log.type === 'rejected' && <span className="text-red-500">退回: {log.reason}</span>}
+                            {log.type === 'resubmitted' && <span className="text-blue-500">重新送出</span>}
+                            {log.type === 'approved' && <span className="text-emerald-500">核准</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div className="flex gap-2 mt-2">
                     <button 
                       onClick={() => handleRejectTransaction(tx.id)}

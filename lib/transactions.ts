@@ -29,26 +29,30 @@ export const createActivityFeedItem = async (
 };
 
 // Helper for calculating who can approve
-const getApproverIds = (submitterId: string, membersSnap: any) => {
+const getApproverIds = (submitterId: string, membersSnap: any, lastModifiedBy?: string) => {
   const members = membersSnap.docs.map((d: any) => d.data());
-  const submitterRole = members.find((m: any) => m.userId === submitterId)?.role || 'viewer';
+  const actualInitiator = lastModifiedBy || submitterId;
+  const initiatorRole = members.find((m: any) => m.userId === actualInitiator)?.role || 'viewer';
   
+  const hasViceAdmin = members.some((m: any) => m.role === 'vice_admin');
+
   return members.filter((m: any) => {
+    // 1. 自己不能審核自己
+    if (m.userId === actualInitiator) return false;
+
     const role = m.role;
-    if (submitterRole === 'editor' || submitterRole === 'viewer') {
+
+    // 3. 特例: 只有 2 人且沒有副管理員，允許另一位成員審核
+    if (members.length === 2 && !hasViceAdmin) {
+      return true; // since we already filtered out actualInitiator
+    }
+
+    // 2. 正常情況下: 由 Admin 或 Vice Admin 審核
+    if (initiatorRole === 'admin') {
+      return role === 'vice_admin' || role === 'admin';
+    } else {
       return role === 'admin' || role === 'vice_admin';
     }
-    if (submitterRole === 'vice_admin') {
-      return role === 'admin';
-    }
-    if (submitterRole === 'admin') {
-      if (members.length > 2) {
-        return role === 'vice_admin';
-      } else {
-        return role !== 'admin';
-      }
-    }
-    return false;
   }).map((m: any) => m.userId);
 };
 
@@ -106,25 +110,41 @@ const notifyTransactionEvent = async (
       const membersSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'members'));
       
       // 1. Pending Approval Notifications
-      if (eventType === 'created' && txData.approvalStatus === 'pending' && txData.userId) {
-        const approverIds = getApproverIds(txData.userId, membersSnap);
+      const isPendingSubmit = (eventType === 'created' || eventType === 'updated') && txData.approvalStatus === 'pending';
+      const isPendingDelete = eventType === 'updated' && txData.approvalStatus === 'pending_delete';
+      
+      if ((isPendingSubmit || isPendingDelete) && txData.userId) {
+        const approverIds = getApproverIds(txData.userId, membersSnap, txData.lastModifiedBy);
         
-        const submitter = membersSnap.docs.find(d => d.data().userId === txData.userId)?.data();
+        const initiatorId = txData.lastModifiedBy || txData.userId;
+        const submitter = membersSnap.docs.find(d => d.data().userId === initiatorId)?.data();
         const payer = txData.payerId ? membersSnap.docs.find(d => d.data().userId === txData.payerId)?.data() : submitter;
         
         const submitterName = submitter?.nickname || submitter?.userId.slice(0, 4);
         const payerName = payer?.nickname || payer?.userId.slice(0, 4);
 
-        const msg = txData.payerId && txData.payerId !== txData.userId 
-          ? `${submitterName} 代 ${payerName} 送出了一筆 $${txData.amount} 的繳款，等待您的審核。`
-          : `${submitterName} 送出了一筆 $${txData.amount} 的繳款，等待您的審核。`;
+        let msg = '';
+        let title = '';
+        let notifType: NotificationType = 'fund_pending_approval';
+
+        if (isPendingDelete) {
+          title = '待審核刪除';
+          msg = `${submitterName} 申請刪除了一筆 $${txData.amount} 的繳款，等待您的審核。`;
+          notifType = 'transaction_delete_pending';
+        } else {
+          title = eventType === 'updated' ? '待審核繳款(已修改)' : '待審核繳款';
+          notifType = eventType === 'updated' ? 'transaction_update_pending' : 'fund_pending_approval';
+          msg = txData.payerId && txData.payerId !== initiatorId
+            ? `${submitterName} 代 ${payerName} 送出了一筆 $${txData.amount} 的繳款，等待您的審核。`
+            : `${submitterName} 送出了一筆 $${txData.amount} 的繳款，等待您的審核。`;
+        }
 
         for (const aId of approverIds) {
-          if (aId === txData.userId) continue;
+          if (aId === initiatorId) continue;
           await addDoc(collection(db, 'users', aId, 'notifications'), {
             userId: aId,
-            type: 'fund_pending_approval',
-            title: '待審核繳款',
+            type: notifType,
+            title,
             message: msg,
             link: `/ledgers/detail?id=${ledgerId}`,
             isRead: false,
@@ -134,7 +154,6 @@ const notifyTransactionEvent = async (
           } as Omit<AppNotification, 'id'>);
         }
       }
-
       // 2. Large Expense Notifications
       if (txData.amount && txData.amount >= 1000) {
       const titleLargeMap = {
@@ -177,8 +196,11 @@ const notifyTransactionEvent = async (
           isIncluded = false;
         }
         if (isIncluded) {
-          if (tx.type === 'income' && tx.approvalStatus !== 'pending') currentBalance += tx.amount;
-          else if (tx.type === 'expense' || tx.type === 'settlement') currentBalance -= tx.amount;
+          const isApproved = !tx.approvalStatus || tx.approvalStatus === 'approved';
+          if (isApproved) {
+            if (tx.type === 'income') currentBalance += tx.amount;
+            else if (tx.type === 'expense' || tx.type === 'settlement') currentBalance -= tx.amount;
+          }
         }
       });
 
@@ -186,13 +208,15 @@ const notifyTransactionEvent = async (
       let prevBalance = currentBalance;
       if (eventType === 'created' && txData.amount) {
         let eff = 0;
-        if (txData.type === 'income' && txData.approvalStatus !== 'pending') eff = txData.amount;
-        else if (txData.type === 'expense' || txData.type === 'settlement') {
-          if (!(txData.type === 'expense' && txData.isAdvancePayment && txData.advancePaymentStatus === 'unsettled')) {
-            eff = -txData.amount;
+        const isApproved = !txData.approvalStatus || txData.approvalStatus === 'approved';
+        if (isApproved) {
+          if (txData.type === 'income') eff = txData.amount;
+          else if (txData.type === 'expense' || txData.type === 'settlement') {
+            let isAdv = txData.isAdvancePayment && txData.advancePaymentStatus === 'unsettled';
+            if (!isAdv) eff = -txData.amount;
           }
         }
-        prevBalance -= eff;
+        prevBalance = currentBalance - eff;
       }
 
       // Only notify if it went from > 0 to <= 0, or if it's creation of an expense and already <= 0 (avoiding spam on every update)
@@ -275,6 +299,24 @@ export const updateTransaction = async (
   
   if (isSharedLedger && ledgerId) {
     const docRef = doc(db, 'ledgers', ledgerId, 'transactions', txId);
+    
+    // Fetch original to check status
+    const origSnap = await getDoc(docRef);
+    if (origSnap.exists()) {
+      const orig = origSnap.data() as Transaction;
+      if (orig.approvalStatus === 'approved' || orig.approvalStatus === 'rejected') {
+         cleanTxData.approvalStatus = 'pending';
+         cleanTxData.lastModifiedBy = userId;
+         
+         const newLog = {
+           type: 'resubmitted' as const,
+           by: userId,
+           at: Date.now()
+         };
+         cleanTxData.auditLogs = [...(orig.auditLogs || []), newLog];
+      }
+    }
+
     await updateDoc(docRef, cleanTxData);
 
     await createActivityFeedItem(
@@ -301,18 +343,29 @@ export const deleteTransaction = async (
 ) => {
   if (isSharedLedger && ledgerId) {
     const docRef = doc(db, 'ledgers', ledgerId, 'transactions', txId);
-    await deleteDoc(docRef);
+    
+    if (deletedTxData?.approvalStatus === 'approved') {
+      // 審核通過的交易不直接刪除，轉為 pending_delete
+      await updateDoc(docRef, {
+        approvalStatus: 'pending_delete',
+        lastModifiedBy: userId,
+        updatedAt: Date.now()
+      });
+      await notifyTransactionEvent(userId, ledgerId, { ...deletedTxData, approvalStatus: 'pending_delete', lastModifiedBy: userId }, 'updated');
+    } else {
+      await deleteDoc(docRef);
 
-    await createActivityFeedItem(
-      ledgerId,
-      userId,
-      'transaction_deleted',
-      deletedTxData?.amount ? `$${deletedTxData.amount.toLocaleString()}元` : '',
-      txId
-    );
+      await createActivityFeedItem(
+        ledgerId,
+        userId,
+        'transaction_deleted',
+        deletedTxData?.amount ? `$${deletedTxData.amount.toLocaleString()}元` : '',
+        txId
+      );
 
-    if (deletedTxData) {
-      await notifyTransactionEvent(userId, ledgerId, deletedTxData, 'deleted');
+      if (deletedTxData) {
+        await notifyTransactionEvent(userId, ledgerId, deletedTxData, 'deleted');
+      }
     }
   } else {
     const docRef = doc(db, 'users', userId, 'transactions', txId);
@@ -331,10 +384,22 @@ export const approveTransaction = async (
   
   if (txSnap.exists()) {
     const txData = txSnap.data() as Transaction;
+    
+    if (txData.approvalStatus === 'pending_delete') {
+      // 審核同意刪除 -> 正式刪除
+      await deleteDoc(docRef);
+      await createActivityFeedItem(ledgerId, userId, 'transaction_deleted', txData.amount ? `$${txData.amount.toLocaleString()}元` : '', txId);
+      await notifyTransactionEvent(userId, ledgerId, txData, 'deleted');
+      return;
+    }
+
+    // 審核同意新增/修改 -> 狀態變為 approved
+    const newLog = { type: 'approved' as const, by: approvedByUserId, at: Date.now() };
     await updateDoc(docRef, {
       approvalStatus: 'approved',
       approvedBy: approvedByUserId,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      auditLogs: [...(txData.auditLogs || []), newLog]
     });
 
     const membersSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'members'));
@@ -376,13 +441,28 @@ export const rejectTransaction = async (
   if (txSnap.exists()) {
     const txData = txSnap.data() as Transaction;
     const rejectedAt = Date.now();
-    await updateDoc(docRef, {
-      approvalStatus: 'rejected',
-      rejectedBy: rejectedByUserId,
-      rejectionReason: reason,
-      rejectedAt,
-      updatedAt: rejectedAt
-    });
+    
+    const newLog = { type: 'rejected' as const, by: rejectedByUserId, at: rejectedAt, reason };
+    
+    if (txData.approvalStatus === 'pending_delete') {
+      // 駁回刪除請求 -> 恢復為 approved
+      await updateDoc(docRef, {
+        approvalStatus: 'approved',
+        updatedAt: rejectedAt,
+        auditLogs: [...(txData.auditLogs || []), newLog]
+      });
+      // 這裡可以考慮發送「駁回刪除」的通知，為了簡單，我們繼續用 fund_rejected 通知，或者改一下 message
+    } else {
+      // 駁回新增/修改請求 -> 狀態變為 rejected
+      await updateDoc(docRef, {
+        approvalStatus: 'rejected',
+        rejectedBy: rejectedByUserId,
+        rejectionReason: reason,
+        rejectedAt,
+        updatedAt: rejectedAt,
+        auditLogs: [...(txData.auditLogs || []), newLog]
+      });
+    }
 
     const membersSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'members'));
     const submitter = membersSnap.docs.find(d => d.data().userId === txData.userId)?.data();
@@ -393,14 +473,21 @@ export const rejectTransaction = async (
     const submitterName = submitter?.nickname || submitter?.userId.slice(0, 4);
     const payerName = payer?.nickname || payer?.userId.slice(0, 4);
     
-    const msg = txData.payerId && txData.payerId !== txData.userId
-      ? `您代 ${payerName} 送出的繳款被 ${rejecterName} 退回了。`
-      : `您的繳款被 ${rejecterName} 退回了。`;
+    let msg = '';
+    let notifTitle = '繳款被退回';
+    if (txData.approvalStatus === 'pending_delete') {
+      notifTitle = '刪除請求被退回';
+      msg = `您申請刪除的繳款被 ${rejecterName} 退回了。退回原因：${reason}`;
+    } else {
+      msg = txData.payerId && txData.payerId !== txData.userId
+        ? `您代 ${payerName} 送出的繳款被 ${rejecterName} 退回了。退回原因：${reason}`
+        : `您的繳款被 ${rejecterName} 退回了。退回原因：${reason}`;
+    }
 
     await addDoc(collection(db, 'users', txData.userId, 'notifications'), {
       userId: txData.userId,
       type: 'fund_rejected',
-      title: '繳款被退回',
+      title: notifTitle,
       message: msg,
       link: `/ledgers/detail?id=${ledgerId}`,
       isRead: false,
@@ -409,7 +496,8 @@ export const rejectTransaction = async (
       rejectedAt,
       rejectedByNickname: rejecterName,
       submitterNickname: submitterName,
-      payerNickname: payerName
+      payerNickname: payerName,
+      txId
     } as Omit<AppNotification, 'id'>);
   }
 };

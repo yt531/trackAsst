@@ -42,6 +42,7 @@ function SharedTransactionForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [originalTx, setOriginalTx] = useState<Transaction | null>(null);
 
   useEffect(() => {
     if (user && activeLedgerId) {
@@ -75,6 +76,7 @@ function SharedTransactionForm() {
       const txDoc = await getDoc(doc(db, 'ledgers', activeLedgerId, 'transactions', txId));
       if (txDoc.exists()) {
         const tx = txDoc.data() as Transaction;
+        setOriginalTx(tx);
         setType(tx.type as 'expense' | 'income');
         setAmount(tx.amount.toString());
         setCategoryId(tx.categoryId);
@@ -108,6 +110,14 @@ function SharedTransactionForm() {
     if (activeLedger?.mode === 'split' && splitWithIds.length === 0) {
       alert('請至少選擇一位分攤對象');
       return;
+    }
+
+    if (originalTx?.approvalStatus === 'approved') {
+      if (members.length > 2 && !members.some(m => m.role === 'vice_admin')) {
+        alert('請先至設定指派至少一位副管理員，才可修改審核通過的交易');
+        return;
+      }
+      if (!confirm('修改已通過的交易後需要重新送審，確定要繼續修改嗎？')) return;
     }
 
     setIsSubmitting(true);

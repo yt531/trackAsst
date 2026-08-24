@@ -25,6 +25,7 @@ export function calculateBalances(transactions: Transaction[]): Record<string, U
 
   for (const t of transactions) {
     if (t.type !== 'expense' && t.type !== 'settlement') continue;
+    if (t.approvalStatus === 'pending' || t.approvalStatus === 'rejected') continue;
     
     if (t.splits && t.splits.length > 0) {
       for (const split of t.splits) {

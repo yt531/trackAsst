@@ -15,6 +15,8 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
+  const [selectedRejectedNotif, setSelectedRejectedNotif] = useState<AppNotification | null>(null);
+  const [selectedTxStatus, setSelectedTxStatus] = useState<string | null>(null);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -74,10 +76,22 @@ export default function NotificationsPage() {
     }
 
     if (notification.type === 'fund_rejected') {
-      const timeStr = notification.rejectedAt ? new Date(notification.rejectedAt).toLocaleString() : '未知時間';
-      const reason = notification.rejectionReason || '無提供說明';
-      const rejecter = notification.rejectedByNickname || '管理員';
-      alert(`退回人: ${rejecter}\n退回時間: ${timeStr}\n退回說明: ${reason}`);
+      setSelectedRejectedNotif(notification);
+      setSelectedTxStatus(null);
+      // Fetch transaction to check if it's already resubmitted
+      if (notification.txId && notification.link) {
+        const ledgerId = notification.link.split('id=')[1];
+        if (ledgerId) {
+          import('firebase/firestore').then(({ getDoc, doc }) => {
+            getDoc(doc(db, 'ledgers', ledgerId, 'transactions', notification.txId!))
+              .then(snap => {
+                if (snap.exists()) {
+                  setSelectedTxStatus(snap.data().approvalStatus || null);
+                }
+              });
+          });
+        }
+      }
     } else if (notification.link) {
       router.push(notification.link);
     }
@@ -157,6 +171,60 @@ export default function NotificationsPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 退回詳情 Modal */}
+      {selectedRejectedNotif && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+            <h3 className="mb-4 text-xl font-bold">退回詳情</h3>
+            <div className="space-y-4 text-sm">
+              <div>
+                <span className="font-semibold text-zinc-500">退回人：</span>
+                <span className="text-zinc-900 dark:text-zinc-100">{selectedRejectedNotif.rejectedByNickname || '管理員'}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-zinc-500">退回時間：</span>
+                <span className="text-zinc-900 dark:text-zinc-100">
+                  {selectedRejectedNotif.rejectedAt ? new Date(selectedRejectedNotif.rejectedAt).toLocaleString() : '未知時間'}
+                </span>
+              </div>
+              <div>
+                <span className="font-semibold text-zinc-500">退回說明：</span>
+                <div className="mt-1 rounded-lg bg-red-50 p-3 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                  {selectedRejectedNotif.rejectionReason || '無提供說明'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setSelectedRejectedNotif(null)}
+                className="flex-1 rounded-xl border border-zinc-200 py-2.5 font-semibold transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                關閉
+              </button>
+              {selectedRejectedNotif.txId && (
+                <button
+                  disabled={selectedTxStatus === 'pending'}
+                  onClick={() => {
+                    const ledgerId = selectedRejectedNotif.link?.split('id=')[1];
+                    if (ledgerId && selectedRejectedNotif.txId) {
+                      router.push(`/ledgers/detail/transactions/edit?id=${ledgerId}&txId=${selectedRejectedNotif.txId}`);
+                    }
+                  }}
+                  className={`flex-1 rounded-xl py-2.5 font-semibold text-white transition-colors ${
+                    selectedTxStatus === 'pending' 
+                      ? 'bg-zinc-400 cursor-not-allowed dark:bg-zinc-600'
+                      : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+                  }`}
+                >
+                  {selectedTxStatus === 'pending' ? '已重新送審 (審核中)' : '重新編輯'}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

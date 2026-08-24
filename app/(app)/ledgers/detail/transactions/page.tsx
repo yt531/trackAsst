@@ -103,14 +103,30 @@ function LedgerTransactionsList() {
   };
 
   const handleDelete = async (tx: Transaction) => {
-    if (!user || !activeLedgerId || !confirm('確定要刪除這筆共享交易嗎？')) return;
+    if (!user || !activeLedgerId) return;
+
+    if (tx.approvalStatus === 'approved') {
+      const membersList = Object.values(members);
+      if (membersList.length > 2 && !membersList.some(m => m.role === 'vice_admin')) {
+        alert('請先至設定指派至少一位副管理員，才可刪除審核通過的交易');
+        return;
+      }
+      if (!confirm('刪除已通過的交易需要經過審核，確定要提出刪除申請嗎？')) return;
+    } else {
+      if (!confirm('確定要刪除這筆共享交易嗎？')) return;
+    }
+    
     try {
       await deleteTransaction(user.uid, tx.id, true, activeLedgerId, tx);
       setTotals(prev => ({
         income: prev.income - (tx.type === 'income' ? (tx.baseAmount || tx.amount) : 0),
         expense: prev.expense - (tx.type === 'expense' ? (tx.baseAmount || tx.amount) : 0),
       }));
-      setTransactions(transactions.filter(t => t.id !== tx.id));
+      if (tx.approvalStatus === 'approved') {
+        setTransactions(transactions.map(t => t.id === tx.id ? { ...t, approvalStatus: 'pending_delete' } : t));
+      } else {
+        setTransactions(transactions.filter(t => t.id !== tx.id));
+      }
     } catch (e) {
       console.error(e);
     }

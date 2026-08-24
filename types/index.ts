@@ -32,6 +32,13 @@ export interface TransactionSplit {
   owedAmount: number;
 }
 
+export interface TransactionAuditLog {
+  type: 'approved' | 'rejected' | 'resubmitted' | 'pending_delete';
+  by: string;
+  at: number;
+  reason?: string;
+}
+
 export interface Transaction {
   id: string;
   ledgerId?: string;
@@ -53,11 +60,18 @@ export interface Transaction {
   isAdvancePayment?: boolean;
   advancePaymentStatus?: 'unsettled' | 'settled';
   settledTransactionId?: string; // ID of the transaction that settled this advance payment
-  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvalStatus?: 'pending' | 'approved' | 'rejected' | 'pending_delete';
   approvedBy?: string;
   rejectionReason?: string;
   rejectedAt?: number;
   rejectedBy?: string;
+  lastModifiedBy?: string;
+  auditLogs?: {
+    type: 'rejected' | 'approved' | 'resubmitted' | 'pending_delete';
+    by: string;
+    at: number;
+    reason?: string;
+  }[];
   payerId?: string;
   createdAt: number;
   updatedAt: number;
@@ -220,7 +234,9 @@ export type NotificationType = 'split_assigned'  | 'ledger_expense_update'
   | 'fund_pending_approval'
   | 'fund_approved'
   | 'fund_rejected'
-  | 'large_expense';
+  | 'large_expense'
+  | 'transaction_delete_pending'
+  | 'transaction_update_pending';
 
 export interface AppNotification {
   id: string;
@@ -236,6 +252,7 @@ export interface AppNotification {
   rejectedByNickname?: string;
   payerNickname?: string;
   submitterNickname?: string;
+  txId?: string;
 }
 
 export type ActivityType = 'transaction_created' | 'transaction_updated' | 'transaction_deleted' | 'member_joined' | 'member_left' | 'settlement';
