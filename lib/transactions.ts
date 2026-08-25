@@ -405,18 +405,49 @@ export const approveTransaction = async (
 
     // 審核同意新增/修改 -> 狀態變為 approved
     const newLog = { type: 'approved' as const, by: approvedByUserId, at: Date.now() };
-    await updateDoc(docRef, {
+    const updates: Partial<Transaction> = {
       approvalStatus: 'approved',
       approvedBy: approvedByUserId,
       updatedAt: Date.now(),
       auditLogs: [...(txData.auditLogs || []), newLog]
-    });
+    };
+
+    const { writeBatch } = await import('firebase/firestore');
+    const batch = writeBatch(db);
+    batch.update(docRef, updates);
 
     const membersSnap = await getDocs(collection(db, 'ledgers', ledgerId, 'members'));
     const submitter = membersSnap.docs.find(d => d.data().userId === txData.userId)?.data();
     const payer = txData.payerId ? membersSnap.docs.find(d => d.data().userId === txData.payerId)?.data() : submitter;
-    const approver = membersSnap.docs.find(d => d.data().userId === approvedByUserId)?.data();
     
+    // Process Balance Deduction
+    if (txData.usedBalance && txData.usedBalance > 0 && txData.payerId) {
+      const payerRef = doc(db, 'ledgers', ledgerId, 'members', txData.payerId);
+      const payerBalance = payer?.balance || 0;
+      
+      // We deduct up to the available balance (prevent negative)
+      const deductAmount = Math.min(txData.usedBalance, payerBalance);
+      
+      if (deductAmount > 0) {
+        batch.update(payerRef, { balance: payerBalance - deductAmount });
+        
+        const logRef = doc(collection(db, 'ledgers', ledgerId, 'balanceLogs'));
+        batch.set(logRef, {
+          id: logRef.id,
+          ledgerId,
+          userId: txData.payerId,
+          amount: deductAmount,
+          type: 'overpayment_deduct',
+          note: `自動折抵繳款：${txData.details}`,
+          createdAt: Date.now(),
+          createdBy: approvedByUserId
+        });
+      }
+    }
+
+    await batch.commit();
+
+    const approver = membersSnap.docs.find(d => d.data().userId === approvedByUserId)?.data();
     const approverName = approver?.nickname || approver?.userId.slice(0, 4);
     const msg = txData.payerId && txData.payerId !== txData.userId
       ? `您代 ${payer?.nickname || payer?.userId.slice(0,4)} 送出的繳款已由 ${approverName} 核准。`
@@ -430,7 +461,7 @@ export const approveTransaction = async (
       link: `/ledgers/detail?id=${ledgerId}`,
       isRead: false,
       createdAt: Date.now()
-    } as Omit<AppNotification, 'id'>);
+    });
 
     // We can also trigger notifyTransactionEvent here as an 'updated' event
     // so it recalculates balance and potentially triggers fund_empty if somehow relevant

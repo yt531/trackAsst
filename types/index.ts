@@ -30,6 +30,7 @@ export interface TransactionSplit {
   userId: string;
   paidAmount: number;
   owedAmount: number;
+  usedBalance?: number; // Amount of personal balance used to offset owed amount
 }
 
 export interface TransactionAuditLog {
@@ -73,6 +74,7 @@ export interface Transaction {
     reason?: string;
   }[];
   payerId?: string;
+  usedBalance?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -164,7 +166,9 @@ export interface FundCollection {
   id: string;
   ledgerId: string;
   title: string;
-  targetAmount: number;
+  targetAmount: number; // Amount per person
+  totalAmount?: number; // Optional fixed total amount (e.g. 1000 for cake)
+  memberIds: string[]; // Members who are part of this collection
   createdAt: number;
   createdBy: string;
   status: 'active' | 'closed';
@@ -203,6 +207,7 @@ export interface LedgerMember {
   joinedAt: number;
   status: 'active' | 'invited' | 'declined' | 'left';
   nickname?: string;
+  balance?: number; // Member's available overpayment balance
   notificationPreferences: {
     all?: boolean;
     newTransaction?: boolean;
@@ -212,6 +217,18 @@ export interface LedgerMember {
     splitAssigned?: boolean;
     largeExpense?: boolean;
   };
+}
+
+export interface MemberBalanceLog {
+  id: string;
+  ledgerId: string;
+  userId: string; // The member who owns the balance
+  amount: number; // Positive means added to balance, negative means used
+  type: 'overpayment_add' | 'expense_deduction' | 'refund' | 'manual';
+  note?: string; // e.g. "[2026/08/25] 溢收款 (備註：蛋糕重新分攤)"
+  relatedTransactionId?: string; // ID of the related transaction
+  createdAt: number;
+  createdBy: string; // User ID of the admin who triggered this
 }
 
 export interface LedgerInvitation {

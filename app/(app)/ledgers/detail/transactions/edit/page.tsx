@@ -285,7 +285,7 @@ function SharedTransactionForm() {
                       }`}
                     >
                       <User className="h-4 w-4" />
-                      {m.userId === user?.uid ? '我' : m.userId.slice(0, 4)}
+                      {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
                     </button>
                   ))}
                 </div>
@@ -314,7 +314,7 @@ function SharedTransactionForm() {
                         }`}
                       >
                         <User className="h-4 w-4" />
-                        {m.userId === user?.uid ? '我' : m.userId.slice(0, 4)}
+                        {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
                       </button>
                     );
                   })}

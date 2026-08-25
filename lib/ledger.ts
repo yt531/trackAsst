@@ -190,7 +190,7 @@ export const deleteLedgerTag = async (ledgerId: string, tagId: string) => {
 // Fund Collections
 // ==========================================
 
-import type { FundCollection, AppNotification } from '../types';
+import type { FundCollection, AppNotification, Transaction, MemberBalanceLog } from '../types';
 
 export const getFundCollections = async (ledgerId: string): Promise<FundCollection[]> => {
   const collectionsRef = collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections');
@@ -203,17 +203,16 @@ export const createFundCollection = async (ledgerId: string, data: FundCollectio
   await setDoc(docRef, data);
 
   // Send collection_notice to all members
-  const members = await getLedgerMembers(ledgerId);
   const ledger = await getLedger(ledgerId);
   
   if (ledger) {
-    for (const member of members) {
-      if (member.userId !== data.createdBy) {
-        await setDoc(doc(collection(db, 'users', member.userId, 'notifications')), {
-          userId: member.userId,
+    for (const memberId of data.memberIds || []) {
+      if (memberId !== data.createdBy) {
+        await setDoc(doc(collection(db, 'users', memberId, 'notifications')), {
+          userId: memberId,
           type: 'collection_notice',
-          title: '📢 新的收款通知',
-          message: `帳本「${ledger.name}」發起了新的收款「${data.title}」，金額為 ${data.targetAmount} 元。`,
+          title: '發起新收款',
+          message: `在「${ledger.name}」發起了新收款「${data.title}」，請繳交 ${data.targetAmount} 元。`,
           link: `/ledgers/detail?id=${ledgerId}`,
           isRead: false,
           createdAt: Date.now(),
@@ -228,4 +227,85 @@ export const updateFundCollection = async (ledgerId: string, collectionId: strin
   await updateDoc(docRef, data);
 };
 
+export const recalculateCollection = async (
+  ledgerId: string, 
+  collectionId: string, 
+  newTargetAmount: number, 
+  newMemberIds: string[], 
+  newTotalAmount: number | undefined,
+  adminUserId: string,
+  note: string
+) => {
+  const { writeBatch } = await import('firebase/firestore');
+  
+  // 1. Update collection
+  const collRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections', collectionId);
+  await updateDoc(collRef, {
+    targetAmount: newTargetAmount,
+    memberIds: newMemberIds,
+    totalAmount: newTotalAmount
+  });
 
+  // 2. Fetch all income transactions for this collection
+  const txQuery = query(collection(db, 'ledgers', ledgerId, 'transactions'), where('collectionId', '==', collectionId), where('type', '==', 'income'));
+  const txSnap = await getDocs(txQuery);
+  const txs = txSnap.docs.map(d => ({ id: d.id, ...d.data() } as Transaction));
+  
+  // 3. Group by user
+  const userPaidAmount: Record<string, number> = {};
+  const userTxs: Record<string, Transaction[]> = {};
+  txs.forEach(tx => {
+    if (tx.approvalStatus === 'approved' || !tx.approvalStatus) { // only count approved/valid ones
+      userPaidAmount[tx.userId] = (userPaidAmount[tx.userId] || 0) + tx.amount;
+      if (!userTxs[tx.userId]) userTxs[tx.userId] = [];
+      userTxs[tx.userId].push(tx);
+    }
+  });
+
+  const overflowResults: { userId: string; overflow: number }[] = [];
+  const batch = writeBatch(db);
+
+  // 4. Process overflow
+  for (const userId of Object.keys(userPaidAmount)) {
+    const paid = userPaidAmount[userId];
+    if (paid > newTargetAmount) {
+      const overflow = paid - newTargetAmount;
+      overflowResults.push({ userId, overflow });
+      
+      // Reduce transaction amount (take the most recent one for simplicity)
+      const userTxList = userTxs[userId].sort((a, b) => b.date - a.date);
+      let remainingOverflow = overflow;
+      for (const tx of userTxList) {
+        if (remainingOverflow <= 0) break;
+        const deduct = Math.min(tx.amount, remainingOverflow);
+        const txRef = doc(db, 'ledgers', ledgerId, 'transactions', tx.id);
+        batch.update(txRef, { amount: tx.amount - deduct });
+        remainingOverflow -= deduct;
+      }
+
+      // Add to member balance
+      const memberRef = doc(db, 'ledgers', ledgerId, 'members', userId);
+      const memberDoc = await getDoc(memberRef);
+      if (memberDoc.exists()) {
+        const memberData = memberDoc.data() as LedgerMember;
+        batch.update(memberRef, { balance: (memberData.balance || 0) + overflow });
+      }
+
+      // Create Balance Log
+      const logRef = doc(collection(db, 'ledgers', ledgerId, 'balanceLogs'));
+      batch.set(logRef, {
+        id: logRef.id,
+        ledgerId,
+        userId,
+        amount: overflow,
+        type: 'overpayment_add',
+        note,
+        createdAt: Date.now(),
+        createdBy: adminUserId
+      } as MemberBalanceLog);
+    }
+  }
+
+  await batch.commit();
+  return overflowResults;
+};

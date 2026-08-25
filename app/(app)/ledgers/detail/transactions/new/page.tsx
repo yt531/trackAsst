@@ -47,6 +47,8 @@ function SharedTransactionForm() {
   const [payerId, setPayerId] = useState<string>('');
   const [splitWithIds, setSplitWithIds] = useState<string[]>([]);
   const [isSubmitOnBehalf, setIsSubmitOnBehalf] = useState(false);
+  const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
+  const [useBalanceForPayers, setUseBalanceForPayers] = useState<Record<string, boolean>>({});
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -142,11 +144,9 @@ function SharedTransactionForm() {
       const numAmount = parseFloat(amount);
       const baseAmount = numAmount; // Simplification
 
-      let splits: TransactionSplit[] | undefined = undefined;
-
       if (activeLedger?.mode === 'split') {
         const splitAmount = numAmount / splitWithIds.length;
-        splits = members.map(m => {
+        const splits = members.map(m => {
           const isPayer = m.userId === payerId;
           const isSplitter = splitWithIds.includes(m.userId);
           
@@ -156,40 +156,69 @@ function SharedTransactionForm() {
             owedAmount: isSplitter ? splitAmount : 0,
           };
         }).filter(s => s.paidAmount > 0 || s.owedAmount > 0);
-      }
 
-      await createTransaction(user.uid, {
-        userId: user.uid,
-        ledgerId: activeLedgerId,
-        type,
-        amount: numAmount,
-        baseAmount,
-        currency: activeLedger?.currency || 'TWD',
-        exchangeRate: 1,
-        paymentMethodId: 'cash', // Shared ledgers may not use personal PMs
-        date: new Date(date).getTime(),
-        details,
-        notes,
-        tagIds: selectedTags.length > 0 ? selectedTags : undefined,
-        splits,
-        payerId: (activeLedger?.mode === 'shared_fund' && isSubmitOnBehalf) ? payerId : user.uid,
-        isAdvancePayment: isAdvancePayment && activeLedger?.mode === 'shared_fund',
-        advancePaymentStatus: (isAdvancePayment && activeLedger?.mode === 'shared_fund') ? 'unsettled' : undefined,
-        collectionId: (type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) ? collectionId : undefined,
-        approvalStatus: (type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) ? 'pending' : undefined,
-        categoryId: (type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) 
-          ? (categories.find(c => c.type === 'income')?.id || 'default_income') 
-          : categoryId,
-      }, true);
+        await createTransaction(user.uid, {
+          userId: user.uid,
+          ledgerId: activeLedgerId,
+          type,
+          amount: numAmount,
+          baseAmount,
+          currency: activeLedger?.currency || 'TWD',
+          exchangeRate: 1,
+          paymentMethodId: 'cash',
+          date: new Date(date).getTime(),
+          details,
+          notes,
+          tagIds: selectedTags.length > 0 ? selectedTags : undefined,
+          splits,
+          payerId,
+          categoryId
+        }, true);
+      } else {
+        // Shared Fund Mode
+        const payers = (isSubmitOnBehalf && type === 'income' && isFundContribution) 
+          ? (selectedPayerIds.length > 0 ? selectedPayerIds : [user.uid])
+          : [user.uid];
 
-      // If we are settling an advance payment, we should also update the original transaction
-      if (settledTransactionId) {
-        // Need to update the original advance payment to 'settled'
-        const txRef = doc(db, 'ledgers', activeLedgerId, 'transactions', settledTransactionId);
-        await updateDoc(txRef, {
-          advancePaymentStatus: 'settled',
-          settledTransactionId: 'settled_by_new_tx' // Optionally we could get the newly created tx ID, but createTransaction doesn't return it currently.
-        });
+        for (const pId of payers) {
+          const member = members.find(m => m.userId === pId);
+          let usedBalance = 0;
+          if (useBalanceForPayers[pId] && member && (member.balance || 0) > 0) {
+            usedBalance = Math.min(numAmount, member.balance || 0);
+          }
+
+          await createTransaction(user.uid, {
+            userId: user.uid,
+            ledgerId: activeLedgerId,
+            type,
+            amount: numAmount,
+            baseAmount,
+            usedBalance: usedBalance > 0 ? usedBalance : undefined,
+            currency: activeLedger?.currency || 'TWD',
+            exchangeRate: 1,
+            paymentMethodId: 'cash',
+            date: new Date(date).getTime(),
+            details: payers.length > 1 ? `${details} (批次)` : details,
+            notes,
+            tagIds: selectedTags.length > 0 ? selectedTags : undefined,
+            payerId: (isSubmitOnBehalf || type === 'expense') ? pId : user.uid, // expense payer is handled via another field if needed, but for income it's pId
+            isAdvancePayment: isAdvancePayment && type === 'expense',
+            advancePaymentStatus: (isAdvancePayment && type === 'expense') ? 'unsettled' : undefined,
+            collectionId: (type === 'income' && isFundContribution) ? collectionId : undefined,
+            approvalStatus: (type === 'income' && isFundContribution) ? 'pending' : undefined,
+            categoryId: (type === 'income' && isFundContribution) 
+              ? (categories.find(c => c.type === 'income')?.id || 'default_income') 
+              : categoryId,
+          }, true);
+        }
+
+        if (settledTransactionId) {
+          const txRef = doc(db, 'ledgers', activeLedgerId, 'transactions', settledTransactionId);
+          await updateDoc(txRef, {
+            advancePaymentStatus: 'settled',
+            settledTransactionId: 'settled_by_new_tx'
+          });
+        }
       }
 
       router.push(`/ledgers/detail?id=${activeLedgerId}`);
@@ -391,7 +420,7 @@ function SharedTransactionForm() {
           )}
 
           {/* Submit on Behalf Field (Shared Fund) */}
-          {activeLedger?.mode === 'shared_fund' && (
+          {activeLedger?.mode === 'shared_fund' && type === 'income' && (
             <div className="space-y-3 p-4 rounded-xl border border-blue-100 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
               <div className="flex items-center gap-2">
                 <input 
@@ -400,33 +429,65 @@ function SharedTransactionForm() {
                   checked={isSubmitOnBehalf}
                   onChange={(e) => {
                     setIsSubmitOnBehalf(e.target.checked);
-                    if (!e.target.checked && user) {
-                      setPayerId(user.uid);
-                    } else if (e.target.checked && user) {
-                      const otherMember = members.find(m => m.userId !== user.uid);
-                      if (otherMember) setPayerId(otherMember.userId);
+                    if (!e.target.checked) {
+                      setSelectedPayerIds([]);
+                    } else {
+                      // Auto-select users with balance > 0
+                      const usersWithBalance = members.filter(m => (m.balance || 0) > 0).map(m => m.userId);
+                      setSelectedPayerIds(usersWithBalance.length > 0 ? usersWithBalance : (user ? [user.uid] : []));
+                      
+                      const useBalanceMap: Record<string, boolean> = {};
+                      usersWithBalance.forEach(id => useBalanceMap[id] = true);
+                      setUseBalanceForPayers(useBalanceMap);
                     }
                   }}
                   className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="isSubmitOnBehalf" className="text-sm font-medium text-blue-900 dark:text-blue-200">
-                  代為送出審核
+                  代為送出審核 / 批次繳款 / 餘額折抵
                 </label>
               </div>
               {isSubmitOnBehalf && (
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-blue-900 dark:text-blue-200">實際付款人</label>
-                  <select
-                    value={payerId}
-                    onChange={(e) => setPayerId(e.target.value)}
-                    className="w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm dark:border-blue-800 dark:bg-zinc-900"
-                  >
-                    {members.filter(m => m.userId !== user?.uid).map(m => (
-                      <option key={m.userId} value={m.userId}>
-                        {m.nickname || `User ${m.userId.slice(0,4)}`}
-                      </option>
-                    ))}
-                  </select>
+                <div className="mt-2 space-y-2 max-h-64 overflow-y-auto pr-2">
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">選擇繳款人 (可複選)</label>
+                  {members.map(m => {
+                    const isSelected = selectedPayerIds.includes(m.userId);
+                    const hasBalance = (m.balance || 0) > 0;
+                    return (
+                      <div key={m.userId} className={`p-3 rounded-lg border flex items-center justify-between ${isSelected ? 'border-blue-400 bg-blue-100/50 dark:bg-blue-900/40' : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800'}`}>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedPayerIds([...selectedPayerIds, m.userId]);
+                              else setSelectedPayerIds(selectedPayerIds.filter(id => id !== m.userId));
+                            }}
+                            className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="font-medium text-sm">{m.nickname || `User ${m.userId.slice(0,4)}`} {m.userId === user?.uid && '(我)'}</span>
+                        </div>
+                        {hasBalance && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">
+                              可用餘額 ${m.balance}
+                            </span>
+                            {isSelected && (
+                              <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
+                                <input 
+                                  type="checkbox"
+                                  checked={!!useBalanceForPayers[m.userId]}
+                                  onChange={(e) => setUseBalanceForPayers({...useBalanceForPayers, [m.userId]: e.target.checked})}
+                                  className="w-3.5 h-3.5 rounded-sm border-zinc-300"
+                                />
+                                優先折抵
+                              </label>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -465,7 +526,7 @@ function SharedTransactionForm() {
                       }`}
                     >
                       <User className="h-4 w-4" />
-                      {m.userId === user?.uid ? '我' : m.userId.slice(0, 4)}
+                      {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
                     </button>
                   ))}
                 </div>
@@ -494,7 +555,7 @@ function SharedTransactionForm() {
                         }`}
                       >
                         <User className="h-4 w-4" />
-                        {m.userId === user?.uid ? '我' : m.userId.slice(0, 4)}
+                        {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
                       </button>
                     );
                   })}

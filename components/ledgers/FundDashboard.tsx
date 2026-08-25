@@ -3,12 +3,12 @@
 import { Ledger, Transaction, LedgerMember, Category } from '@/types';
 import { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { Settings2, Wallet, Users, CheckCircle2, AlertCircle, PieChart as PieChartIcon, Plus, X, Check } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { updateLedger, getFundCollections, createFundCollection, updateFundCollection } from '@/lib/ledger';
+import { updateLedger, getFundCollections, createFundCollection, updateFundCollection, recalculateCollection } from '@/lib/ledger';
 import { approveTransaction, rejectTransaction } from '@/lib/transactions';
-import type { FundCollection } from '@/types';
+import type { FundCollection, AppNotification } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 
 interface FundDashboardProps {
@@ -26,11 +26,21 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
   const [collections, setCollections] = useState<FundCollection[]>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
   
-  // Start Collection Modal State
+  // Start/Edit Collection Modal State
   const [isStartCollectionModalOpen, setIsStartCollectionModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [newCollectionTitle, setNewCollectionTitle] = useState('');
   const [newCollectionAmount, setNewCollectionAmount] = useState('');
+  const [collectionMode, setCollectionMode] = useState<'per_person'|'total'>('per_person');
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isStartingCollection, setIsStartingCollection] = useState(false);
+
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [recalcNote, setRecalcNote] = useState('加入新成員重新計算費用');
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [pendingRecalcData, setPendingRecalcData] = useState<any>(null);
+  
+  const [notificationPreview, setNotificationPreview] = useState<{isOpen: boolean, results: any[]}>({isOpen: false, results: []});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,6 +68,8 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
 
     const {
     totalBalance,
+    availableBalance,
+    totalMemberBalance,
     totalSpent,
     reimbursements,
     pendingApprovals,
@@ -101,15 +113,22 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       value: categoryTotals[catId]
     })).sort((a, b) => b.value - a.value);
 
+    let totalMemberBalance = 0;
+    members.forEach(m => {
+      totalMemberBalance += (m.balance || 0);
+    });
+
     return {
       totalBalance: balance,
+      availableBalance: balance - totalMemberBalance,
+      totalMemberBalance,
       totalSpent: spent,
       reimbursements: reimbursementsList,
       pendingApprovals: pendingList,
       categoryData: catData,
       memberStats: memberPayments
     };
-  }, [transactions, selectedCollectionId]);
+  }, [transactions, selectedCollectionId, members]);
 
   const handleSaveSettings = async () => {
     // Deprecated for memberTargetAmount, but keeping for future settings
@@ -135,26 +154,108 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
 
     setIsStartingCollection(true);
     try {
-      const newRef = doc(collection(db, 'ledgers')); // just to generate ID
-      await createFundCollection(ledger.id, {
-        id: newRef.id,
-        ledgerId: ledger.id,
-        title: newCollectionTitle,
-        targetAmount: numAmount,
-        createdAt: Date.now(),
-        createdBy: user.uid,
-        status: 'active'
-      });
-      setIsStartCollectionModalOpen(false);
-      setNewCollectionTitle('');
-      setNewCollectionAmount('');
-      window.location.reload();
+      if (isEditMode && selectedCollectionId) {
+        // Edit mode means Recalculate
+        const newTargetAmount = collectionMode === 'per_person' ? numAmount : numAmount / selectedMemberIds.length;
+        const newTotalAmount = collectionMode === 'total' ? numAmount : undefined;
+        
+        setPendingRecalcData({
+          collectionId: selectedCollectionId,
+          newTargetAmount,
+          newMemberIds: selectedMemberIds,
+          newTotalAmount
+        });
+        setIsStartCollectionModalOpen(false);
+        setIsNoteModalOpen(true);
+      } else {
+        const newRef = doc(collection(db, 'ledgers')); // just to generate ID
+        await createFundCollection(ledger.id, {
+          id: newRef.id,
+          ledgerId: ledger.id,
+          title: newCollectionTitle,
+          targetAmount: collectionMode === 'per_person' ? numAmount : numAmount / selectedMemberIds.length,
+          totalAmount: collectionMode === 'total' ? numAmount : undefined,
+          memberIds: selectedMemberIds,
+          createdAt: Date.now(),
+          createdBy: user.uid,
+          status: 'active'
+        });
+        setIsStartCollectionModalOpen(false);
+        window.location.reload();
+      }
     } catch (err) {
       console.error(err);
-      alert('發起收款失敗');
+      alert(isEditMode ? '重新計算失敗' : '發起收款失敗');
     } finally {
       setIsStartingCollection(false);
     }
+  };
+
+  const executeRecalculation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !pendingRecalcData) return;
+    setIsRecalculating(true);
+    try {
+      const results = await recalculateCollection(
+        ledger.id,
+        pendingRecalcData.collectionId,
+        pendingRecalcData.newTargetAmount,
+        pendingRecalcData.newMemberIds,
+        pendingRecalcData.newTotalAmount,
+        user.uid,
+        recalcNote
+      );
+      
+      setIsNoteModalOpen(false);
+      
+      if (results.length > 0) {
+        setNotificationPreview({ isOpen: true, results });
+      } else {
+        alert('重新計算完成，本次無溢收款產生。');
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error(error);
+      alert('重新計算失敗');
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
+  const handleSendNotifications = async (send: boolean) => {
+    if (send && user) {
+      for (const res of notificationPreview.results) {
+        await setDoc(doc(collection(db, 'users', res.userId, 'notifications')), {
+          userId: res.userId,
+          type: 'ledger_expense_update',
+          title: '溢收款已轉入餘額',
+          message: `由於收款重新分攤，您的溢繳金額 ${res.overflow} 元已轉入您的帳本餘額。（備註：${recalcNote}）`,
+          link: `/ledgers/detail?id=${ledger.id}`,
+          isRead: false,
+          createdAt: Date.now(),
+        } as Omit<AppNotification, 'id'>);
+      }
+    }
+    window.location.reload();
+  };
+
+  const openStartModal = () => {
+    setIsEditMode(false);
+    setNewCollectionTitle('');
+    setNewCollectionAmount('');
+    setCollectionMode('per_person');
+    setSelectedMemberIds(members.map(m => m.userId));
+    setIsStartCollectionModalOpen(true);
+  };
+
+  const openEditModal = () => {
+    if (!selectedCollection) return;
+    setIsEditMode(true);
+    setNewCollectionTitle(selectedCollection.title);
+    setCollectionMode(selectedCollection.totalAmount ? 'total' : 'per_person');
+    setNewCollectionAmount(selectedCollection.totalAmount ? selectedCollection.totalAmount.toString() : selectedCollection.targetAmount.toString());
+    setSelectedMemberIds(selectedCollection.memberIds || members.map(m => m.userId));
+    setIsStartCollectionModalOpen(true);
   };
 
   const handleCloseCollection = async (id: string) => {
@@ -238,14 +339,19 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
 
       {/* Overview & Budget Card */}
       <div className="rounded-2xl p-6 bg-white dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-800 text-zinc-900 dark:text-white shadow-xl border border-zinc-200 dark:border-zinc-800/50">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">公積金總餘額</h3>
-            <div className="text-4xl font-bold">${totalBalance.toLocaleString()}</div>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div className="flex-1 w-full">
+            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">可用公積金 (排除成員溢繳)</h3>
+            <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">${availableBalance.toLocaleString()}</div>
+            {totalMemberBalance > 0 && (
+              <div className="text-xs text-zinc-500 mt-2">
+                總現金: ${totalBalance.toLocaleString()} (含成員溢繳餘額: ${totalMemberBalance.toLocaleString()})
+              </div>
+            )}
           </div>
           {ledger.mode === 'shared_fund' && (currentUserRole === 'admin' || currentUserRole === 'vice_admin') && (
             <button 
-              onClick={() => setIsStartCollectionModalOpen(true)}
+              onClick={openStartModal}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -285,15 +391,23 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
           ) : (
             <>
               {selectedCollection?.status === 'active' && (currentUserRole === 'admin' || currentUserRole === 'vice_admin') && (
-                <button
-                  onClick={() => handleCloseCollection(selectedCollection.id)}
-                  className="mb-4 w-full py-1.5 text-xs text-rose-600 border border-rose-200 bg-rose-50 rounded-lg hover:bg-rose-100 dark:bg-rose-900/20 dark:border-rose-900/50 transition-colors"
-                >
-                  關閉此收款期數
-                </button>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={openEditModal}
+                    className="flex-1 py-1.5 text-xs text-blue-600 border border-blue-200 bg-blue-50 rounded-lg hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-900/50 transition-colors"
+                  >
+                    編輯 / 重新分攤
+                  </button>
+                  <button
+                    onClick={() => handleCloseCollection(selectedCollection.id)}
+                    className="flex-1 py-1.5 text-xs text-rose-600 border border-rose-200 bg-rose-50 rounded-lg hover:bg-rose-100 dark:bg-rose-900/20 dark:border-rose-900/50 transition-colors"
+                  >
+                    關閉此收款期數
+                  </button>
+                </div>
               )}
               <div className="space-y-3">
-                {members.map(member => {
+                {members.filter(m => (selectedCollection?.memberIds || members.map(m=>m.userId)).includes(m.userId)).map(member => {
               const paid = memberStats[member.userId] || 0;
               const isPaid = paid >= memberTarget;
               return (
@@ -476,12 +590,12 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
         </section>
       )}
 
-      {/* Start Collection Modal */}
+      {/* Start/Edit Collection Modal */}
       {isStartCollectionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">發起新收款</h2>
+              <h2 className="text-xl font-bold">{isEditMode ? '編輯收款 / 重新分攤' : '發起新收款'}</h2>
               <button onClick={() => setIsStartCollectionModalOpen(false)} className="text-zinc-400 hover:text-zinc-600"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleStartCollection} className="space-y-4">
@@ -496,8 +610,31 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                   placeholder="例如: 9月公積金"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium mb-1">每人應繳額度</label>
+                <label className="block text-sm font-medium mb-1">收費模式</label>
+                <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setCollectionMode('per_person')}
+                    className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-all ${
+                      collectionMode === 'per_person' ? 'bg-white shadow text-blue-600' : 'text-zinc-500'
+                    }`}
+                  >每人固定金額</button>
+                  <button
+                    type="button"
+                    onClick={() => setCollectionMode('total')}
+                    className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-all ${
+                      collectionMode === 'total' ? 'bg-white shadow text-blue-600' : 'text-zinc-500'
+                    }`}
+                  >總額平均分攤</button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {collectionMode === 'per_person' ? '每人應繳額度' : '總目標額度'}
+                </label>
                 <input 
                   type="number" 
                   required
@@ -505,17 +642,107 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                   value={newCollectionAmount} 
                   onChange={e => setNewCollectionAmount(e.target.value)}
                   className="w-full rounded-lg border border-zinc-300 bg-white p-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  placeholder="例如: 1000"
+                  placeholder={collectionMode === 'per_person' ? '例如: 200' : '例如: 1000'}
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">參與分攤成員</label>
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-800 dark:border-zinc-700">
+                  {members.map(m => {
+                    const isSelected = selectedMemberIds.includes(m.userId);
+                    return (
+                      <button
+                        key={m.userId}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedMemberIds(selectedMemberIds.filter(id => id !== m.userId));
+                          } else {
+                            setSelectedMemberIds([...selectedMemberIds, m.userId]);
+                          }
+                        }}
+                        className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-xs transition-colors ${
+                          isSelected 
+                            ? 'border-blue-500 bg-blue-100 text-blue-700 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-100' 
+                            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                        }`}
+                      >
+                        {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {collectionMode === 'total' && selectedMemberIds.length > 0 && newCollectionAmount && (
+                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded-lg text-center dark:bg-blue-900/20 dark:text-blue-400">
+                  重新計算後每人應繳: {(Number(newCollectionAmount) / selectedMemberIds.length).toFixed(2)}
+                </div>
+              )}
+
               <button 
                 type="submit"
                 disabled={isStartingCollection}
                 className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
               >
-                {isStartingCollection ? '處理中...' : '確認發起'}
+                {isStartingCollection ? '處理中...' : (isEditMode ? '儲存並重新分攤' : '確認發起')}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Note Modal for Recalculation */}
+      {isNoteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+            <h2 className="text-xl font-bold mb-4">填寫溢收款備註</h2>
+            <p className="text-sm text-zinc-500 mb-4">系統即將重新計算應繳金額，若有成員溢繳將自動轉入其個人餘額。請為此操作填寫備註：</p>
+            <form onSubmit={executeRecalculation}>
+              <input
+                type="text"
+                required
+                value={recalcNote}
+                onChange={e => setRecalcNote(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 bg-white p-2.5 text-sm mb-4 dark:border-zinc-700 dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <button 
+                type="submit"
+                disabled={isRecalculating}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isRecalculating ? '計算中...' : '確認執行'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Preview Modal */}
+      {notificationPreview.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+            <h2 className="text-xl font-bold mb-4">派發通知確認</h2>
+            <p className="text-sm text-zinc-500 mb-4">重新計算完成，共有 {notificationPreview.results.length} 位成員產生溢收款。是否發送 App 內通知給這些成員？</p>
+            <div className="bg-zinc-50 dark:bg-zinc-800 p-3 rounded-lg text-xs text-zinc-600 dark:text-zinc-400 mb-4 font-mono">
+              預覽內容：<br/>
+              由於收款重新分攤，您的溢繳金額 X 元已轉入您的帳本餘額。（備註：{recalcNote}）
+            </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleSendNotifications(false)}
+                className="flex-1 bg-zinc-200 hover:bg-zinc-300 text-zinc-700 font-medium py-2.5 rounded-xl transition-colors dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                不發送
+              </button>
+              <button 
+                onClick={() => handleSendNotifications(true)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition-colors"
+              >
+                發送通知
+              </button>
+            </div>
           </div>
         </div>
       )}
