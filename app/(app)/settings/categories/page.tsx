@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Category } from '@/types';
-import { Plus, ArrowLeft, ArrowUpRight, ArrowDownRight, GripVertical, ArrowUpDown, Info } from 'lucide-react';
+import { Plus, ArrowLeft, ArrowUpRight, ArrowDownRight, GripVertical, ArrowUpDown, Info, Search } from 'lucide-react';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
 import { mergeCategories } from '@/lib/utils';
@@ -93,6 +93,7 @@ export default function CategoriesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form State
   const [type, setType] = useState<'income' | 'expense'>('expense');
@@ -126,6 +127,9 @@ export default function CategoriesPage() {
 
   const expenseCategories = allCategories.filter((c: any) => c.type === 'expense');
   const incomeCategories = allCategories.filter((c: any) => c.type === 'income');
+
+  const filteredExpenseCategories = expenseCategories.filter((c: any) => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredIncomeCategories = incomeCategories.filter((c: any) => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleAddOrEdit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,7 +205,7 @@ export default function CategoriesPage() {
 
   const actionButtons = (
     <div className="flex items-center gap-1 md:gap-2">
-      {allCategories.length > 1 && (
+      {allCategories.length > 1 && !searchQuery && (
         <button
           onClick={() => {
             if (isAdding) {
@@ -346,6 +350,24 @@ export default function CategoriesPage() {
              </button>
           </div>
 
+          <div className="mb-4 relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="h-4 w-4 text-zinc-400" />
+            </div>
+            <input
+              type="text"
+              placeholder={`搜尋${activeTab === 'expense' ? '支出' : '收入'}分類...`}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value && isReorderMode) {
+                  setIsReorderMode(false);
+                }
+              }}
+              className="block w-full rounded-lg border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+          </div>
+
           {activeTab === 'expense' ? (
             <div className="space-y-2">
               <DndContext
@@ -354,10 +376,10 @@ export default function CategoriesPage() {
                 onDragEnd={(e) => handleDragEnd(e, 'expense')}
               >
                 <SortableContext
-                  items={expenseCategories}
+                  items={filteredExpenseCategories}
                   strategy={verticalListSortingStrategy}
                 >
-                  {expenseCategories.map((cat: any) => (
+                  {filteredExpenseCategories.map((cat: any) => (
                     <SortableCategoryItem
                       key={cat.id}
                       cat={cat}
@@ -375,10 +397,10 @@ export default function CategoriesPage() {
                 onDragEnd={(e) => handleDragEnd(e, 'income')}
               >
                 <SortableContext
-                  items={incomeCategories}
+                  items={filteredIncomeCategories}
                   strategy={verticalListSortingStrategy}
                 >
-                  {incomeCategories.map((cat: any) => (
+                  {filteredIncomeCategories.map((cat: any) => (
                     <SortableCategoryItem
                       key={cat.id}
                       cat={cat}
