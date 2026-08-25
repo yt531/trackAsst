@@ -250,50 +250,67 @@ export default function PaymentMethodsPage() {
     }
   };
 
+  const actionButtons = (
+    <div className="flex items-center gap-1 md:gap-2">
+      {methods.length > 1 && (
+        <button
+          onClick={() => {
+            if (editingId) {
+              alert('請先取消新增才能使用排序功能');
+              return;
+            }
+            setIsReorderMode(!isReorderMode);
+          }}
+          className={`flex items-center gap-1 text-sm font-medium rounded-lg px-2 py-1 transition-colors ${
+            isReorderMode
+              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <ArrowUpDown className="h-5 w-5 md:h-4 md:w-4" />
+          <span className="hidden md:inline">排序</span>
+        </button>
+      )}
+      <button
+        onClick={() => {
+          if (isReorderMode) {
+            alert('請先取消排序才能使用新增功能');
+            return;
+          }
+          setEditingId('new');
+          setType('bank');
+          setBrandId('');
+          setName('');
+          setNotes('');
+        }}
+        className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+      >
+        <Plus className="h-5 w-5 md:h-4 md:w-4" />
+        <span className="hidden md:inline">新增</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader title="支付方式管理" backHref="/settings" />
-      <header className="hidden md:flex items-center gap-4">
-        <Link href="/settings" className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
-          <ArrowLeft className="w-6 h-6" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">支付方式管理</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            管理您的銀行、電子支付與信用卡。
-          </p>
+      <PageHeader title="支付方式管理" backHref="/settings" rightAction={actionButtons} />
+      <header className="hidden md:flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/settings" className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
+            <ArrowLeft className="w-6 h-6" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">支付方式管理</h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              管理您的銀行、電子支付與信用卡。
+            </p>
+          </div>
         </div>
+        {actionButtons}
       </header>
 
       <div className="space-y-4 pb-20">
-        <div className="flex justify-end gap-2">
-          {methods.length > 1 && (
-            <button
-              onClick={() => setIsReorderMode(!isReorderMode)}
-              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-2 py-1 transition-colors ${
-                isReorderMode
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-              }`}
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              排序
-            </button>
-          )}
-          <button
-            onClick={() => {
-              setEditingId('new');
-              setType('bank');
-              setBrandId('');
-              setName('');
-              setNotes('');
-            }}
-            className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-          >
-            <Plus className="h-4 w-4" />
-            新增
-          </button>
-        </div>
+        {/* Action buttons moved to header */}
 
         {editingId && (
           <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">

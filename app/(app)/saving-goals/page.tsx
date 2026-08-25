@@ -270,38 +270,55 @@ export default function SavingGoalsPage() {
     }
   };
 
+  const actionButtons = (
+    <div className="flex items-center gap-1 md:gap-2">
+      {goals.length > 1 && (
+        <button
+          onClick={() => {
+            if (isFormOpen) {
+              alert('請先取消新增才能使用排序功能');
+              return;
+            }
+            setIsReorderMode(!isReorderMode);
+          }}
+          className={`flex items-center gap-1 text-sm font-medium rounded-lg px-2 py-1 transition-colors ${
+            isReorderMode
+              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <ArrowUpDown className="h-5 w-5 md:h-4 md:w-4" />
+          <span className="hidden md:inline">排序</span>
+        </button>
+      )}
+      <button
+        onClick={() => {
+          if (isReorderMode) {
+            alert('請先取消排序才能使用新增功能');
+            return;
+          }
+          resetForm();
+          setIsFormOpen(true);
+        }}
+        className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+      >
+        <Plus className="h-5 w-5 md:h-4 md:w-4" />
+        <span className="hidden md:inline">新增</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader title="存錢目標" backHref="/more" />
-      <div className="flex items-center justify-between">
-        <div className="hidden md:block">
+      <PageHeader title="存錢目標" backHref="/more" rightAction={actionButtons} />
+      <header className="hidden md:flex items-center justify-between gap-4">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">存錢目標</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">規劃並達成您的夢想基金</p>
         </div>
         
-        <div className="flex items-center gap-2 ml-auto">
-          {goals.length > 1 && (
-            <button
-              onClick={() => setIsReorderMode(!isReorderMode)}
-              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
-                isReorderMode
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-              }`}
-            >
-              <ArrowUpDown className="h-5 w-5" />
-              <span className="hidden md:inline">排序</span>
-            </button>
-          )}
-          <button
-            onClick={() => { resetForm(); setIsFormOpen(true); }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm md:h-auto md:w-auto md:px-4 md:py-2 md:rounded-lg"
-          >
-            <Plus className="h-5 w-5 md:mr-2" />
-            <span className="hidden md:inline font-medium">新增目標</span>
-          </button>
-        </div>
-      </div>
+        {actionButtons}
+      </header>
 
       {isFormOpen && (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">

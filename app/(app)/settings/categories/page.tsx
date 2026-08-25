@@ -253,9 +253,49 @@ export default function CategoriesPage() {
     }
   };
 
+  const actionButtons = (
+    <div className="flex items-center gap-1 md:gap-2">
+      {allCategories.length > 1 && (
+        <button
+          onClick={() => {
+            if (isAdding) {
+              alert('請先取消新增才能使用排序功能');
+              return;
+            }
+            setIsReorderMode(!isReorderMode);
+          }}
+          className={`flex items-center gap-1 text-sm font-medium rounded-lg px-2 py-1 transition-colors ${
+            isReorderMode
+              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <ArrowUpDown className="h-5 w-5 md:h-4 md:w-4" />
+          <span className="hidden md:inline">排序</span>
+        </button>
+      )}
+      <button
+        onClick={() => {
+          if (isReorderMode) {
+            alert('請先取消排序才能使用新增功能');
+            return;
+          }
+          setEditingId(null);
+          setName('');
+          setType('expense');
+          setIsAdding(true);
+        }}
+        className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+      >
+        <Plus className="h-5 w-5 md:h-4 md:w-4" />
+        <span className="hidden md:inline">新增</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6 pb-20">
-      <PageHeader title="交易分類管理" backHref="/settings" />
+      <PageHeader title="交易分類管理" backHref="/settings" rightAction={actionButtons} />
       <header className="hidden md:flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/settings')} className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
@@ -268,33 +308,7 @@ export default function CategoriesPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {allCategories.length > 1 && (
-            <button
-              onClick={() => setIsReorderMode(!isReorderMode)}
-              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
-                isReorderMode
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-              }`}
-            >
-              <ArrowUpDown className="h-5 w-5" />
-              <span className="hidden sm:inline">排序</span>
-            </button>
-          )}
-          <button
-            onClick={() => {
-              setEditingId(null);
-              setName('');
-              setType('expense');
-              setIsAdding(!isAdding);
-            }}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">新增分類</span>
-          </button>
-        </div>
+        {actionButtons}
       </header>
 
       {isAdding && (

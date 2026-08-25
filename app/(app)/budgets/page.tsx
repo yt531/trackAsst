@@ -540,49 +540,58 @@ export default function BudgetsPage() {
     viewMode === 'daily' ? dailyBudgets :
     viewMode === 'weekly' ? weeklyBudgets : yearlyBudgets;
 
+  const actionButtons = (
+    <div className="flex items-center gap-1 md:gap-2">
+      {currentViewBudgets.length > 1 && (
+        <button
+          onClick={() => {
+            if (isFormOpen) {
+              alert('請先取消新增才能使用排序功能');
+              return;
+            }
+            setIsReorderMode(!isReorderMode);
+          }}
+          className={`flex items-center gap-1 text-sm font-medium rounded-lg px-2 py-1 transition-colors ${
+            isReorderMode
+              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <ArrowUpDown className="h-5 w-5 md:h-4 md:w-4" />
+          <span className="hidden md:inline">排序</span>
+        </button>
+      )}
+      <button
+        onClick={() => {
+          if (isReorderMode) {
+            alert('請先取消排序才能使用新增功能');
+            return;
+          }
+          handleOpenForm();
+        }}
+        className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+      >
+        <Plus className="h-5 w-5 md:h-4 md:w-4" />
+        <span className="hidden md:inline">新增</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader 
         title="預算管理" 
         backHref="/" 
-        rightAction={
-          <button
-            onClick={() => handleOpenForm()}
-            className="p-2 text-blue-600 dark:text-blue-400"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-        }
+        rightAction={actionButtons}
       />
-      <div className="flex items-center justify-between">
-        <div className="hidden md:block">
+      <header className="hidden md:flex items-center justify-between gap-4">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">預算管理</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">設定並追蹤您的花費目標</p>
         </div>
         
-        <div className="flex items-center gap-2 ml-auto">
-          {currentViewBudgets.length > 1 && (
-            <button
-              onClick={() => setIsReorderMode(!isReorderMode)}
-              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
-                isReorderMode
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-              }`}
-            >
-              <ArrowUpDown className="h-5 w-5" />
-              <span className="hidden md:inline">排序</span>
-            </button>
-          )}
-          <button
-            onClick={() => handleOpenForm()}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden md:inline font-medium">新增預算</span>
-          </button>
-        </div>
-      </div>
+        {actionButtons}
+      </header>
 
       {isFormOpen && (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">

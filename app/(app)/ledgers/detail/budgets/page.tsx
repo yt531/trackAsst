@@ -529,26 +529,38 @@ export default function LedgerBudgetsPage() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">帳本預算</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           {budgets.length > 1 && (
             <button
-              onClick={() => setIsReorderMode(!isReorderMode)}
-              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+              onClick={() => {
+                if (isFormOpen) {
+                  alert('請先取消新增才能使用排序功能');
+                  return;
+                }
+                setIsReorderMode(!isReorderMode);
+              }}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-2 py-1 transition-colors ${
                 isReorderMode
                   ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
                   : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
               }`}
             >
-              <ArrowUpDown className="h-5 w-5" />
+              <ArrowUpDown className="h-5 w-5 md:h-4 md:w-4" />
               <span className="hidden md:inline">排序</span>
             </button>
           )}
           <button
-            onClick={() => handleOpenForm()}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              if (isReorderMode) {
+                alert('請先取消排序才能使用新增功能');
+                return;
+              }
+              handleOpenForm();
+            }}
+            className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
           >
-            <Plus className="h-4 w-4" />
-            <span className="hidden md:inline font-medium">新增預算</span>
+            <Plus className="h-5 w-5 md:h-4 md:w-4" />
+            <span className="hidden md:inline">新增</span>
           </button>
         </div>
       </div>

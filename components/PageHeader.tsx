@@ -54,7 +54,7 @@ export function PageHeader({ title, rightAction, backHref }: PageHeaderProps) {
         {title}
       </span>
 
-      <div className="flex items-center justify-end w-[60px]">
+      <div className="flex items-center justify-end w-auto min-w-[60px]">
         {rightAction}
       </div>
     </header>
