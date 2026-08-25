@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { getLedgerCategories, createLedgerCategory, updateLedgerCategory, deleteLedgerCategory, getLedgerMembers } from '@/lib/ledger';
 import { Category, LedgerMember } from '@/types';
-import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2, GripVertical, ArrowUpDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 import {
@@ -31,9 +31,10 @@ interface SortableCategoryItemProps {
   onEdit?: (cat: Category) => void;
   onDelete?: (id: string) => void;
   canEdit: boolean;
+  isReorderMode?: boolean;
 }
 
-function SortableCategoryItem({ cat, onEdit, onDelete, canEdit }: SortableCategoryItemProps) {
+function SortableCategoryItem({ cat, onEdit, onDelete, canEdit, isReorderMode }: SortableCategoryItemProps) {
   const {
     attributes,
     listeners,
@@ -57,7 +58,7 @@ function SortableCategoryItem({ cat, onEdit, onDelete, canEdit }: SortableCatego
       className={`flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 transition-colors group ${canEdit ? 'hover:border-blue-300 dark:hover:border-blue-700' : ''}`}
     >
       <div className="flex flex-1 items-center gap-3">
-        {canEdit && (
+        {canEdit && isReorderMode && (
           <button
             className="cursor-grab p-1 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 touch-none active:cursor-grabbing"
             {...attributes}
@@ -99,6 +100,7 @@ export default function SharedCategoriesPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isReorderMode, setIsReorderMode] = useState(false);
   
   const [canEdit, setCanEdit] = useState(false);
 
@@ -276,20 +278,35 @@ export default function SharedCategoriesPage() {
             </p>
           </div>
         </div>
-        {canEdit && (
-          <button
-            onClick={() => {
-              setEditingId(null);
-              setName('');
-              setType('expense');
-              setIsAdding(!isAdding);
-            }}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">新增分類</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {categories.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode(!isReorderMode)}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+                isReorderMode
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <ArrowUpDown className="h-5 w-5" />
+              <span className="hidden sm:inline">排序</span>
+            </button>
+          )}
+          {canEdit && (
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setName('');
+                setType('expense');
+                setIsAdding(!isAdding);
+              }}
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">新增分類</span>
+            </button>
+          )}
+        </div>
       </header>
 
       {!canEdit && !loading && (
@@ -394,6 +411,7 @@ export default function SharedCategoriesPage() {
                         canEdit={canEdit}
                         onEdit={handleEditClick}
                         onDelete={handleDelete}
+                        isReorderMode={isReorderMode}
                       />
                     ))}
                   </SortableContext>
@@ -428,6 +446,7 @@ export default function SharedCategoriesPage() {
                         canEdit={canEdit}
                         onEdit={handleEditClick}
                         onDelete={handleDelete}
+                        isReorderMode={isReorderMode}
                       />
                     ))}
                   </SortableContext>

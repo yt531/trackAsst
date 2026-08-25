@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Category } from '@/types';
-import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2, GripVertical, ArrowUpDown } from 'lucide-react';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
 import { mergeCategories } from '@/lib/utils';
@@ -32,9 +32,10 @@ interface SortableCategoryItemProps {
   cat: Category;
   onEdit: (cat: Category) => void;
   onDelete: (id: string, isCustom: boolean) => void;
+  isReorderMode?: boolean;
 }
 
-function SortableCategoryItem({ cat, onEdit, onDelete }: SortableCategoryItemProps) {
+function SortableCategoryItem({ cat, onEdit, onDelete, isReorderMode }: SortableCategoryItemProps) {
   const {
     attributes,
     listeners,
@@ -58,13 +59,15 @@ function SortableCategoryItem({ cat, onEdit, onDelete }: SortableCategoryItemPro
       className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 shadow-sm hover:border-blue-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-blue-700 transition-colors group"
     >
       <div className="flex flex-1 items-center gap-3">
-        <button
-          className="cursor-grab p-1 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 touch-none active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-5 w-5" />
-        </button>
+        {isReorderMode && (
+          <button
+            className="cursor-grab p-1 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 touch-none active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-5 w-5" />
+          </button>
+        )}
         <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{cat.name}</div>
         {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded">系統預設</span>}
       </div>
@@ -95,6 +98,7 @@ export default function CategoriesPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   // Form State
   const [type, setType] = useState<'income' | 'expense'>('expense');
@@ -264,18 +268,33 @@ export default function CategoriesPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => {
-            setEditingId(null);
-            setName('');
-            setType('expense');
-            setIsAdding(!isAdding);
-          }}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">新增分類</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {allCategories.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode(!isReorderMode)}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+                isReorderMode
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <ArrowUpDown className="h-5 w-5" />
+              <span className="hidden sm:inline">排序</span>
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setEditingId(null);
+              setName('');
+              setType('expense');
+              setIsAdding(!isAdding);
+            }}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">新增分類</span>
+          </button>
+        </div>
       </header>
 
       {isAdding && (
@@ -370,6 +389,7 @@ export default function CategoriesPage() {
                       cat={cat}
                       onEdit={handleEditClick}
                       onDelete={handleDelete}
+                      isReorderMode={isReorderMode}
                     />
                   ))}
                 </SortableContext>
@@ -399,6 +419,7 @@ export default function CategoriesPage() {
                       cat={cat}
                       onEdit={handleEditClick}
                       onDelete={handleDelete}
+                      isReorderMode={isReorderMode}
                     />
                   ))}
                 </SortableContext>

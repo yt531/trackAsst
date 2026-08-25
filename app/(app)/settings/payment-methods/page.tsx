@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc, where } from 'firebase/firestore';
 import { PaymentMethod, PaymentMethodType } from '@/types';
-import { Plus, Trash2, ArrowLeft, Pencil, GripVertical, Info } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Pencil, GripVertical, Info, ArrowUpDown } from 'lucide-react';
 import { PREDEFINED_BANKS, PREDEFINED_EPAYS, PREDEFINED_CARDS } from '@/lib/constants';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { useRouter } from 'next/navigation';
@@ -30,9 +30,10 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface SortablePaymentMethodItemProps {
   method: PaymentMethod;
+  isReorderMode?: boolean;
 }
 
-function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
+function SortablePaymentMethodItem({ method, isReorderMode }: SortablePaymentMethodItemProps) {
   const {
     attributes,
     listeners,
@@ -56,13 +57,15 @@ function SortablePaymentMethodItem({ method }: SortablePaymentMethodItemProps) {
       className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:border-blue-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-blue-700 transition-colors group"
     >
       <div className="flex flex-1 items-center gap-3">
-        <button
-          className="cursor-grab p-1 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 touch-none active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-5 w-5" />
-        </button>
+        {isReorderMode && (
+          <button
+            className="cursor-grab p-1 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 touch-none active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-5 w-5" />
+          </button>
+        )}
         <div className="flex flex-1 items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xl">
             {method.type === 'bank' && '🏦'}
@@ -99,6 +102,7 @@ export default function PaymentMethodsPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   // Form State
   const [type, setType] = useState<PaymentMethodType>('bank');
@@ -262,7 +266,20 @@ export default function PaymentMethodsPage() {
       </header>
 
       <div className="space-y-4 pb-20">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {methods.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode(!isReorderMode)}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-2 py-1 transition-colors ${
+                isReorderMode
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              排序
+            </button>
+          )}
           <button
             onClick={() => {
               setEditingId('new');
@@ -271,7 +288,7 @@ export default function PaymentMethodsPage() {
               setName('');
               setNotes('');
             }}
-            className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400"
+            className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
           >
             <Plus className="h-4 w-4" />
             新增
@@ -390,6 +407,7 @@ export default function PaymentMethodsPage() {
                     <SortablePaymentMethodItem
                       key={method.id}
                       method={method}
+                      isReorderMode={isReorderMode}
                     />
                   ))}
                 </SortableContext>

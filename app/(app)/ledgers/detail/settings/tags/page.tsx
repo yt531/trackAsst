@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { getLedgerTags, createLedgerTag, updateLedgerTag, deleteLedgerTag, getLedgerMembers } from '@/lib/ledger';
 import { Tag } from '@/types';
-import { Plus, Trash2, ArrowLeft, Tags as TagsIcon, Edit2, GripVertical, Search } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Tags as TagsIcon, Edit2, GripVertical, Search, ArrowUpDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 
@@ -34,8 +34,8 @@ interface SortableTagItemProps {
   setEditingId: (id: string | null) => void;
   setEditName: (name: string) => void;
   handleUpdate: (id: string) => void;
-  handleDelete: (id: string) => void;
   canEdit: boolean;
+  isReorderMode?: boolean;
 }
 
 function SortableTagItem({
@@ -46,7 +46,8 @@ function SortableTagItem({
   setEditName,
   handleUpdate,
   handleDelete,
-  canEdit
+  canEdit,
+  isReorderMode
 }: SortableTagItemProps) {
   const {
     attributes,
@@ -74,7 +75,7 @@ function SortableTagItem({
       }`}
     >
       <div className="flex flex-1 items-center gap-3">
-        {canEdit && (
+        {canEdit && isReorderMode && (
           <div
             {...attributes}
             {...listeners}
@@ -150,6 +151,7 @@ export default function SharedTagsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
@@ -325,15 +327,30 @@ export default function SharedTagsPage() {
             </p>
           </div>
         </div>
-        {canEdit && (
-          <button
-            onClick={() => setIsAdding(!isAdding)}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">新增標籤</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {tags.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode(!isReorderMode)}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+                isReorderMode
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <ArrowUpDown className="h-5 w-5" />
+              <span className="hidden sm:inline">排序</span>
+            </button>
+          )}
+          {canEdit && (
+            <button
+              onClick={() => setIsAdding(!isAdding)}
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">新增標籤</span>
+            </button>
+          )}
+        </div>
       </header>
 
       {!canEdit && !loading && (
@@ -428,6 +445,7 @@ export default function SharedTagsPage() {
                           handleUpdate={handleUpdate}
                           handleDelete={handleDelete}
                           canEdit={canEdit}
+                          isReorderMode={isReorderMode}
                         />
                       ))}
                     </div>

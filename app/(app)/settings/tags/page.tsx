@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Tag } from '@/types';
-import { Plus, Trash2, ArrowLeft, Tags as TagsIcon, Edit2, GripVertical, Search } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Tags as TagsIcon, Edit2, GripVertical, Search, ArrowUpDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 
@@ -35,6 +35,7 @@ interface SortableTagItemProps {
   setEditName: (name: string) => void;
   handleUpdate: (id: string) => void;
   handleDelete: (id: string) => void;
+  isReorderMode?: boolean;
 }
 
 function SortableTagItem({
@@ -45,6 +46,7 @@ function SortableTagItem({
   setEditName,
   handleUpdate,
   handleDelete,
+  isReorderMode,
 }: SortableTagItemProps) {
   const {
     attributes,
@@ -73,13 +75,15 @@ function SortableTagItem({
     >
       <div className="flex flex-1 items-center gap-3">
         {/* Drag Handle */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 active:cursor-grabbing touch-none"
-        >
-          <GripVertical className="h-5 w-5" />
-        </div>
+        {isReorderMode && (
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 active:cursor-grabbing touch-none"
+          >
+            <GripVertical className="h-5 w-5" />
+          </div>
+        )}
 
         {editingId === tag.id ? (
           <div className="flex flex-1 items-center gap-2 mr-4">
@@ -145,6 +149,7 @@ export default function TagsPage() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
@@ -297,13 +302,28 @@ export default function TagsPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">新增標籤</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {tags.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode(!isReorderMode)}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+                isReorderMode
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <ArrowUpDown className="h-5 w-5" />
+              <span className="hidden sm:inline">排序</span>
+            </button>
+          )}
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">新增標籤</span>
+          </button>
+        </div>
       </header>
 
       {isAdding && (
@@ -391,6 +411,7 @@ export default function TagsPage() {
                           setEditName={setEditName}
                           handleUpdate={handleUpdate}
                           handleDelete={handleDelete}
+                          isReorderMode={isReorderMode}
                         />
                       ))}
                     </div>

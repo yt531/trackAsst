@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { getSavingGoals, saveSavingGoal, updateSavingGoalAmount, deleteSavingGoal, updateSavingGoalsOrder } from '@/lib/savingGoals';
 import type { SavingGoal } from '@/types';
 import { format } from 'date-fns';
-import { Target, Plus, Check, PlusCircle, Trash2, Bell, GripVertical, Info } from 'lucide-react';
+import { Target, Plus, Check, PlusCircle, Trash2, Bell, GripVertical, Info, ArrowUpDown } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { PageHeader } from '@/components/PageHeader';
@@ -29,10 +29,12 @@ import { CSS } from '@dnd-kit/utilities';
 
 function SortableGoalCard({ 
   goal, 
-  isReminderDue
+  isReminderDue,
+  isReorderMode
 }: { 
   goal: SavingGoal; 
   isReminderDue: (g: SavingGoal) => boolean;
+  isReorderMode?: boolean;
 }) {
   const {
     attributes,
@@ -63,13 +65,15 @@ function SortableGoalCard({
       
       <div className="mb-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div 
-            {...attributes} 
-            {...listeners} 
-            className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-          >
-            <GripVertical className="h-5 w-5" />
-          </div>
+          {isReorderMode && (
+            <div 
+              {...attributes} 
+              {...listeners} 
+              className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              <GripVertical className="h-5 w-5" />
+            </div>
+          )}
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
             <Target className="h-5 w-5" />
           </div>
@@ -128,6 +132,7 @@ export default function SavingGoalsPage() {
   const { user } = useAuth();
   const [goals, setGoals] = useState<SavingGoal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -268,18 +273,34 @@ export default function SavingGoalsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="存錢目標" backHref="/more" />
-      <div className="hidden md:flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between">
+        <div className="hidden md:block">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">存錢目標</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">規劃並達成您的夢想基金</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setIsFormOpen(true); }}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm md:h-auto md:w-auto md:px-4 md:py-2 md:rounded-lg"
-        >
-          <Plus className="h-5 w-5 md:mr-2" />
-          <span className="hidden md:inline font-medium">新增目標</span>
-        </button>
+        
+        <div className="flex items-center gap-2 ml-auto">
+          {goals.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode(!isReorderMode)}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+                isReorderMode
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <ArrowUpDown className="h-5 w-5" />
+              <span className="hidden md:inline">排序</span>
+            </button>
+          )}
+          <button
+            onClick={() => { resetForm(); setIsFormOpen(true); }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm md:h-auto md:w-auto md:px-4 md:py-2 md:rounded-lg"
+          >
+            <Plus className="h-5 w-5 md:mr-2" />
+            <span className="hidden md:inline font-medium">新增目標</span>
+          </button>
+        </div>
       </div>
 
       {isFormOpen && (
@@ -415,6 +436,7 @@ export default function SavingGoalsPage() {
                   key={goal.id}
                   goal={goal}
                   isReminderDue={isReminderDue}
+                  isReorderMode={isReorderMode}
                 />
               ))}
             </div>

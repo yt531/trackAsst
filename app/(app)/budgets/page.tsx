@@ -10,7 +10,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, getUserCollection, getUserSettings, setUserSettings } from '@/lib/db';
 import { format, subMonths, addMonths, subYears, addYears, startOfMonth, endOfMonth, startOfYear, endOfYear, getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek, setISOWeek, setISOWeekYear } from 'date-fns';
-import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Wallet, Pencil, Trash2, GripVertical, Settings, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { SearchableCategorySelect } from '@/components/ui/SearchableCategorySelect';
@@ -41,9 +41,10 @@ interface SortableBudgetCardProps {
   onEdit: (budget: Budget) => void;
   onDelete: (id: string) => void;
   onConfigRules?: (budget: Budget) => void;
+  isReorderMode?: boolean;
 }
 
-function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions, onEdit, onDelete, onConfigRules }: SortableBudgetCardProps) {
+function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions, onEdit, onDelete, onConfigRules, isReorderMode }: SortableBudgetCardProps) {
   const {
     attributes,
     listeners,
@@ -137,15 +138,17 @@ function SortableBudgetCard({ budget, categoryName, selectedMonth, transactions,
   return (
     <div ref={setNodeRef} style={style} className="relative group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 transition-colors hover:border-blue-300 dark:hover:border-blue-800 flex">
       {/* Drag Handle */}
-      <div 
-        className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-8 cursor-grab touch-none text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 rounded-l-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-5 w-5" />
-      </div>
+      {isReorderMode && (
+        <div 
+          className="absolute left-0 top-0 bottom-0 flex items-center justify-center w-8 cursor-grab touch-none text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400 rounded-l-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-5 w-5" />
+        </div>
+      )}
 
-      <div className="flex-1 ml-4 relative">
+      <div className={`flex-1 ${isReorderMode ? 'ml-4' : ''} relative`}>
         {/* Actions (Edit / Delete / Config) */}
         <div className="absolute -top-1 -right-1 flex gap-1 z-10">
           {!budget.categoryId && onConfigRules && (
@@ -224,6 +227,7 @@ export default function BudgetsPage() {
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES as Category[]);
   const [periodTransactions, setPeriodTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isReorderMode, setIsReorderMode] = useState(false);
   
   const now = new Date();
   const currentMonth = format(now, 'yyyy-MM');
@@ -550,18 +554,34 @@ export default function BudgetsPage() {
           </button>
         }
       />
-      <div className="hidden md:flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between">
+        <div className="hidden md:block">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">預算管理</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">設定並追蹤您的花費目標</p>
         </div>
-        <button
-          onClick={() => handleOpenForm()}
-          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          新增預算
-        </button>
+        
+        <div className="flex items-center gap-2 ml-auto">
+          {currentViewBudgets.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode(!isReorderMode)}
+              className={`flex items-center gap-1 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+                isReorderMode
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <ArrowUpDown className="h-5 w-5" />
+              <span className="hidden md:inline">排序</span>
+            </button>
+          )}
+          <button
+            onClick={() => handleOpenForm()}
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden md:inline font-medium">新增預算</span>
+          </button>
+        </div>
       </div>
 
       {isFormOpen && (
@@ -876,6 +896,7 @@ export default function BudgetsPage() {
                       onEdit={handleOpenForm}
                       onDelete={handleDeleteBudget}
                       onConfigRules={handleOpenConfig}
+                      isReorderMode={isReorderMode}
                     />
                   ))}
                 </SortableContext>
