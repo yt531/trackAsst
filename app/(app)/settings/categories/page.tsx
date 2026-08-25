@@ -5,11 +5,12 @@ import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Category } from '@/types';
-import { Plus, Trash2, ArrowLeft, ArrowUpRight, ArrowDownRight, Edit2, GripVertical, ArrowUpDown } from 'lucide-react';
+import { Plus, ArrowLeft, ArrowUpRight, ArrowDownRight, GripVertical, ArrowUpDown, Info } from 'lucide-react';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { useRouter } from 'next/navigation';
 import { mergeCategories } from '@/lib/utils';
 import { PageHeader } from '@/components/PageHeader';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import {
   DndContext,
   closestCenter,
@@ -30,12 +31,10 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface SortableCategoryItemProps {
   cat: Category;
-  onEdit: (cat: Category) => void;
-  onDelete: (id: string, isCustom: boolean) => void;
   isReorderMode?: boolean;
 }
 
-function SortableCategoryItem({ cat, onEdit, onDelete, isReorderMode }: SortableCategoryItemProps) {
+function SortableCategoryItem({ cat, isReorderMode }: SortableCategoryItemProps) {
   const {
     attributes,
     listeners,
@@ -72,18 +71,13 @@ function SortableCategoryItem({ cat, onEdit, onDelete, isReorderMode }: Sortable
         {!cat.isCustom && <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded">系統預設</span>}
       </div>
       <div className="flex items-center gap-1">
-        <button
-          onClick={() => onEdit(cat)}
-          className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        <Link
+          href={`/settings/categories/detail?id=${cat.id}`}
+          className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-zinc-100 hover:bg-blue-50 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+          title="檢視"
         >
-          <Edit2 className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => onDelete(cat.id, cat.isCustom || false)}
-          className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+          <Info className="h-4 w-4" />
+        </Link>
       </div>
     </div>
   );
@@ -97,7 +91,6 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [isReorderMode, setIsReorderMode] = useState(false);
 
   // Form State
@@ -139,44 +132,19 @@ export default function CategoriesPage() {
     setIsSaving(true);
     
     try {
-      if (editingId) {
-        // Editing existing category (custom or default)
-        const catToEdit = allCategories.find((c: any) => c.id === editingId);
-        if (!catToEdit) return;
-        
-        const updatedCat = {
-          ...catToEdit,
-          name,
-          type,
-        };
-        
-        const { id, ...dataToSave } = updatedCat as any;
-        await setDoc(doc(db, 'users', user.uid, 'categories', editingId), dataToSave, { merge: true });
-        
-        setCustomCategories(prev => {
-          const exists = prev.some(c => c.id === editingId);
-          if (exists) {
-            return prev.map(c => c.id === editingId ? updatedCat as Category : c);
-          } else {
-            return [...prev, updatedCat as Category];
-          }
-        });
-      } else {
-        // Adding new custom category
-        const newCat = {
-          name,
-          type,
-          icon: type === 'expense' ? 'shopping-bag' : 'plus-circle',
-          isCustom: true,
-          order: type === 'expense' ? expenseCategories.length : incomeCategories.length
-        };
-        
-        const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), newCat);
-        setCustomCategories([...customCategories, { id: docRef.id, ...newCat }]);
-      }
+      // Adding new custom category
+      const newCat = {
+        name,
+        type,
+        icon: type === 'expense' ? 'shopping-bag' : 'plus-circle',
+        isCustom: true,
+        order: type === 'expense' ? expenseCategories.length : incomeCategories.length
+      };
+      
+      const docRef = await addDoc(collection(db, 'users', user.uid, 'categories'), newCat);
+      setCustomCategories([...customCategories, { id: docRef.id, ...newCat }]);
       
       setIsAdding(false);
-      setEditingId(null);
       setName('');
     } catch (e) {
       console.error(e);
@@ -186,30 +154,7 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleEditClick = (cat: Category) => {
-    setEditingId(cat.id);
-    setName(cat.name);
-    setType(cat.type as 'income' | 'expense');
-    setIsAdding(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
-  const handleDelete = async (id: string, isCustom: boolean) => {
-    if (!user || !confirm('確定要刪除此分類嗎？相關的交易紀錄不會被刪除，但可能會無法顯示正確分類名稱。')) return;
-    try {
-      if (isCustom) {
-        await deleteDoc(doc(db, 'users', user.uid, 'categories', id));
-        setCustomCategories(customCategories.filter(c => c.id !== id));
-      } else {
-        // For default categories, we mark as deleted
-        await setDoc(doc(db, 'users', user.uid, 'categories', id), { isDeleted: true }, { merge: true });
-        setCustomCategories([...customCategories, { id, isDeleted: true } as any]);
-      }
-    } catch (e) {
-      console.error(e);
-      alert('刪除失敗');
-    }
-  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -280,7 +225,6 @@ export default function CategoriesPage() {
             alert('請先取消排序才能使用新增功能');
             return;
           }
-          setEditingId(null);
           setName('');
           setType('expense');
           setIsAdding(true);
@@ -360,7 +304,6 @@ export default function CategoriesPage() {
               type="button"
               onClick={() => {
                 setIsAdding(false);
-                setEditingId(null);
               }}
               className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
@@ -401,8 +344,6 @@ export default function CategoriesPage() {
                     <SortableCategoryItem
                       key={cat.id}
                       cat={cat}
-                      onEdit={handleEditClick}
-                      onDelete={handleDelete}
                       isReorderMode={isReorderMode}
                     />
                   ))}
@@ -431,8 +372,6 @@ export default function CategoriesPage() {
                     <SortableCategoryItem
                       key={cat.id}
                       cat={cat}
-                      onEdit={handleEditClick}
-                      onDelete={handleDelete}
                       isReorderMode={isReorderMode}
                     />
                   ))}
