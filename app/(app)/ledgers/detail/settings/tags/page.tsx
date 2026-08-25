@@ -34,6 +34,7 @@ interface SortableTagItemProps {
   setEditingId: (id: string | null) => void;
   setEditName: (name: string) => void;
   handleUpdate: (id: string) => void;
+  handleDelete: (id: string) => void;
   canEdit: boolean;
   isReorderMode?: boolean;
 }
