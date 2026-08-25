@@ -47,7 +47,8 @@ function SharedTransactionForm() {
   const [members, setMembers] = useState<LedgerMember[]>([]);
   const [payerId, setPayerId] = useState<string>('');
   const [splitWithIds, setSplitWithIds] = useState<string[]>([]);
-  const [isSubmitOnBehalf, setIsSubmitOnBehalf] = useState(false);
+  const [isSubmitOnBehalfSingle, setIsSubmitOnBehalfSingle] = useState(false);
+  const [isBatchPayment, setIsBatchPayment] = useState(false);
   const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -176,7 +177,7 @@ function SharedTransactionForm() {
         }, true);
       } else {
         // Shared Fund Mode
-        const payers = (isSubmitOnBehalf && type === 'income' && isFundContribution) 
+        const payers = (type === 'income' && isFundContribution && (isSubmitOnBehalfSingle || isBatchPayment))
           ? (selectedPayerIds.length > 0 ? selectedPayerIds : [user.uid])
           : [user.uid];
 
@@ -194,7 +195,7 @@ function SharedTransactionForm() {
             details: payers.length > 1 ? `${details} (批次)` : details,
             notes,
             tagIds: selectedTags.length > 0 ? selectedTags : undefined,
-            payerId: (isSubmitOnBehalf || type === 'expense') ? pId : user.uid, // expense payer is handled via another field if needed, but for income it's pId
+            payerId: (isSubmitOnBehalfSingle || isBatchPayment || type === 'expense') ? pId : user.uid, // expense payer is handled via another field if needed, but for income it's pId
             isAdvancePayment: isAdvancePayment && type === 'expense',
             advancePaymentStatus: (isAdvancePayment && type === 'expense') ? 'unsettled' : undefined,
             collectionId: (type === 'income' && isFundContribution) ? collectionId : undefined,
@@ -228,6 +229,9 @@ function SharedTransactionForm() {
   }
 
   const filteredCategories = categories.filter(c => c.type === type);
+  
+  const currentUserMember = members.find(m => m.userId === user?.uid);
+  const isAdminOrVice = currentUserMember?.role === 'admin' || currentUserMember?.role === 'vice_admin';
 
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-20">
@@ -415,32 +419,54 @@ function SharedTransactionForm() {
           {/* Submit on Behalf Field (Shared Fund) */}
           {activeLedger?.mode === 'shared_fund' && type === 'income' && (
             <div className="space-y-3 p-4 rounded-xl border border-blue-100 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
-              <div className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  id="isSubmitOnBehalf"
-                  checked={isSubmitOnBehalf}
-                  onChange={(e) => {
-                    setIsSubmitOnBehalf(e.target.checked);
-                    if (!e.target.checked) {
-                      setSelectedPayerIds([]);
-                    } else {
-                      setSelectedPayerIds(user ? [user.uid] : []);
-                    }
-                  }}
-                  className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="isSubmitOnBehalf" className="text-sm font-medium text-blue-900 dark:text-blue-200">
-                  代為送出審核 / 批次繳款
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+                  <input 
+                    type="checkbox"
+                    checked={isSubmitOnBehalfSingle}
+                    onChange={(e) => {
+                      setIsSubmitOnBehalfSingle(e.target.checked);
+                      if (e.target.checked) {
+                        setIsBatchPayment(false);
+                        setSelectedPayerIds(user ? [user.uid] : []);
+                      } else {
+                        setSelectedPayerIds([]);
+                      }
+                    }}
+                    className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  代為送出審核
                 </label>
+
+                {isAdminOrVice && (
+                  <label className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+                    <input 
+                      type="checkbox"
+                      checked={isBatchPayment}
+                      onChange={(e) => {
+                        setIsBatchPayment(e.target.checked);
+                        if (e.target.checked) {
+                          setIsSubmitOnBehalfSingle(false);
+                          setSelectedPayerIds(user ? [user.uid] : []);
+                        } else {
+                          setSelectedPayerIds([]);
+                        }
+                      }}
+                      className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    批次繳費 (多人)
+                  </label>
+                )}
               </div>
-              {isSubmitOnBehalf && (
+
+              {(isSubmitOnBehalfSingle || isBatchPayment) && (
                 <div className="mt-2 border-t border-blue-200 dark:border-blue-900/50 pt-3">
                   <MemberSelector 
                     members={members}
                     selectedIds={selectedPayerIds}
                     onChange={setSelectedPayerIds}
                     currentUserUid={user?.uid}
+                    mode={isSubmitOnBehalfSingle ? 'single' : 'multiple'}
                   />
                 </div>
               )}

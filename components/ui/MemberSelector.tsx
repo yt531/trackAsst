@@ -12,6 +12,7 @@ interface MemberSelectorProps {
   footerText?: React.ReactNode;
   className?: string;
   renderMemberExtra?: (member: LedgerMember, isIncluded: boolean) => React.ReactNode;
+  mode?: 'multiple' | 'single';
 }
 
 export function MemberSelector({
@@ -21,7 +22,8 @@ export function MemberSelector({
   currentUserUid,
   footerText,
   className = '',
-  renderMemberExtra
+  renderMemberExtra,
+  mode = 'multiple'
 }: MemberSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'view' | 'include' | 'exclude'>('include');
@@ -52,16 +54,20 @@ export function MemberSelector({
   }, [filteredMembers, selectedIds]);
 
   const handleToggle = (memberId: string, currentStatus: 'included' | 'excluded') => {
-    if (activeTab === 'view') return; // View mode is read-only
+    if (activeTab === 'view' && mode === 'multiple') return; // View mode is read-only
     
-    if (currentStatus === 'included') {
-      onChange(selectedIds.filter(id => id !== memberId));
+    if (mode === 'single') {
+      onChange([memberId]);
     } else {
-      onChange([...selectedIds, memberId]);
+      if (currentStatus === 'included') {
+        onChange(selectedIds.filter(id => id !== memberId));
+      } else {
+        onChange([...selectedIds, memberId]);
+      }
     }
   };
 
-  const displayedList = activeTab === 'view' ? included : (activeTab === 'include' ? included : excluded);
+  const displayedList = mode === 'single' ? filteredMembers : (activeTab === 'view' ? included : (activeTab === 'include' ? included : excluded));
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -80,35 +86,37 @@ export function MemberSelector({
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
-        <button
-          type="button"
-          onClick={() => setActiveTab('view')}
-          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            activeTab === 'view' ? 'bg-white shadow text-blue-600 dark:bg-zinc-700 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-        >
-          檢視名單
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('include')}
-          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            activeTab === 'include' ? 'bg-white shadow text-blue-600 dark:bg-zinc-700 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-        >
-          包含 ({included.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('exclude')}
-          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            activeTab === 'exclude' ? 'bg-white shadow text-blue-600 dark:bg-zinc-700 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-        >
-          排除 ({excluded.length})
-        </button>
-      </div>
+      {mode === 'multiple' && (
+        <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setActiveTab('view')}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              activeTab === 'view' ? 'bg-white shadow text-blue-600 dark:bg-zinc-700 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
+          >
+            檢視名單
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('include')}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              activeTab === 'include' ? 'bg-white shadow text-blue-600 dark:bg-zinc-700 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
+          >
+            包含 ({included.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('exclude')}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              activeTab === 'exclude' ? 'bg-white shadow text-blue-600 dark:bg-zinc-700 dark:text-blue-400' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
+          >
+            排除 ({excluded.length})
+          </button>
+        </div>
+      )}
 
       {/* Member List */}
       <div className="flex flex-wrap gap-2 max-h-[35vh] md:max-h-60 overflow-y-auto p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-700">
@@ -121,16 +129,16 @@ export function MemberSelector({
             const isMe = m.userId === currentUserUid;
             const displayName = isMe ? '我' : (m.nickname || m.userId.slice(0, 4));
             const hasBalance = (m.balance || 0) > 0;
-            const isIncluded = activeTab === 'view' || activeTab === 'include';
+            const isIncluded = mode === 'single' ? selectedIds.includes(m.userId) : (activeTab === 'view' || activeTab === 'include');
 
             return (
               <button
                 key={m.userId}
                 type="button"
                 onClick={() => handleToggle(m.userId, isIncluded ? 'included' : 'excluded')}
-                disabled={activeTab === 'view'}
+                disabled={activeTab === 'view' && mode === 'multiple'}
                 className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors ${
-                  activeTab === 'view' 
+                  (activeTab === 'view' && mode === 'multiple')
                     ? 'border-blue-200 bg-blue-50 text-blue-700 cursor-default dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300' 
                     : isIncluded 
                       ? 'border-blue-500 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-100 dark:hover:bg-blue-900/70' 
@@ -139,13 +147,16 @@ export function MemberSelector({
               >
                 <User className="h-3.5 w-3.5" />
                 <span>{displayName}</span>
+                {mode === 'single' && isIncluded && (
+                  <Check className="h-4 w-4 ml-1 text-blue-600 dark:text-blue-400" />
+                )}
                 {hasBalance && !renderMemberExtra && (
                   <span className="ml-1 text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full dark:bg-emerald-900/50 dark:text-emerald-400">
                     ${m.balance}
                   </span>
                 )}
                 {renderMemberExtra && renderMemberExtra(m, isIncluded)}
-                {activeTab !== 'view' && (
+                {mode === 'multiple' && activeTab !== 'view' && (
                   isIncluded ? <Check className="h-3.5 w-3.5 ml-1 opacity-70" /> : <X className="h-3.5 w-3.5 ml-1 opacity-70" />
                 )}
               </button>
