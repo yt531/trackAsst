@@ -7,6 +7,7 @@ import { collection, query, getDocs, doc, updateDoc, setDoc } from 'firebase/fir
 import { Settings2, Wallet, Users, CheckCircle2, AlertCircle, PieChart as PieChartIcon, Plus, X, Check } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { updateLedger, getFundCollections, createFundCollection, updateFundCollection, recalculateCollection } from '@/lib/ledger';
+import { MemberSelector } from '@/components/ui/MemberSelector';
 import { approveTransaction, rejectTransaction } from '@/lib/transactions';
 import type { FundCollection, AppNotification } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
@@ -592,13 +593,14 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
 
       {/* Start/Edit Collection Modal */}
       {isStartCollectionModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-sm flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
+            <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
               <h2 className="text-xl font-bold">{isEditMode ? '編輯收款 / 重新分攤' : '發起新收款'}</h2>
               <button onClick={() => setIsStartCollectionModalOpen(false)} className="text-zinc-400 hover:text-zinc-600"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleStartCollection} className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-6">
+              <form onSubmit={handleStartCollection} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">收款名稱</label>
                 <input 
@@ -646,40 +648,17 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">參與分攤成員</label>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-zinc-200 rounded-lg bg-zinc-50 dark:bg-zinc-800 dark:border-zinc-700">
-                  {members.map(m => {
-                    const isSelected = selectedMemberIds.includes(m.userId);
-                    return (
-                      <button
-                        key={m.userId}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedMemberIds(selectedMemberIds.filter(id => id !== m.userId));
-                          } else {
-                            setSelectedMemberIds([...selectedMemberIds, m.userId]);
-                          }
-                        }}
-                        className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-xs transition-colors ${
-                          isSelected 
-                            ? 'border-blue-500 bg-blue-100 text-blue-700 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-100' 
-                            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                        }`}
-                      >
-                        {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
-                      </button>
-                    )
-                  })}
-                </div>
+              <div className="mt-4 border-t border-zinc-200 dark:border-zinc-800 pt-4">
+                <MemberSelector 
+                  members={members}
+                  selectedIds={selectedMemberIds}
+                  onChange={setSelectedMemberIds}
+                  currentUserUid={user?.uid}
+                  footerText={collectionMode === 'total' && selectedMemberIds.length > 0 && newCollectionAmount ? `重新計算後每人應繳: ${(Number(newCollectionAmount) / selectedMemberIds.length).toFixed(2)}` : `參與分攤人數: ${selectedMemberIds.length} 人`}
+                />
               </div>
 
-              {collectionMode === 'total' && selectedMemberIds.length > 0 && newCollectionAmount && (
-                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded-lg text-center dark:bg-blue-900/20 dark:text-blue-400">
-                  重新計算後每人應繳: {(Number(newCollectionAmount) / selectedMemberIds.length).toFixed(2)}
-                </div>
-              )}
+              {/* End of new Collection Form */}
 
               <button 
                 type="submit"
@@ -689,13 +668,14 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                 {isStartingCollection ? '處理中...' : (isEditMode ? '儲存並重新分攤' : '確認發起')}
               </button>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* Note Modal for Recalculation */}
       {isNoteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
             <h2 className="text-xl font-bold mb-4">填寫溢收款備註</h2>
             <p className="text-sm text-zinc-500 mb-4">系統即將重新計算應繳金額，若有成員溢繳將自動轉入其個人餘額。請為此操作填寫備註：</p>

@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { Search, X, Users, User } from 'lucide-react';
 import { getLedgerMembers, getLedgerCategories, getLedgerTags } from '@/lib/ledger';
 import { updateTransaction } from '@/lib/transactions';
+import { MemberSelector } from '@/components/ui/MemberSelector';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -293,32 +294,12 @@ function SharedTransactionForm() {
 
               <div>
                 <label className="mb-2 block text-sm font-medium">要跟誰分攤？ (平均分攤)</label>
-                <div className="flex flex-wrap gap-2">
-                  {members.map(m => {
-                    const isSelected = splitWithIds.includes(m.userId);
-                    return (
-                      <button
-                        key={`split_${m.userId}`}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSplitWithIds(splitWithIds.filter(id => id !== m.userId));
-                          } else {
-                            setSplitWithIds([...splitWithIds, m.userId]);
-                          }
-                        }}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
-                          isSelected 
-                            ? 'border-purple-500 bg-purple-100 text-purple-700 dark:border-purple-400 dark:bg-purple-900/50 dark:text-purple-100' 
-                            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                        }`}
-                      >
-                        <User className="h-4 w-4" />
-                        {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
-                      </button>
-                    );
-                  })}
-                </div>
+                <MemberSelector 
+                  members={members}
+                  selectedIds={splitWithIds}
+                  onChange={setSplitWithIds}
+                  currentUserUid={user?.uid}
+                />
                 {amount && splitWithIds.length > 0 && (
                   <p className="mt-2 text-sm text-zinc-500">
                     每人需分攤: {(parseFloat(amount) / splitWithIds.length).toFixed(2)} {activeLedger.currency}

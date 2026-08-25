@@ -81,6 +81,7 @@ export const verifyAndJoinLedger = async (
         id: userId,
         ledgerId: invitation.ledgerId,
         userId: userId,
+        email: userEmail,
         role: invitation.defaultRole as LedgerRole,
         joinedAt: Date.now(),
         status: 'active',

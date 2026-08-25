@@ -207,6 +207,7 @@ export interface LedgerMember {
   joinedAt: number;
   status: 'active' | 'invited' | 'declined' | 'left';
   nickname?: string;
+  email?: string;
   balance?: number; // Member's available overpayment balance
   notificationPreferences: {
     all?: boolean;

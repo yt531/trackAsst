@@ -1,7 +1,8 @@
 'use client';
 
-import { auth, googleProvider } from '@/lib/firebase';
+import { auth, googleProvider, db } from '@/lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Wallet } from 'lucide-react';
 import { useState } from 'react';
@@ -15,7 +16,17 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError('');
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Save user profile info to Firestore
+      if (result.user) {
+        await setDoc(doc(db, 'users', result.user.uid), {
+          email: result.user.email,
+          displayName: result.user.displayName,
+          lastLoginAt: Date.now()
+        }, { merge: true });
+      }
+
       router.push('/');
     } catch (err: any) {
       setError(err.message || '登入失敗');

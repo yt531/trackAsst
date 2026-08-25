@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { MemberSelector } from '@/components/ui/MemberSelector';
 import { Category, LedgerMember, TransactionSplit, Tag } from '@/types';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -448,46 +449,35 @@ function SharedTransactionForm() {
                 </label>
               </div>
               {isSubmitOnBehalf && (
-                <div className="mt-2 space-y-2 max-h-64 overflow-y-auto pr-2">
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">選擇繳款人 (可複選)</label>
-                  {members.map(m => {
-                    const isSelected = selectedPayerIds.includes(m.userId);
-                    const hasBalance = (m.balance || 0) > 0;
-                    return (
-                      <div key={m.userId} className={`p-3 rounded-lg border flex items-center justify-between ${isSelected ? 'border-blue-400 bg-blue-100/50 dark:bg-blue-900/40' : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800'}`}>
-                        <div className="flex items-center gap-3">
-                          <input 
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) setSelectedPayerIds([...selectedPayerIds, m.userId]);
-                              else setSelectedPayerIds(selectedPayerIds.filter(id => id !== m.userId));
-                            }}
-                            className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="font-medium text-sm">{m.nickname || `User ${m.userId.slice(0,4)}`} {m.userId === user?.uid && '(我)'}</span>
+                <div className="mt-2 border-t border-blue-200 dark:border-blue-900/50 pt-3">
+                  <MemberSelector 
+                    members={members}
+                    selectedIds={selectedPayerIds}
+                    onChange={setSelectedPayerIds}
+                    currentUserUid={user?.uid}
+                    renderMemberExtra={(m, isIncluded) => {
+                      const hasBalance = (m.balance || 0) > 0;
+                      if (!hasBalance) return null;
+                      return (
+                        <div className="flex items-center gap-2 ml-2">
+                          <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">
+                            可用餘額 ${m.balance}
+                          </span>
+                          {isIncluded && (
+                            <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer border-l pl-2 dark:border-zinc-700">
+                              <input 
+                                type="checkbox"
+                                checked={!!useBalanceForPayers[m.userId]}
+                                onChange={(e) => setUseBalanceForPayers({...useBalanceForPayers, [m.userId]: e.target.checked})}
+                                className="w-3.5 h-3.5 rounded-sm border-zinc-300"
+                              />
+                              優先折抵
+                            </label>
+                          )}
                         </div>
-                        {hasBalance && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">
-                              可用餘額 ${m.balance}
-                            </span>
-                            {isSelected && (
-                              <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
-                                <input 
-                                  type="checkbox"
-                                  checked={!!useBalanceForPayers[m.userId]}
-                                  onChange={(e) => setUseBalanceForPayers({...useBalanceForPayers, [m.userId]: e.target.checked})}
-                                  className="w-3.5 h-3.5 rounded-sm border-zinc-300"
-                                />
-                                優先折抵
-                              </label>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    }}
+                  />
                 </div>
               )}
             </div>
@@ -534,32 +524,12 @@ function SharedTransactionForm() {
 
               <div>
                 <label className="mb-2 block text-sm font-medium">要跟誰分攤？ (平均分攤)</label>
-                <div className="flex flex-wrap gap-2">
-                  {members.map(m => {
-                    const isSelected = splitWithIds.includes(m.userId);
-                    return (
-                      <button
-                        key={`split_${m.userId}`}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSplitWithIds(splitWithIds.filter(id => id !== m.userId));
-                          } else {
-                            setSplitWithIds([...splitWithIds, m.userId]);
-                          }
-                        }}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
-                          isSelected 
-                            ? 'border-purple-500 bg-purple-100 text-purple-700 dark:border-purple-400 dark:bg-purple-900/50 dark:text-purple-100' 
-                            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                        }`}
-                      >
-                        <User className="h-4 w-4" />
-                        {m.userId === user?.uid ? '我' : (m.nickname || m.userId.slice(0, 4))}
-                      </button>
-                    );
-                  })}
-                </div>
+                <MemberSelector 
+                  members={members}
+                  selectedIds={splitWithIds}
+                  onChange={setSplitWithIds}
+                  currentUserUid={user?.uid}
+                />
                 {amount && splitWithIds.length > 0 && (
                   <p className="mt-2 text-sm text-zinc-500">
                     每人需分攤: {(parseFloat(amount) / splitWithIds.length).toFixed(2)} {activeLedger.currency}
