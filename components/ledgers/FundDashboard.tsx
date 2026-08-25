@@ -180,7 +180,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
           createdAt: Date.now(),
           createdBy: user.uid,
           status: 'active'
-        });
+        }, members, user.uid);
         setIsStartCollectionModalOpen(false);
         window.location.reload();
       }

@@ -49,7 +49,6 @@ function SharedTransactionForm() {
   const [splitWithIds, setSplitWithIds] = useState<string[]>([]);
   const [isSubmitOnBehalf, setIsSubmitOnBehalf] = useState(false);
   const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
-  const [useBalanceForPayers, setUseBalanceForPayers] = useState<Record<string, boolean>>({});
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -182,19 +181,12 @@ function SharedTransactionForm() {
           : [user.uid];
 
         for (const pId of payers) {
-          const member = members.find(m => m.userId === pId);
-          let usedBalance = 0;
-          if (useBalanceForPayers[pId] && member && (member.balance || 0) > 0) {
-            usedBalance = Math.min(numAmount, member.balance || 0);
-          }
-
           await createTransaction(user.uid, {
             userId: user.uid,
             ledgerId: activeLedgerId,
             type,
             amount: numAmount,
             baseAmount,
-            usedBalance: usedBalance > 0 ? usedBalance : undefined,
             currency: activeLedger?.currency || 'TWD',
             exchangeRate: 1,
             paymentMethodId: 'cash',
@@ -433,19 +425,13 @@ function SharedTransactionForm() {
                     if (!e.target.checked) {
                       setSelectedPayerIds([]);
                     } else {
-                      // Auto-select users with balance > 0
-                      const usersWithBalance = members.filter(m => (m.balance || 0) > 0).map(m => m.userId);
-                      setSelectedPayerIds(usersWithBalance.length > 0 ? usersWithBalance : (user ? [user.uid] : []));
-                      
-                      const useBalanceMap: Record<string, boolean> = {};
-                      usersWithBalance.forEach(id => useBalanceMap[id] = true);
-                      setUseBalanceForPayers(useBalanceMap);
+                      setSelectedPayerIds(user ? [user.uid] : []);
                     }
                   }}
                   className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="isSubmitOnBehalf" className="text-sm font-medium text-blue-900 dark:text-blue-200">
-                  代為送出審核 / 批次繳款 / 餘額折抵
+                  代為送出審核 / 批次繳款
                 </label>
               </div>
               {isSubmitOnBehalf && (
@@ -455,28 +441,6 @@ function SharedTransactionForm() {
                     selectedIds={selectedPayerIds}
                     onChange={setSelectedPayerIds}
                     currentUserUid={user?.uid}
-                    renderMemberExtra={(m, isIncluded) => {
-                      const hasBalance = (m.balance || 0) > 0;
-                      if (!hasBalance) return null;
-                      return (
-                        <div className="flex items-center gap-2 ml-2">
-                          <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">
-                            可用餘額 ${m.balance}
-                          </span>
-                          {isIncluded && (
-                            <label className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer border-l pl-2 dark:border-zinc-700">
-                              <input 
-                                type="checkbox"
-                                checked={!!useBalanceForPayers[m.userId]}
-                                onChange={(e) => setUseBalanceForPayers({...useBalanceForPayers, [m.userId]: e.target.checked})}
-                                className="w-3.5 h-3.5 rounded-sm border-zinc-300"
-                              />
-                              優先折抵
-                            </label>
-                          )}
-                        </div>
-                      );
-                    }}
                   />
                 </div>
               )}

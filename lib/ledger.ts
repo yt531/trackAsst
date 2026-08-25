@@ -198,28 +198,98 @@ export const getFundCollections = async (ledgerId: string): Promise<FundCollecti
   return snap.docs.map(doc => doc.data() as FundCollection).sort((a, b) => b.createdAt - a.createdAt);
 };
 
-export const createFundCollection = async (ledgerId: string, data: FundCollection) => {
-  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections', data.id);
-  await setDoc(docRef, data);
+export const createFundCollection = async (ledgerId: string, data: FundCollection, members: LedgerMember[], adminUserId: string) => {
+  const { writeBatch } = await import('firebase/firestore');
+  const batch = writeBatch(db);
 
-  // Send collection_notice to all members
+  let totalPaidAmount = 0;
+  const notifications: Omit<AppNotification, 'id'>[] = [];
   const ledger = await getLedger(ledgerId);
-  
-  if (ledger) {
-    for (const memberId of data.memberIds || []) {
-      if (memberId !== data.createdBy) {
-        await setDoc(doc(collection(db, 'users', memberId, 'notifications')), {
-          userId: memberId,
-          type: 'collection_notice',
-          title: '發起新收款',
-          message: `在「${ledger.name}」發起了新收款「${data.title}」，請繳交 ${data.targetAmount} 元。`,
-          link: `/ledgers/detail?id=${ledgerId}`,
-          isRead: false,
+
+  for (const memberId of data.memberIds || []) {
+    const member = members.find(m => m.userId === memberId);
+    let autoDeducted = 0;
+
+    if (member && (member.balance || 0) > 0) {
+      const amountToPay = data.targetAmount; // The target per person
+      const deductAmount = Math.min(member.balance || 0, amountToPay);
+      
+      if (deductAmount > 0) {
+        autoDeducted = deductAmount;
+        totalPaidAmount += deductAmount;
+
+        // 1. Deduct balance from LedgerMember
+        const memberRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'members', member.userId);
+        batch.update(memberRef, { balance: (member.balance || 0) - deductAmount });
+
+        // 2. Create Balance Log
+        const balanceLogRef = doc(collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'balanceLogs'));
+        batch.set(balanceLogRef, {
+          id: balanceLogRef.id,
+          ledgerId: ledgerId,
+          userId: member.userId,
+          amount: -deductAmount,
+          type: 'expense_deduction',
+          note: `系統自動餘額折抵 (${data.title})`,
           createdAt: Date.now(),
-        } as Omit<AppNotification, 'id'>);
+          createdBy: adminUserId
+        } as MemberBalanceLog);
+
+        // 3. Create approved Income Transaction
+        const txRef = doc(collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'transactions'));
+        batch.set(txRef, {
+          id: txRef.id,
+          ledgerId: ledgerId,
+          userId: member.userId,
+          type: 'income',
+          amount: deductAmount,
+          baseAmount: deductAmount,
+          currency: ledger?.currency || 'TWD',
+          exchangeRate: 1,
+          categoryId: 'system_offset',
+          paymentMethodId: 'system',
+          details: `系統自動餘額折抵 - ${data.title}`,
+          date: Date.now(),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          payerId: member.userId,
+          collectionId: data.id,
+          approvalStatus: 'approved',
+          usedBalance: deductAmount
+        } as Transaction);
       }
     }
+
+    if (memberId !== data.createdBy && ledger) {
+      notifications.push({
+        userId: memberId,
+        type: 'collection_notice',
+        title: '發起新收款',
+        message: autoDeducted > 0
+          ? `在「${ledger?.name}」發起了新收款「${data.title}」，應繳 ${data.targetAmount} 元（系統已自動折抵餘額 ${autoDeducted} 元）。`
+          : `在「${ledger?.name}」發起了新收款「${data.title}」，請繳交 ${data.targetAmount} 元。`,
+        link: `/ledgers/detail?id=${ledgerId}`,
+        isRead: false,
+        createdAt: Date.now(),
+      });
+    }
   }
+
+  // 4. Create FundCollection
+  const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections', data.id);
+  const collectionData = {
+    ...data,
+    paidAmount: totalPaidAmount
+  };
+  batch.set(docRef, collectionData);
+
+  // 5. Send notifications
+  for (const notif of notifications) {
+    const notifRef = doc(collection(db, 'users', notif.userId, 'notifications'));
+    batch.set(notifRef, notif);
+  }
+
+  await batch.commit();
 };
 
 export const updateFundCollection = async (ledgerId: string, collectionId: string, data: Partial<FundCollection>) => {
