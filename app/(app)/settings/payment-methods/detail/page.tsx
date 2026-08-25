@@ -192,9 +192,20 @@ function PaymentMethodDetail() {
     return <div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">找不到此支付方式</div>;
   }
 
+  const actionButtons = paymentMethod && paymentMethod.id !== 'cash' && paymentMethod.id !== 'unset' && !isEditing ? (
+    <div className="flex items-center gap-2">
+      <button onClick={handleEdit} className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-white hover:bg-blue-50 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full border border-zinc-200 dark:border-zinc-700 transition-colors shadow-sm" title="修改">
+        <Pencil className="h-4 w-4" />
+      </button>
+      <button onClick={handleDelete} className="p-2 text-zinc-500 hover:text-red-600 dark:text-zinc-400 bg-white hover:bg-red-50 dark:hover:text-red-400 dark:bg-zinc-800 dark:hover:bg-red-900/30 rounded-full border border-zinc-200 dark:border-zinc-700 transition-colors shadow-sm" title="刪除">
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  ) : null;
+
   return (
     <div className="space-y-6 pb-20">
-      <PageHeader title={paymentMethod?.name || '載入中...'} backHref="/settings/payment-methods" />
+      <PageHeader title={paymentMethod?.name || '載入中...'} backHref="/settings/payment-methods" rightAction={actionButtons} />
       <header className="hidden md:flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link href="/settings/payment-methods" className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
@@ -207,16 +218,7 @@ function PaymentMethodDetail() {
             </p>
           </div>
         </div>
-        {paymentMethod && paymentMethod.id !== 'cash' && paymentMethod.id !== 'unset' && !isEditing && (
-          <div className="flex items-center gap-2">
-            <button onClick={handleEdit} className="p-2 text-zinc-500 hover:text-blue-600 dark:text-zinc-400 bg-white hover:bg-blue-50 dark:text-zinc-400 dark:hover:text-blue-400 dark:bg-zinc-800 dark:hover:bg-blue-900/30 rounded-full border border-zinc-200 dark:border-zinc-700 transition-colors shadow-sm" title="修改">
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button onClick={handleDelete} className="p-2 text-zinc-500 hover:text-red-600 dark:text-zinc-400 bg-white hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:bg-zinc-800 dark:hover:bg-red-900/30 rounded-full border border-zinc-200 dark:border-zinc-700 transition-colors shadow-sm" title="刪除">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+        {actionButtons}
       </header>
 
       {isEditing && (
