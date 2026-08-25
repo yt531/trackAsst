@@ -462,7 +462,7 @@ function SharedTransactionForm() {
               {(isSubmitOnBehalfSingle || isBatchPayment) && (
                 <div className="mt-2 border-t border-blue-200 dark:border-blue-900/50 pt-3">
                   <MemberSelector 
-                    members={members}
+                    members={isSubmitOnBehalfSingle ? members.filter(m => m.userId !== user?.uid) : members}
                     selectedIds={selectedPayerIds}
                     onChange={setSelectedPayerIds}
                     currentUserUid={user?.uid}
