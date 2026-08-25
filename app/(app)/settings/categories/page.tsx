@@ -92,6 +92,7 @@ export default function CategoriesPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isReorderMode, setIsReorderMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense');
 
   // Form State
   const [type, setType] = useState<'income' | 'expense'>('expense');
@@ -226,7 +227,7 @@ export default function CategoriesPage() {
             return;
           }
           setName('');
-          setType('expense');
+          setType(activeTab);
           setIsAdding(true);
         }}
         className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
@@ -323,13 +324,29 @@ export default function CategoriesPage() {
       {loading ? (
         <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">載入中...</div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* 支出分類 */}
-          <div>
-            <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
-              <ArrowDownRight className="h-5 w-5 text-red-500" />
-              支出分類
-            </h2>
+        <div>
+          <div className="mb-6 flex w-full rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+             <button
+               onClick={() => {
+                 setActiveTab('expense');
+                 setIsReorderMode(false); // 切換標籤時自動取消排序模式
+               }}
+               className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === 'expense' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+             >
+               支出分類
+             </button>
+             <button
+               onClick={() => {
+                 setActiveTab('income');
+                 setIsReorderMode(false);
+               }}
+               className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === 'income' ? 'bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'}`}
+             >
+               收入分類
+             </button>
+          </div>
+
+          {activeTab === 'expense' ? (
             <div className="space-y-2">
               <DndContext
                 sensors={sensors}
@@ -350,14 +367,7 @@ export default function CategoriesPage() {
                 </SortableContext>
               </DndContext>
             </div>
-          </div>
-
-          {/* 收入分類 */}
-          <div>
-            <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
-              <ArrowUpRight className="h-5 w-5 text-green-500" />
-              收入分類
-            </h2>
+          ) : (
             <div className="space-y-2">
               <DndContext
                 sensors={sensors}
@@ -378,7 +388,7 @@ export default function CategoriesPage() {
                 </SortableContext>
               </DndContext>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
