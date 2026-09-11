@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Invoice } from '@/types';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
-import { ScanLine, Receipt, Settings2, Cloud, FileText, ChevronLeft, ChevronRight, Calendar, ArrowDownRight, Hash, Trash2, Edit2, Check, X } from 'lucide-react';
+import { ScanLine, Receipt, Settings2, Cloud, FileText, ChevronLeft, ChevronRight, Calendar, ArrowDownRight, Hash, Trash2, Edit2, Check, X, Image as ImageIcon } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays, subDays } from 'date-fns';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Dialog } from '@/components/ui/dialog';
@@ -140,22 +140,36 @@ function InvoicesContent() {
         title="發票存摺" 
         backHref="/" 
         rightAction={
-          <Link href="/invoices/scan" className="p-2 text-blue-600 dark:text-blue-400">
-            <ScanLine className="h-5 w-5" />
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link href="/transactions/new?mode=scan_receipt" className="p-2 text-blue-600 dark:text-blue-400" title="辨識發票明細">
+              <ImageIcon className="h-5 w-5" />
+            </Link>
+            <Link href="/invoices/scan" className="p-2 text-blue-600 dark:text-blue-400" title="掃描發票">
+              <ScanLine className="h-5 w-5" />
+            </Link>
+          </div>
         }
       />
       <header className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">發票存摺</h1>
         </div>
-        <Link
-          href="/invoices/scan"
-          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <ScanLine className="h-4 w-4" />
-          <span className="hidden sm:inline">掃描發票</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/transactions/new?mode=scan_receipt"
+            className="flex items-center gap-2 rounded-xl bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 transition-colors"
+          >
+            <ImageIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">辨識發票明細</span>
+          </Link>
+          <Link
+            href="/invoices/scan"
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          >
+            <ScanLine className="h-4 w-4" />
+            <span className="hidden sm:inline">掃描發票</span>
+          </Link>
+        </div>
       </header>
 
       {/* Tabs */}

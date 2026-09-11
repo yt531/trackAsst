@@ -10,9 +10,7 @@ import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { mergeCategories } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
-import { Search, X, Plus, Upload } from 'lucide-react';
-import Tesseract from 'tesseract.js';
-import { parseMOFReceipt, ScannedReceiptResult } from '@/lib/receipt-parser';
+import { Search, X, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 
 function TransactionForm() {
@@ -21,8 +19,6 @@ function TransactionForm() {
   const searchParams = useSearchParams();
   const invoiceId = searchParams.get('invoiceId');
   const editId = searchParams.get('editId');
-  const mode = searchParams.get('mode');
-  const isScanMode = mode === 'scan_receipt';
 
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
@@ -32,13 +28,7 @@ function TransactionForm() {
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [details, setDetails] = useState('');
-  const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
-
-  const [scannedTransactions, setScannedTransactions] = useState<ScannedReceiptResult[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
-  const [scanWarning, setScanWarning] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -73,22 +63,17 @@ function TransactionForm() {
       const pms = pmSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
       
       const hasCash = pms.find(m => m.id === 'cash');
-      const hasUnsetExpense = pms.find(m => m.id === 'unset_expense');
-      const hasUnsetIncome = pms.find(m => m.id === 'unset_income');
+      const hasUnset = pms.find(m => m.id === 'unset');
       
       if (!hasCash) {
-        pms.push({ id: 'cash', type: 'cash', name: '現金', isSystem: true, order: -3 } as PaymentMethod);
+        pms.push({ id: 'cash', type: 'cash', name: '現金', isSystem: true, order: -2 } as PaymentMethod);
       }
-      if (!hasUnsetExpense) {
-        pms.push({ id: 'unset_expense', type: 'unset', name: '未設定支付方式', isSystem: true, order: -2 } as PaymentMethod);
-      }
-      if (!hasUnsetIncome) {
-        pms.push({ id: 'unset_income', type: 'unset', name: '未設定收款方式', isSystem: true, order: -1 } as PaymentMethod);
+      if (!hasUnset) {
+        pms.push({ id: 'unset', type: 'unset', name: '未設定支付方式', isSystem: true, order: -1 } as PaymentMethod);
       }
       
-      let filteredPms = pms.filter(m => m.id !== 'unset');
-      filteredPms.sort((a, b) => (a.order || 0) - (b.order || 0));
-      setPaymentMethods(filteredPms);
+      pms.sort((a, b) => (a.order || 0) - (b.order || 0));
+      setPaymentMethods(pms);
 
       // Load Custom Categories
       const catSnap = await getDocs(collection(db, 'users', user.uid, 'categories'));
@@ -120,12 +105,7 @@ function TransactionForm() {
           setCurrency(txData.currency || 'TWD');
           setExchangeRate(txData.exchangeRate?.toString() || '1');
           setCategoryId(txData.categoryId);
-          if (txData.paymentMethodId === 'unset') {
-            setPaymentMethodId(txData.type === 'income' ? 'unset_income' : 'unset_expense');
-          } else {
-            setPaymentMethodId(txData.paymentMethodId || '');
-          }
-          setLocation(txData.location || '');
+          setPaymentMethodId(txData.paymentMethodId);
           setDate(format(new Date(txData.date), "yyyy-MM-dd'T'HH:mm"));
           setDetails(txData.details || '');
           setNotes(txData.notes || '');
@@ -134,9 +114,9 @@ function TransactionForm() {
           }
         }
       } else {
-        // No defaults
-        setCategoryId('');
-        setPaymentMethodId('');
+        // Set defaults for new transaction
+        setCategoryId(allCats[0].id);
+        setPaymentMethodId(defaultPmId || 'unset');
 
         // Load Invoice if provided
         if (invoiceId) {
@@ -161,65 +141,9 @@ function TransactionForm() {
     }
   };
 
-  
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsScanning(true);
-    setScanProgress({ current: 0, total: files.length });
-    
-    const newScans: ScannedReceiptResult[] = [];
-    
-    try {
-      const worker = await Tesseract.createWorker('chi_tra');
-      
-      for (let i = 0; i < files.length; i++) {
-        setScanProgress({ current: i + 1, total: files.length });
-        const file = files[i];
-        
-        const { data: { text } } = await worker.recognize(file);
-        const result = parseMOFReceipt(text);
-        newScans.push(result);
-      }
-      
-      await worker.terminate();
-      
-      setScannedTransactions(prev => {
-         const updatedQueue = [...prev, ...newScans];
-         if (prev.length === 0 && updatedQueue.length > 0) {
-            loadScannedTransaction(updatedQueue[0]);
-         }
-         return updatedQueue;
-      });
-      
-    } catch (err) {
-      console.error('OCR Error:', err);
-      alert('辨識過程發生錯誤，請稍後再試。');
-    } finally {
-      setIsScanning(false);
-      if (e.target) e.target.value = '';
-    }
-  };
-
-  const loadScannedTransaction = (scan: ScannedReceiptResult) => {
-    if (scan.totalAmount !== undefined) setAmount(scan.totalAmount.toString());
-    if (scan.location) setLocation(scan.location);
-    if (scan.date) setDate(scan.date);
-    if (scan.details) setDetails(scan.details);
-    
-    if (scan.incomplete && scan.errors && scan.errors.length > 0) {
-      setScanWarning(`⚠️ 系統無法完整解析，請檢查並補上：${scan.errors.join('、')}`);
-    } else {
-      setScanWarning('');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!categoryId) { alert('請選擇分類'); return; }
-    if (!paymentMethodId) { alert(type === 'expense' ? '請選擇支付方式' : '請選擇收款方式'); return; }
-    if (!user || !amount) return;
+    if (!user || !amount || !categoryId || !paymentMethodId) return;
     setIsSubmitting(true);
 
     try {
@@ -240,7 +164,6 @@ function TransactionForm() {
         details,
         notes,
         tagIds: selectedTags,
-        location,
         updatedAt: Date.now(),
       };
 
@@ -259,21 +182,6 @@ function TransactionForm() {
             isLinkedToTransaction: true
           });
         }
-      }
-
-      if (scannedTransactions.length > 0) {
-         const remaining = [...scannedTransactions];
-         remaining.shift();
-         if (remaining.length > 0) {
-            setScannedTransactions(remaining);
-            loadScannedTransaction(remaining[0]);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setIsSubmitting(false);
-            return;
-         } else {
-            setScannedTransactions([]);
-            setScanWarning('');
-         }
       }
 
       router.push('/transactions');
@@ -298,49 +206,16 @@ function TransactionForm() {
     (cat.name || '').toLowerCase().includes((categorySearchQuery || '').toLowerCase())
   );
 
-  const filteredPaymentMethods = paymentMethods.filter((pm) => {
-    if (type === 'expense' && pm.id === 'unset_income') return false;
-    if (type === 'income' && pm.id === 'unset_expense') return false;
-    return (pm.name || '').toLowerCase().includes((paymentSearchQuery || '').toLowerCase());
-  });
+  const filteredPaymentMethods = paymentMethods.filter((pm) =>
+    (pm.name || '').toLowerCase().includes((paymentSearchQuery || '').toLowerCase())
+  );
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <PageHeader 
-        title={editId ? '修改交易' : '新增交易'} 
-        backHref={isScanMode ? '/invoices' : undefined} 
-      />
-      <header className="hidden md:flex items-center justify-between">
+      <PageHeader title={editId ? '修改交易' : '新增交易'} />
+      <header className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">{editId ? '修改交易' : '新增交易'}</h1>
       </header>
-
-      {!editId && isScanMode && (
-         <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-center dark:border-zinc-700 relative hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-            <input type="file" multiple accept="image/*" onChange={handleFileUpload} disabled={isScanning || isSubmitting} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" />
-            <div className="flex flex-col items-center justify-center gap-2">
-               <div className="rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
-                  <Upload className="h-6 w-6" />
-               </div>
-               {isScanning ? (
-                  <div>
-                     <p className="font-medium">OCR 辨識中...</p>
-                     <p className="text-sm text-zinc-500">處理進度：{scanProgress.current} / {scanProgress.total}</p>
-                  </div>
-               ) : (
-                  <div>
-                     <p className="font-medium">上傳發票明細截圖以進行辨識</p>
-                     <p className="text-sm text-zinc-500">可多選，將會批次辨識</p>
-                  </div>
-               )}
-            </div>
-         </div>
-      )}
-
-      {scanWarning && (
-        <div className="rounded-xl bg-yellow-50 p-4 border border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
-           <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">{scanWarning}</p>
-        </div>
-      )}
 
       {linkedInvoice && (
         <div className="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
@@ -353,32 +228,30 @@ function TransactionForm() {
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
         <form onSubmit={handleSubmit} className="space-y-4">
         {/* Type Toggle */}
-        {!isScanMode && !invoiceId && mode !== 'scan' && (
-          <div className="flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
-            <button
-              type="button"
-              onClick={() => setType('expense')}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-                type === 'expense'
-                  ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'
-              }`}
-            >
-              支出
-            </button>
-            <button
-              type="button"
-              onClick={() => setType('income')}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-                type === 'income'
-                  ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'
-              }`}
-            >
-              收入
-            </button>
-          </div>
-        )}
+        <div className="flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+          <button
+            type="button"
+            onClick={() => setType('expense')}
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+              type === 'expense'
+                ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
+                : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'
+            }`}
+          >
+            支出
+          </button>
+          <button
+            type="button"
+            onClick={() => setType('income')}
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+              type === 'income'
+                ? 'bg-white text-zinc-900 shadow dark:bg-zinc-800 dark:text-white'
+                : 'text-zinc-500 hover:text-zinc-90 dark:text-zinc-4000 dark:text-zinc-400'
+            }`}
+          >
+            收入
+          </button>
+        </div>
 
         {/* Amount & Currency */}
         <div className="flex gap-2">
@@ -436,52 +309,36 @@ function TransactionForm() {
               className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white p-3 text-sm text-left dark:border-zinc-700 dark:bg-zinc-900"
             >
               <span className={!categoryId ? "text-zinc-500 dark:text-zinc-400" : "truncate"}>
-                {categoryId ? categories.find(c => c.id === categoryId)?.name || '未知分類' : '選擇分類'}
+                {categoryId ? categories.find(c => c.id === categoryId)?.name || '未知分類' : '搜尋分類...'}
               </span>
               <Search className="h-4 w-4 shrink-0 text-zinc-400" />
             </button>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">
-              {type === 'expense' ? '支付方式' : '收款方式'}
-            </label>
+            <label className="mb-1 block text-sm font-medium">支付方式</label>
             <button
               type="button"
               onClick={() => setIsPaymentModalOpen(true)}
               className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-white p-3 text-sm text-left dark:border-zinc-700 dark:bg-zinc-900"
             >
               <span className={!paymentMethodId ? "text-zinc-500 dark:text-zinc-400" : "truncate"}>
-                {paymentMethodId ? paymentMethods.find(p => p.id === paymentMethodId)?.name || (type === 'expense' ? '未知支付方式' : '未知收款方式') : (type === 'expense' ? '選擇支付方式' : '選擇收款方式')}
+                {paymentMethodId ? paymentMethods.find(p => p.id === paymentMethodId)?.name || '未知支付方式' : '搜尋支付方式...'}
               </span>
               <Search className="h-4 w-4 shrink-0 text-zinc-400" />
             </button>
           </div>
         </div>
 
-        {/* Date & Location */}
-        <div className={`grid gap-4 ${type === 'expense' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          <div>
-            <label className="mb-1 block text-sm font-medium">日期</label>
-            <DatePicker
-              type="datetime-local"
-              required
-              value={date}
-              onChange={(val) => setDate(val)}
-            />
-          </div>
-          {type === 'expense' && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">交易地點</label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 bg-white p-[11px] text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                placeholder="例如：超商、超市、賣場、商店..."
-              />
-            </div>
-          )}
+        {/* Date */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">日期</label>
+          <DatePicker
+            type="datetime-local"
+            required
+            value={date}
+            onChange={(val) => setDate(val)}
+          />
         </div>
 
         {/* Tags */}
@@ -520,9 +377,7 @@ function TransactionForm() {
 
         {/* Details */}
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            {type === 'expense' ? '消費品項' : '交易明細'}
-          </label>
+          <label className="mb-1 block text-sm font-medium">交易明細</label>
           <textarea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
@@ -581,7 +436,7 @@ function TransactionForm() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
               {tags.length === 0 ? (
                 <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">
                   目前沒有任何標籤。<br/>請至設定頁面新增標籤。
@@ -663,7 +518,7 @@ function TransactionForm() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
               {filteredCategories.length === 0 ? (
                 <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">找不到符合的分類。</div>
               ) : (
@@ -705,7 +560,7 @@ function TransactionForm() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
             <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
-              <h2 className="text-lg font-bold">{type === 'expense' ? '選擇支付方式' : '選擇收款方式'}</h2>
+              <h2 className="text-lg font-bold">選擇支付方式</h2>
               <button
                 onClick={() => setIsPaymentModalOpen(false)}
                 className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -721,7 +576,7 @@ function TransactionForm() {
                 </div>
                 <input
                   type="text"
-                  placeholder={type === 'expense' ? '搜尋支付方式...' : '搜尋收款方式...'}
+                  placeholder="搜尋支付方式..."
                   value={paymentSearchQuery}
                   onChange={(e) => setPaymentSearchQuery(e.target.value)}
                   className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
@@ -729,11 +584,9 @@ function TransactionForm() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
               {filteredPaymentMethods.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">
-                  {type === 'expense' ? '找不到符合的支付方式。' : '找不到符合的收款方式。'}
-                </div>
+                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">找不到符合的支付方式。</div>
               ) : (
                 <div className="flex flex-col gap-1">
                   {filteredPaymentMethods.map((pm) => {

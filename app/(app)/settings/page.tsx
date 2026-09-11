@@ -79,7 +79,7 @@ export default function SettingsPage() {
                 <span className="text-xl">💳</span>
               </div>
               <div>
-                <div className="font-medium">支付方式管理</div>
+                <div className="font-medium">交易方式管理</div>
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">新增或修改您的銀行帳戶、電子支付與信用卡</div>
               </div>
             </div>

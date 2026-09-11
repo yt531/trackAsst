@@ -122,17 +122,22 @@ export default function PaymentMethodsPage() {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
       
       const hasCash = data.find(m => m.id === 'cash');
-      const hasUnset = data.find(m => m.id === 'unset');
+      const hasUnsetExpense = data.find(m => m.id === 'unset_expense');
+      const hasUnsetIncome = data.find(m => m.id === 'unset_income');
       
       if (!hasCash) {
-        data.push({ id: 'cash', type: 'cash', name: '現金', isSystem: true, order: -2 } as PaymentMethod);
+        data.push({ id: 'cash', type: 'cash', name: '現金', isSystem: true, order: -3 } as PaymentMethod);
       }
-      if (!hasUnset) {
-        data.push({ id: 'unset', type: 'unset', name: '未設定支付方式', isSystem: true, order: -1 } as PaymentMethod);
+      if (!hasUnsetExpense) {
+        data.push({ id: 'unset_expense', type: 'unset', name: '未設定支付方式', isSystem: true, order: -2 } as PaymentMethod);
+      }
+      if (!hasUnsetIncome) {
+        data.push({ id: 'unset_income', type: 'unset', name: '未設定收款方式', isSystem: true, order: -1 } as PaymentMethod);
       }
       
-      data.sort((a, b) => (a.order || 0) - (b.order || 0));
-      setMethods(data);
+      const filteredData = data.filter(m => m.id !== 'unset');
+      filteredData.sort((a, b) => (a.order || 0) - (b.order || 0));
+      setMethods(filteredData);
     } catch (e) {
       console.error(e);
     } finally {
@@ -293,14 +298,14 @@ export default function PaymentMethodsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="支付方式管理" backHref="/settings" rightAction={actionButtons} />
+      <PageHeader title="交易方式管理" backHref="/settings" rightAction={actionButtons} />
       <header className="hidden md:flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link href="/settings" className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
-            <ArrowLeft className="w-6 h-6" />
+          <Link href="/settings" className="p-2 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
+            <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">支付方式管理</h1>
+            <h1 className="text-xl font-bold tracking-tight">交易方式管理</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               管理您的銀行、電子支付與信用卡。
             </p>

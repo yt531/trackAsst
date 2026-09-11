@@ -53,6 +53,7 @@ export interface Transaction {
   paymentMethodId: string;
   date: number; // Unix timestamp
   details: string;
+  location?: string;
   notes?: string;
   invoiceId?: string; // Link to the scanned/imported invoice
   tagIds?: string[];
