@@ -40,6 +40,7 @@ function TransactionForm() {
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
   const [scanWarning, setScanWarning] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [manualEntryMode, setManualEntryMode] = useState(false);
   
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
@@ -314,25 +315,39 @@ function TransactionForm() {
         <h1 className="text-2xl font-bold tracking-tight">{editId ? '修改交易' : '新增交易'}</h1>
       </header>
 
-      {!editId && isScanMode && (
-         <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-center dark:border-zinc-700 relative hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-            <input type="file" multiple accept="image/*" onChange={handleFileUpload} disabled={isScanning || isSubmitting} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" />
-            <div className="flex flex-col items-center justify-center gap-2">
-               <div className="rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
-                  <Upload className="h-6 w-6" />
+      {!editId && isScanMode && scannedTransactions.length === 0 && (
+         <div className="space-y-4">
+            <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-center dark:border-zinc-700 relative hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+               <input type="file" multiple accept="image/*" onChange={handleFileUpload} disabled={isScanning || isSubmitting} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" />
+               <div className="flex flex-col items-center justify-center gap-2">
+                  <div className="rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
+                     <Upload className="h-6 w-6" />
+                  </div>
+                  {isScanning ? (
+                     <div>
+                        <p className="font-medium">OCR 辨識中...</p>
+                        <p className="text-sm text-zinc-500">處理進度：{scanProgress.current} / {scanProgress.total}</p>
+                     </div>
+                  ) : (
+                     <div>
+                        <p className="font-medium">上傳發票明細截圖以進行辨識</p>
+                        <p className="text-sm text-zinc-500">可多選，將會批次辨識</p>
+                     </div>
+                  )}
                </div>
-               {isScanning ? (
-                  <div>
-                     <p className="font-medium">OCR 辨識中...</p>
-                     <p className="text-sm text-zinc-500">處理進度：{scanProgress.current} / {scanProgress.total}</p>
-                  </div>
-               ) : (
-                  <div>
-                     <p className="font-medium">上傳發票明細截圖以進行辨識</p>
-                     <p className="text-sm text-zinc-500">可多選，將會批次辨識</p>
-                  </div>
-               )}
             </div>
+            
+            {!manualEntryMode && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setManualEntryMode(true)}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  跳過掃描，直接手動輸入
+                </button>
+              </div>
+            )}
          </div>
       )}
 
@@ -350,8 +365,9 @@ function TransactionForm() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      {(!isScanMode || editId || scannedTransactions.length > 0 || manualEntryMode) && (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+          <form onSubmit={handleSubmit} className="space-y-4">
         {/* Type Toggle */}
         {!isScanMode && !invoiceId && mode !== 'scan' && (
           <div className="flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
@@ -550,7 +566,8 @@ function TransactionForm() {
           {isSubmitting ? '儲存中...' : (editId ? '儲存修改' : '儲存交易')}
         </button>
       </form>
-      </div>
+        </div>
+      )}
 
       {/* Tags Modal */}
       {isTagModalOpen && (
