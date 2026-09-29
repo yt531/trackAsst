@@ -459,30 +459,30 @@ function TransactionForm() {
           </div>
         </div>
 
-        {/* Date & Location */}
-        <div className={`grid gap-4 ${type === 'expense' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        {/* Date */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">日期</label>
+          <DatePicker
+            type="datetime-local"
+            required
+            value={date}
+            onChange={(val) => setDate(val)}
+          />
+        </div>
+
+        {/* Location */}
+        {type === 'expense' && (
           <div>
-            <label className="mb-1 block text-sm font-medium">日期</label>
-            <DatePicker
-              type="datetime-local"
-              required
-              value={date}
-              onChange={(val) => setDate(val)}
+            <label className="mb-1 block text-sm font-medium">交易地點</label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 bg-white p-[11px] text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              placeholder="例如：超商、超市、賣場、商店..."
             />
           </div>
-          {type === 'expense' && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">交易地點</label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 bg-white p-[11px] text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                placeholder="例如：超商、超市、賣場、商店..."
-              />
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Tags */}
         <div>
