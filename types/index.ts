@@ -40,6 +40,12 @@ export interface TransactionAuditLog {
   reason?: string;
 }
 
+export interface TransactionItem {
+  name: string;
+  quantity: number;
+  subtotal: number;
+}
+
 export interface Transaction {
   id: string;
   ledgerId?: string;
@@ -53,6 +59,7 @@ export interface Transaction {
   paymentMethodId: string;
   date: number; // Unix timestamp
   details: string;
+  items?: TransactionItem[]; // Structured line items (name, quantity, subtotal)
   location?: string;
   notes?: string;
   invoiceId?: string; // Link to the scanned/imported invoice
