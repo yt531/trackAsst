@@ -34,6 +34,8 @@ try {
 }
 
 const googleProvider = new GoogleAuthProvider();
+// 每次登入都顯示 Google 帳號選擇，避免登出後被自動登入上一個帳號
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Initialize Messaging only on client side
 let messaging: any = null;

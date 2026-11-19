@@ -1,12 +1,14 @@
 'use client';
 
-import { Fingerprint, User, Palette, LogOut, Tags, Bell, Shield, Database, Smartphone } from 'lucide-react';
+import { useState } from 'react';
+import { Fingerprint, User, Palette, LogOut, Repeat, Tags, Bell, Shield, Database, Smartphone } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
 import { PageHeader } from '@/components/PageHeader';
+import { AccountActionDialog } from '@/components/AccountActionDialog';
 
 export default function SettingsPage() {
+  const [accountAction, setAccountAction] = useState<'logout' | 'switch' | null>(null);
+
   return (
     <div className="space-y-8 pb-20">
       <PageHeader title="設定" backHref="/more" />
@@ -171,15 +173,26 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <section className="pt-4">
-        <button 
-          onClick={() => signOut(auth)}
+      <section className="space-y-3 pt-4">
+        <button
+          onClick={() => setAccountAction('switch')}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-4 font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700/50 transition-colors"
+        >
+          <Repeat className="h-5 w-5" />
+          切換帳號
+        </button>
+        <button
+          onClick={() => setAccountAction('logout')}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-4 font-medium text-red-600 hover:bg-red-100 dark:bg-zinc-800 dark:text-red-400 dark:hover:bg-zinc-700/50 transition-colors"
         >
           <LogOut className="h-5 w-5" />
           登出
         </button>
       </section>
+
+      {accountAction && (
+        <AccountActionDialog mode={accountAction} onClose={() => setAccountAction(null)} />
+      )}
     </div>
   );
 }
