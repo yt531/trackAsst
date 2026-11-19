@@ -10,6 +10,7 @@ import { PrivacyDropdown } from '@/components/PrivacyDropdown';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { recordNotifyDebug, showLocalNotification } from '@/lib/local-notify';
+import { registerPushDevice } from '@/lib/push';
 import type { AppNotification } from '@/types';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [lastScrollY, setLastScrollY] = useState(0);
   
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // 已允許通知的裝置：登入後自動登記（或更新）推播 token，換帳號或 token 更新後才能繼續收到推播
+  useEffect(() => {
+    if (!user) return;
+    registerPushDevice(user.uid).catch(err => console.warn('Failed to register push device', err));
+  }, [user]);
 
   // Listen to unread notifications
   useEffect(() => {

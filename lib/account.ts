@@ -1,6 +1,7 @@
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { clearIndexedDbPersistence, doc, setDoc, terminate, waitForPendingWrites } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
+import { unregisterPushDevice } from './push';
 
 // 存在 localStorage 但不分帳號的項目：登出或換帳號時必須清除，避免下一位使用者繼承
 // （pinHash 登入後會由雲端還原；其餘為此裝置的本機設定）
@@ -37,6 +38,8 @@ const clearLocalAccountData = async () => {
 };
 
 export const logout = async () => {
+  // 必須在仍登入時刪除這台裝置的推播紀錄，之後才不會再收到這個帳號的推播
+  await unregisterPushDevice(auth.currentUser?.uid);
   await signOut(auth);
   await clearLocalAccountData();
   window.location.replace('/login');
@@ -54,6 +57,8 @@ export const switchAccount = async (): Promise<'switched' | 'same'> => {
     displayName: result.user.displayName,
     lastLoginAt: Date.now(),
   }, { merge: true });
+  // 已換成新帳號，舊帳號的裝置紀錄無法再刪除；讓 token 失效，Worker 推播失敗時會自動清掉
+  await unregisterPushDevice();
   await clearLocalAccountData();
   window.location.replace('/');
   return 'switched';

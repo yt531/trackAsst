@@ -5,6 +5,7 @@ import { Megaphone, Pencil, Search, Trash2, X } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { LedgerMember, LedgerNotice } from '@/types';
 import { deleteNotice, editNotice, fetchNotices, isLedgerManagerRole, sendNotice } from '@/lib/notices';
+import { requestPush } from '@/lib/push';
 
 interface NoticeBoardProps {
   ledgerId: string;
@@ -174,10 +175,11 @@ function NoticeComposer({ ledgerId, ledgerName, userId, members, editing, nameOf
       if (editing) {
         await editNotice(editing, content.trim());
       } else {
-        await sendNotice({
+        const noticeId = await sendNotice({
           ledgerId, ledgerName, authorId: userId, content: content.trim(),
           mentionAll, mentionedIds: selectedIds, members,
         });
+        void requestPush('notice', ledgerId, noticeId); // 推播失敗不影響發送
       }
       onDone();
     } catch (err) {

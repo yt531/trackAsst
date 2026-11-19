@@ -2,12 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { messaging } from '@/lib/firebase';
-import { getToken } from 'firebase/messaging';
 import { useAuth } from '@/components/AuthProvider';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { readNotifyDebug, showLocalNotification, type NotifyDebug } from '@/lib/local-notify';
+import { registerPushDevice, type PushRegisterResult } from '@/lib/push';
+
+const PUSH_STATUS_TEXT: Record<PushRegisterResult | 'checking' | 'error', string> = {
+  checking: '檢查中...',
+  ok: '已登記（這台裝置可接收背景推播）',
+  denied: '尚未允許通知權限',
+  unsupported: '此瀏覽器不支援背景推播',
+  'no-service-worker': '尚未註冊 Service Worker（開發環境或剛載入，請重新整理）',
+  'no-vapid-key': '缺少 VAPID 金鑰設定',
+  error: '登記失敗（請看主控台）',
+};
 
 export function NotificationSettings() {
   const { user } = useAuth();
@@ -16,6 +23,16 @@ export function NotificationSettings() {
 
   const [debug, setDebug] = useState<NotifyDebug>({});
   const [swStatus, setSwStatus] = useState('檢查中...');
+  const [pushStatus, setPushStatus] = useState<PushRegisterResult | 'checking' | 'error'>('checking');
+
+  // 已允許通知時，確認這台裝置有登記推播 token（可重複執行）
+  useEffect(() => {
+    if (!user) return;
+    registerPushDevice(user.uid).then(setPushStatus).catch(err => {
+      console.error('Failed to register push device', err);
+      setPushStatus('error');
+    });
+  }, [user]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -37,30 +54,20 @@ export function NotificationSettings() {
   };
 
   const requestPermission = async () => {
-    if (!user || !messaging) return;
+    if (!user) return;
     setLoading(true);
     try {
       const p = await Notification.requestPermission();
       setPermission(p);
 
       if (p === 'granted') {
-        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-        const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-        
-        if (!vapidKey || !apiKey) {
-          console.error('Firebase configuration (VAPID key or API key) not found in env.');
-          alert('Firebase 設定未正確載入，請重新啟動開發伺服器 (npm run dev) 以載入 .env 檔案。');
-          return;
-        }
-
-        const token = await getToken(messaging, { vapidKey });
-        if (token) {
-          // Save the token to the user's document in Firestore so a backend can send pushes
-          await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
-          alert('通知已啟用！App 在背景開啟時，收到新通知會彈出提醒（App 完全關閉時暫時收不到）。');
-        } else {
-          console.error('No registration token available.');
-        }
+        const result = await registerPushDevice(user.uid);
+        setPushStatus(result);
+        alert(
+          result === 'ok'
+            ? '通知已啟用！這台裝置會收到管理員通知與公告的推播（App 關閉也會收到）。'
+            : `通知權限已允許，但背景推播尚未啟用：${PUSH_STATUS_TEXT[result]}。App 開啟時仍會顯示通知。`
+        );
       }
     } catch (error) {
       console.error('Error enabling notifications:', error);
@@ -115,6 +122,7 @@ export function NotificationSettings() {
           </div>
           <div>瀏覽器權限：{permission}</div>
           <div className="break-all">Service Worker：{swStatus}</div>
+          <div>背景推播裝置：{PUSH_STATUS_TEXT[pushStatus]}</div>
           <div>
             最近偵測到新通知：
             {debug.event

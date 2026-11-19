@@ -39,6 +39,31 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
+// 接收 FCM 推播（Worker 只送 data 訊息，由這裡決定如何顯示）
+self.addEventListener("push", (event) => {
+  let payload: { data?: Record<string, string> } & Record<string, string> = {} as never;
+  try {
+    payload = event.data?.json() ?? {};
+  } catch {
+    // 非 JSON 內容就使用預設標題
+  }
+  const data: Record<string, string> = payload.data ?? payload;
+  const scope = self.registration.scope;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      // App 正在前景時，鈴鐺紅點與 App 內通知已足夠，不重複彈出
+      if (windowClients.some((client) => client.visibilityState === "visible" && client.focused)) return;
+      return self.registration.showNotification(data.title || "輕鬆記", {
+        body: data.body || "",
+        icon: `${scope}icon-192x192.png`,
+        tag: data.tag, // 與 App 內本機通知相同的 tag，同時出現時只顯示一則
+        data: { url: new URL((data.url || "").replace(/^\//, ""), scope).href },
+      });
+    })
+  );
+});
+
 // 點擊系統通知：已有開啟的視窗就切過去並導向對應頁面，否則開新視窗
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

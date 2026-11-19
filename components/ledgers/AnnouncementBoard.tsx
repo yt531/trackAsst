@@ -10,6 +10,7 @@ import {
   getMemberName, isAnnouncementActive,
 } from '@/lib/announcements';
 import { isLedgerManagerRole } from '@/lib/notices';
+import { requestPush } from '@/lib/push';
 
 interface AnnouncementBoardProps {
   ledgerId: string;
@@ -162,7 +163,8 @@ function AnnouncementComposer({ ledgerId, userId, editing, onClose, onDone }: Co
       if (editing) {
         await editAnnouncement(editing, content.trim(), expiresAt);
       } else {
-        await createAnnouncement(ledgerId, userId, content.trim(), expiresAt ?? undefined);
+        const announcementId = await createAnnouncement(ledgerId, userId, content.trim(), expiresAt ?? undefined);
+        void requestPush('announcement', ledgerId, announcementId); // 推播失敗不影響發佈
       }
       onDone();
     } catch (err) {

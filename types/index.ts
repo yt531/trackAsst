@@ -302,6 +302,7 @@ export interface LedgerNotice {
   deleted?: boolean; // 軟刪除，保留紀錄
   deletedAt?: number;
   deletedBy?: string;
+  pushedAt?: number; // 由推播 Worker 寫入，代表已推播過
 }
 
 // 帳本公告，存於 ledgers/{ledgerId}/announcements
@@ -318,6 +319,7 @@ export interface Announcement {
   status: 'active' | 'cancelled';
   cancelledAt?: number;
   cancelledBy?: string;
+  pushedAt?: number; // 由推播 Worker 寫入，代表已推播過
 }
 
 export type ActivityType = 'transaction_created' | 'transaction_updated' | 'transaction_deleted' | 'member_joined' | 'member_left' | 'settlement';

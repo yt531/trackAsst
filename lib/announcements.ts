@@ -27,7 +27,7 @@ export const createAnnouncement = async (
   authorId: string,
   content: string,
   expiresAt?: number,
-) => {
+): Promise<string> => {
   const now = Date.now();
   const data: Omit<Announcement, 'id'> = {
     ledgerId,
@@ -38,7 +38,8 @@ export const createAnnouncement = async (
     status: 'active',
     ...(expiresAt !== undefined && { expiresAt }),
   };
-  await addDoc(colRef(ledgerId), data);
+  const ref = await addDoc(colRef(ledgerId), data);
+  return ref.id;
 };
 
 // expiresAt 傳 null 代表清除到期時間
