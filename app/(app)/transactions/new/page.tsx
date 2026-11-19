@@ -57,7 +57,7 @@ function SortableItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`grid grid-cols-[24px_1fr_60px_70px_32px] gap-0 border-t border-zinc-200 dark:border-zinc-700 ${
+      className={`grid grid-cols-[24px_minmax(0,1fr)_minmax(36px,50px)_minmax(44px,62px)_28px] gap-0 border-t border-zinc-200 dark:border-zinc-700 ${
         isDragging ? 'bg-zinc-100 dark:bg-zinc-800 shadow-md relative z-10' : ''
       }`}
     >
@@ -72,21 +72,21 @@ function SortableItem({
         type="text"
         value={item.name}
         onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-        className="px-3 py-2 text-sm bg-white dark:bg-zinc-900 outline-none border-r border-zinc-200 dark:border-zinc-700"
+        className="min-w-0 px-3 py-2 text-sm bg-white dark:bg-zinc-900 outline-none border-r border-zinc-200 dark:border-zinc-700"
         placeholder="品名"
       />
       <input
         type="number"
         value={item.quantity || ''}
         onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
-        className="px-2 py-2 text-sm text-center bg-white dark:bg-zinc-900 outline-none border-r border-zinc-200 dark:border-zinc-700"
+        className="min-w-0 px-2 py-2 text-sm text-center bg-white dark:bg-zinc-900 outline-none border-r border-zinc-200 dark:border-zinc-700"
         placeholder="0"
       />
       <input
         type="number"
         value={item.subtotal || ''}
         onChange={(e) => updateItem(item.id, 'subtotal', e.target.value)}
-        className="px-2 py-2 text-sm text-right bg-white dark:bg-zinc-900 outline-none border-r border-zinc-200 dark:border-zinc-700"
+        className="min-w-0 px-2 py-2 text-sm text-right bg-white dark:bg-zinc-900 outline-none border-r border-zinc-200 dark:border-zinc-700"
         placeholder="0"
       />
       <button
@@ -912,7 +912,7 @@ function TransactionForm() {
           {items.length > 0 ? (
             <div className="rounded-lg border border-zinc-300 dark:border-zinc-700 overflow-hidden">
               {/* Table Header */}
-              <div className="grid grid-cols-[24px_1fr_60px_70px_32px] gap-0 bg-zinc-50 dark:bg-zinc-800/50 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              <div className="grid grid-cols-[24px_minmax(0,1fr)_minmax(36px,50px)_minmax(44px,62px)_28px] gap-0 bg-zinc-50 dark:bg-zinc-800/50 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                 <div className="px-1 py-2 border-r border-zinc-200 dark:border-zinc-700"></div>
                 <div className="px-3 py-2 text-center border-r border-zinc-200 dark:border-zinc-700">品名</div>
                 <div className="px-2 py-2 text-center border-r border-zinc-200 dark:border-zinc-700">數量</div>
