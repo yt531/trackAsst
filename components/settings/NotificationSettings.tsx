@@ -124,10 +124,21 @@ export function NotificationSettings() {
           若您使用 iOS 裝置，請先將此網頁「加入主畫面」後才能啟用通知功能。
         </p>
 
-        {/* 診斷：協助確認這台裝置為什麼沒有彈出系統通知 */}
-        <div className="mt-4 space-y-2 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">通知診斷</span>
+        {/* 已允許通知時，簡短顯示背景推播是否可用；登記失敗要讓使用者看得到，不藏在進階診斷裡 */}
+        {permission === 'granted' && (
+          <div className="mt-2 space-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <div>背景推播：{PUSH_STATUS_TEXT[pushStatus]}</div>
+            {pushError && <div className="break-all text-rose-500">錯誤內容：{pushError}</div>}
+          </div>
+        )}
+
+        {/* 進階診斷：預設收合，排查「為什麼沒有彈出系統通知」時才需要展開 */}
+        <details className="mt-4 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+          <summary className="cursor-pointer select-none font-medium text-zinc-700 dark:text-zinc-300">
+            進階診斷（排查通知問題時使用）
+          </summary>
+          <div className="mt-3 space-y-2">
+          <div>
             <button
               onClick={sendTest}
               className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-700"
@@ -137,8 +148,6 @@ export function NotificationSettings() {
           </div>
           <div>瀏覽器權限：{permission}</div>
           <div className="break-all">Service Worker：{swStatus}</div>
-          <div>背景推播裝置：{PUSH_STATUS_TEXT[pushStatus]}</div>
-          {pushError && <div className="break-all text-rose-500">錯誤內容：{pushError}</div>}
           <div className="break-all">推播訂閱：{subscriptionStatus}</div>
           <div>
             Service Worker 版本：
@@ -162,7 +171,8 @@ export function NotificationSettings() {
               ? `${new Date(debug.shown.at).toLocaleString()}，${debug.shown.ok ? '成功' : '失敗'}（${debug.shown.via}）${debug.shown.error ? ` ${debug.shown.error}` : ''}`
               : '尚無紀錄'}
           </div>
-        </div>
+          </div>
+        </details>
       </div>
     </div>
   );
