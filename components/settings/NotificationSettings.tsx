@@ -40,7 +40,7 @@ export function NotificationSettings() {
         if (token) {
           // Save the token to the user's document in Firestore so a backend can send pushes
           await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
-          alert('推播通知已啟用！您將會收到存錢提醒。');
+          alert('通知已啟用！App 在背景開啟時，收到新通知會彈出提醒（App 完全關閉時暫時收不到）。');
         } else {
           console.error('No registration token available.');
         }
@@ -65,7 +65,7 @@ export function NotificationSettings() {
             <div>
               <div className="font-medium">推播通知 (Web Push)</div>
               <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                {permission === 'granted' ? '已開啟通知' : permission === 'denied' ? '您已封鎖通知' : '開啟通知以接收存錢提醒'}
+                {permission === 'granted' ? '已開啟通知' : permission === 'denied' ? '您已封鎖通知' : '開啟通知以接收新通知提醒'}
               </div>
             </div>
           </div>

@@ -9,6 +9,8 @@ import { usePrivacy } from '@/components/PrivacyProvider';
 import { PrivacyDropdown } from '@/components/PrivacyDropdown';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { showLocalNotification } from '@/lib/local-notify';
+import type { AppNotification } from '@/types';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,8 +27,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       collection(db, 'users', user.uid, 'notifications'),
       where('isRead', '==', false)
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    let baselineReady = false;
+    // includeMetadataChanges：快取資料變成伺服器資料時也會觸發，才能可靠判斷「基準」何時建立
+    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
       setUnreadCount(snapshot.size);
+
+      // 第一次取得伺服器資料當作基準（避免把既有未讀全部彈出），之後新增的才提醒
+      if (!baselineReady) {
+        if (!snapshot.metadata.fromCache) baselineReady = true;
+        return;
+      }
+      // App 在前景時鈴鐺紅點已足夠，只有背景才彈系統通知
+      if (document.visibilityState === 'visible') return;
+
+      const added = snapshot.docChanges()
+        .filter(change => change.type === 'added')
+        .map(change => ({ id: change.doc.id, ...change.doc.data() } as AppNotification))
+        .filter(n => !n.deleted);
+      if (added.length === 0) return;
+
+      if (added.length > 3) {
+        showLocalNotification('輕鬆記', `您有 ${added.length} 則新通知`, { link: '/notifications', tag: 'notifications-summary' });
+      } else {
+        added.forEach(n => showLocalNotification(n.title, n.message, { link: n.link, tag: n.id }));
+      }
     });
     return () => unsubscribe();
   }, [user]);

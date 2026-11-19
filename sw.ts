@@ -38,3 +38,19 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// 點擊系統通知：已有開啟的視窗就切過去並導向對應頁面，否則開新視窗
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url: string = event.notification.data?.url || self.registration.scope;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windowClients) => {
+      const existing = windowClients[0];
+      if (existing) {
+        await existing.focus();
+        return existing.navigate(url);
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
