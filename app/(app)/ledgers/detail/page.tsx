@@ -28,6 +28,11 @@ export default function LedgerBalancesPage() {
   const getMemberName = (userId: string) =>
     members.find(m => m.userId === userId)?.nickname || `使用者 ${userId.slice(0, 4)}`;
 
+  const getMemberInitial = (userId: string) => {
+    const nickname = members.find(m => m.userId === userId)?.nickname;
+    return nickname ? Array.from(nickname)[0] : '友';
+  };
+
   useEffect(() => {
     const fetchTransactions = async () => {
       if (!activeLedgerId) return;
@@ -200,7 +205,7 @@ export default function LedgerBalancesPage() {
                   <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium ${
                     isMe ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
                   }`}>
-                    {isMe ? '我' : '友'}
+                    {isMe ? '我' : getMemberInitial(b.userId)}
                   </div>
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
                     {isMe ? '您 (You)' : getMemberName(b.userId)}
