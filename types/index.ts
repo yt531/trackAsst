@@ -304,6 +304,22 @@ export interface LedgerNotice {
   deletedBy?: string;
 }
 
+// 帳本公告，存於 ledgers/{ledgerId}/announcements
+// 顯示中 = status 為 active 且未過 expiresAt；已取消或已到期者屬於歷史公告
+export interface Announcement {
+  id: string;
+  ledgerId: string;
+  authorId: string;
+  content: string;
+  createdAt: number;
+  updatedAt?: number; // 有值代表已編輯（最後編輯時間）
+  expiresAt?: number; // 到期時間，空值代表不會到期
+  order: number; // 顯示順序，由小到大；預設為 -createdAt（最新在前），管理員可手動重排
+  status: 'active' | 'cancelled';
+  cancelledAt?: number;
+  cancelledBy?: string;
+}
+
 export type ActivityType = 'transaction_created' | 'transaction_updated' | 'transaction_deleted' | 'member_joined' | 'member_left' | 'settlement';
 
 export interface ActivityFeedItem {

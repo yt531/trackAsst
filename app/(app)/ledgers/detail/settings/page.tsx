@@ -551,6 +551,25 @@ export default function LedgersSettingsPage() {
             </div>
           </section>
 
+          {/* 公告管理（admin 與 vice_admin） */}
+          {(isAdmin || currentUserMember?.role === 'vice_admin') && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                公告管理
+              </h2>
+              <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden">
+                <Link href={`/ledgers/detail/settings/announcements?id=${activeLedgerId}`} className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                  <div>
+                    <div className="font-medium text-zinc-900 dark:text-zinc-100">公告排序</div>
+                    <div className="text-xs text-zinc-500">手動調整動態時報公告區的顯示順序</div>
+                  </div>
+                  <div className="text-zinc-400">&gt;</div>
+                </Link>
+              </div>
+            </section>
+          )}
+
           {/* 管理員工具 */}
           {isAdmin && (
             <section className="space-y-4">

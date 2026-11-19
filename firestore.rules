@@ -78,6 +78,17 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // 公告：全體成員可讀；僅管理員可建立、修改（含取消），不可真刪
+      match /announcements/{announcementId} {
+        allow read: if isLedgerMember(ledgerId);
+        allow create: if isLedgerManager(ledgerId)
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.status == 'active';
+        allow update: if isLedgerManager(ledgerId)
+          && request.resource.data.authorId == resource.data.authorId;
+        allow delete: if false;
+      }
+
       match /collections/{collectionId} {
         allow read, write: if isLedgerMember(ledgerId);
       }

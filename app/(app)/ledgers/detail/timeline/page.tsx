@@ -9,6 +9,7 @@ import { ActivityFeedItem, LedgerMember } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 import { getLedgerMembers } from '@/lib/ledger';
 import { NoticeBoard } from '@/components/ledgers/NoticeBoard';
+import { AnnouncementBoard } from '@/components/ledgers/AnnouncementBoard';
 
 export default function LedgerFeedPage() {
   const { activeLedgerId, activeLedger } = useLedger();
@@ -98,6 +99,13 @@ export default function LedgerFeedPage() {
 
   return (
     <div className="space-y-4">
+      {user && activeLedgerId && members[user.uid] && (
+        <AnnouncementBoard
+          ledgerId={activeLedgerId}
+          userId={user.uid}
+          members={Object.values(members)}
+        />
+      )}
       {user && activeLedgerId && activeLedger && (
         <NoticeBoard
           ledgerId={activeLedgerId}
