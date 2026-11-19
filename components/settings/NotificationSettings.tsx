@@ -24,13 +24,19 @@ export function NotificationSettings() {
   const [debug, setDebug] = useState<NotifyDebug>({});
   const [swStatus, setSwStatus] = useState('檢查中...');
   const [pushStatus, setPushStatus] = useState<PushRegisterResult | 'checking' | 'error'>('checking');
+  const [pushError, setPushError] = useState('');
 
   // 已允許通知時，確認這台裝置有登記推播 token（可重複執行）
   useEffect(() => {
     if (!user) return;
-    registerPushDevice(user.uid).then(setPushStatus).catch(err => {
+    registerPushDevice(user.uid).then(result => {
+      setPushStatus(result);
+      setPushError('');
+    }).catch(err => {
       console.error('Failed to register push device', err);
       setPushStatus('error');
+      // 手機沒有主控台可看，直接把實際錯誤顯示在診斷區
+      setPushError(`${err?.code ?? err?.name ?? 'Error'}: ${String(err?.message ?? err).slice(0, 300)}`);
     });
   }, [user]);
 
@@ -123,6 +129,7 @@ export function NotificationSettings() {
           <div>瀏覽器權限：{permission}</div>
           <div className="break-all">Service Worker：{swStatus}</div>
           <div>背景推播裝置：{PUSH_STATUS_TEXT[pushStatus]}</div>
+          {pushError && <div className="break-all text-rose-500">錯誤內容：{pushError}</div>}
           <div>
             最近偵測到新通知：
             {debug.event
