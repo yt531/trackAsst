@@ -15,6 +15,19 @@ const getServiceWorkerRegistration = async () => {
   return registration;
 };
 
+const toBase64Url = (buffer: ArrayBuffer) =>
+  btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+// 這台裝置若已有「用不同 VAPID 金鑰建立」的推播訂閱（例如金鑰設定錯誤時留下的），
+// SDK 會直接沿用舊訂閱，導致金鑰不符而收不到推播，因此要先取消讓它重新訂閱。
+const resetMismatchedSubscription = async (registration: ServiceWorkerRegistration, vapidKey: string) => {
+  const subscription = await registration.pushManager.getSubscription();
+  const currentKey = subscription?.options.applicationServerKey;
+  if (subscription && currentKey && toBase64Url(currentKey) !== vapidKey) {
+    await subscription.unsubscribe();
+  }
+};
+
 // 取得這台裝置的推播 token，並登記到 users/{uid}/devices/{token}（可重複呼叫，不會產生重複紀錄）
 export const registerPushDevice = async (uid: string): Promise<PushRegisterResult> => {
   if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
@@ -27,6 +40,7 @@ export const registerPushDevice = async (uid: string): Promise<PushRegisterResul
   const registration = await getServiceWorkerRegistration();
   if (!registration) return 'no-service-worker';
 
+  await resetMismatchedSubscription(registration, vapidKey);
   const token = await getToken(getMessaging(app), { vapidKey, serviceWorkerRegistration: registration });
   if (!token) return 'unsupported';
   await setDoc(doc(db, 'users', uid, 'devices', token), {
