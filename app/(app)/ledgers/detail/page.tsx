@@ -6,7 +6,8 @@ import { Scale, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs } from 'firebase/firestore';
-import { Transaction } from '@/types';
+import { Transaction, LedgerMember } from '@/types';
+import { getLedgerMembers } from '@/lib/ledger';
 import { calculateBalances, calculateSettlements, UserBalance, SettlementPlan } from '@/lib/settlements';
 import { createTransaction } from '@/lib/transactions';
 import { useRouter } from 'next/navigation';
@@ -22,6 +23,10 @@ export default function LedgerBalancesPage() {
   const [plans, setPlans] = useState<SettlementPlan[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isSettling, setIsSettling] = useState(false);
+  const [members, setMembers] = useState<LedgerMember[]>([]);
+
+  const getMemberName = (userId: string) =>
+    members.find(m => m.userId === userId)?.nickname || `使用者 ${userId.slice(0, 4)}`;
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -31,7 +36,8 @@ export default function LedgerBalancesPage() {
         const q = query(collection(db, 'ledgers', activeLedgerId, 'transactions'));
         const snap = await getDocs(q);
         const txs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Transaction));
-        
+        setMembers(await getLedgerMembers(activeLedgerId));
+
         const balancesRecord = calculateBalances(txs);
         const calculatedPlans = calculateSettlements(balancesRecord);
         
@@ -158,11 +164,11 @@ export default function LedgerBalancesPage() {
                 }`}>
                   <div className="flex items-center gap-3">
                     <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {isMeFrom ? '您' : `使用者 ${plan.fromUser.slice(0,4)}`}
+                      {isMeFrom ? '您' : getMemberName(plan.fromUser)}
                     </div>
                     <ArrowRight className="h-4 w-4 text-zinc-400" />
                     <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {isMeTo ? '您' : `使用者 ${plan.toUser.slice(0,4)}`}
+                      {isMeTo ? '您' : getMemberName(plan.toUser)}
                     </div>
                     <div className="ml-2 font-bold text-lg text-zinc-900 dark:text-zinc-100">
                       ${plan.amount}
@@ -197,7 +203,7 @@ export default function LedgerBalancesPage() {
                     {isMe ? '我' : '友'}
                   </div>
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {isMe ? '您 (You)' : `使用者 ${b.userId.slice(0,4)}`}
+                    {isMe ? '您 (You)' : getMemberName(b.userId)}
                   </span>
                 </div>
                 <div className={`font-bold ${
