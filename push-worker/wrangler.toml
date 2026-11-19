@@ -1,0 +1,11 @@
+name = "trackasst-push"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# 以下皆為公開資訊（Firebase 網頁 API 金鑰本來就會出現在網站中）。
+# 服務帳戶金鑰是機密，不放這裡：請用 `npx wrangler secret put SERVICE_ACCOUNT_JSON` 設定。
+[vars]
+PROJECT_ID = "track-asst"
+DATABASE_ID = "ai-studio-97cbcf7a-650e-45dd-b6ad-bfe77c2f9bdb"
+FIREBASE_API_KEY = "AIzaSyDQlVfrNtVs3QfEx0VE9ffKPDL3KuOiG9M"
+ALLOWED_ORIGINS = "https://yt531.github.io,http://localhost:3000"
