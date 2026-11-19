@@ -302,6 +302,7 @@ const handlePush = async (request: Request, env: Env, json: JsonFn): Promise<Res
     failed++;
     // 只有 token 確定已失效（404 / UNREGISTERED）才清理，其他錯誤不動資料
     const errorText = await res.text();
+    console.warn('fcm send failed', res.status, errorText.slice(0, 300));
     if (res.status === 404 || errorText.includes('UNREGISTERED')) invalid.push(device);
   }));
 
@@ -331,8 +332,11 @@ export default {
           Vary: 'Origin',
         }
       : {};
-    const json: JsonFn = (status, body) =>
-      new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors } });
+    const json: JsonFn = (status, body) => {
+      // 供 `wrangler tail` 查看每次請求的結果（只含狀態與數量，不含任何機密或通知內容）
+      console.log('push response', status, JSON.stringify(body));
+      return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors } });
+    };
 
     if (request.method === 'OPTIONS') return new Response(null, { status: originOk ? 204 : 403, headers: cors });
     if (request.method !== 'POST') return json(405, { error: 'method not allowed' });

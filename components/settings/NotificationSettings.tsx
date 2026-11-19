@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { readNotifyDebug, showLocalNotification, type NotifyDebug } from '@/lib/local-notify';
-import { registerPushDevice, type PushRegisterResult } from '@/lib/push';
+import { getPushSubscriptionStatus, readSwDebug, registerPushDevice, type PushRegisterResult, type SwDebug } from '@/lib/push';
 
 const PUSH_STATUS_TEXT: Record<PushRegisterResult | 'checking' | 'error', string> = {
   checking: '檢查中...',
@@ -25,6 +25,14 @@ export function NotificationSettings() {
   const [swStatus, setSwStatus] = useState('檢查中...');
   const [pushStatus, setPushStatus] = useState<PushRegisterResult | 'checking' | 'error'>('checking');
   const [pushError, setPushError] = useState('');
+  const [subscriptionStatus, setSubscriptionStatus] = useState('檢查中...');
+  const [swDebug, setSwDebug] = useState<SwDebug>({});
+
+  // 讀取推播訂閱狀態與 Service Worker 寫入的紀錄（登記完成後才讀，才會是最新的）
+  const refreshPushDiagnostics = async () => {
+    setSwDebug(await readSwDebug());
+    setSubscriptionStatus(await getPushSubscriptionStatus().catch(err => `讀取失敗：${String(err?.message ?? err)}`));
+  };
 
   // 已允許通知時，確認這台裝置有登記推播 token（可重複執行）
   useEffect(() => {
@@ -37,7 +45,8 @@ export function NotificationSettings() {
       setPushStatus('error');
       // 手機沒有主控台可看，直接把實際錯誤顯示在診斷區
       setPushError(`${err?.code ?? err?.name ?? 'Error'}: ${String(err?.message ?? err).slice(0, 300)}`);
-    });
+    }).finally(refreshPushDiagnostics);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
@@ -130,6 +139,17 @@ export function NotificationSettings() {
           <div className="break-all">Service Worker：{swStatus}</div>
           <div>背景推播裝置：{PUSH_STATUS_TEXT[pushStatus]}</div>
           {pushError && <div className="break-all text-rose-500">錯誤內容：{pushError}</div>}
+          <div className="break-all">推播訂閱：{subscriptionStatus}</div>
+          <div>
+            Service Worker 版本：
+            {swDebug.sw ? `${swDebug.sw.version}（啟用於 ${new Date(swDebug.sw.activatedAt).toLocaleString()}）` : '舊版或尚無紀錄（還沒更新到含推播處理的版本）'}
+          </div>
+          <div className="break-all">
+            最近收到的推播事件：
+            {swDebug.push
+              ? `${new Date(swDebug.push.at).toLocaleString()}，結果：${swDebug.push.outcome}${swDebug.push.parseError ? '（內容非 JSON）' : ''}${swDebug.push.raw ? `，內容：${swDebug.push.raw}` : ''}`
+              : '尚無紀錄（代表推播從未送達這台裝置的 Service Worker）'}
+          </div>
           <div>
             最近偵測到新通知：
             {debug.event

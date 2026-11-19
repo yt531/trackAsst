@@ -28,6 +28,38 @@ const resetMismatchedSubscription = async (registration: ServiceWorkerRegistrati
   }
 };
 
+// 診斷用：這台裝置目前的推播訂閱狀態（有沒有訂閱、金鑰是否和設定一致、推播服務是哪一個）
+export const getPushSubscriptionStatus = async (): Promise<string> => {
+  if (!('serviceWorker' in navigator)) return '瀏覽器不支援';
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) return '尚未註冊 Service Worker';
+  const subscription = await registration.pushManager.getSubscription();
+  if (!subscription) return '沒有訂閱（還沒向推播服務登記）';
+  const key = subscription.options.applicationServerKey;
+  const host = new URL(subscription.endpoint).host;
+  const expected = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+  if (!key) return `已訂閱（${host}），無法讀取金鑰`;
+  return toBase64Url(key) === expected ? `已訂閱，金鑰相符（${host}）` : `已訂閱，但金鑰與設定不符（${host}）`;
+};
+
+// 診斷用：讀取 Service Worker 寫入的紀錄（版本、最近一次收到的推播事件）
+export interface SwDebug {
+  sw?: { version: string; activatedAt: number } | null;
+  push?: { version: string; at: number; hasData: boolean; outcome: string; raw?: string; parseError?: boolean } | null;
+}
+export const readSwDebug = async (): Promise<SwDebug> => {
+  try {
+    const cache = await caches.open('push-debug');
+    const read = async (key: string) => {
+      const response = await cache.match(`/__push-debug/${key}`);
+      return response ? await response.json() : null;
+    };
+    return { sw: await read('sw'), push: await read('push') };
+  } catch {
+    return {};
+  }
+};
+
 // 取得這台裝置的推播 token，並登記到 users/{uid}/devices/{token}（可重複呼叫，不會產生重複紀錄）
 export const registerPushDevice = async (uid: string): Promise<PushRegisterResult> => {
   if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
