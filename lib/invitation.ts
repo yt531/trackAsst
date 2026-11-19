@@ -137,6 +137,7 @@ export const verifyAndJoinLedger = async (
             const notification: AppNotification = {
               id: notifRef.id,
               userId: member.userId,
+              senderId: userId,
               type: 'member_joined',
               title: '新成員加入',
               message: `${nickname} 加入了 ${ledger.name}`,

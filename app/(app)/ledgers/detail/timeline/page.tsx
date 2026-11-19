@@ -8,6 +8,7 @@ import { collection, query, orderBy, limit, getDocs, where, startAfter, QueryDoc
 import { ActivityFeedItem, LedgerMember } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 import { getLedgerMembers } from '@/lib/ledger';
+import { NoticeBoard } from '@/components/ledgers/NoticeBoard';
 
 export default function LedgerFeedPage() {
   const { activeLedgerId, activeLedger } = useLedger();
@@ -97,6 +98,14 @@ export default function LedgerFeedPage() {
 
   return (
     <div className="space-y-4">
+      {user && activeLedgerId && activeLedger && (
+        <NoticeBoard
+          ledgerId={activeLedgerId}
+          ledgerName={activeLedger.name}
+          userId={user.uid}
+          members={Object.values(members)}
+        />
+      )}
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">動態時報</h1>
       </div>

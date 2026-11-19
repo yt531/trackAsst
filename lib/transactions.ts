@@ -96,6 +96,7 @@ const notifyTransactionEvent = async (
 
             await addDoc(collection(db, 'users', split.userId, 'notifications'), {
               userId: split.userId,
+              senderId: userId,
               type: 'split_assigned',
               title: titleMap[eventType as keyof typeof titleMap],
               message,
@@ -143,6 +144,7 @@ const notifyTransactionEvent = async (
           if (aId === initiatorId) continue;
           await addDoc(collection(db, 'users', aId, 'notifications'), {
             userId: aId,
+            senderId: userId,
             type: notifType,
             title,
             message: msg,
@@ -176,6 +178,7 @@ const notifyTransactionEvent = async (
 
           await addDoc(collection(db, 'users', memberId, 'notifications'), {
             userId: memberId,
+            senderId: userId,
             type: 'large_expense',
             title: titleLargeMap[eventType as keyof typeof titleLargeMap],
             message,
@@ -227,6 +230,7 @@ const notifyTransactionEvent = async (
           if (['admin', 'vice_admin', 'editor'].includes(mData.role)) {
              await addDoc(collection(db, 'users', mData.userId, 'notifications'), {
                userId: mData.userId,
+               senderId: userId,
                type: 'fund_empty',
                title: '⚠️ 公積金餘額見底',
                message: `帳本「${ledgerData.name}」的公積金餘額已不足，請盡快存入款項！`,
@@ -455,6 +459,7 @@ export const approveTransaction = async (
       
     await addDoc(collection(db, 'users', txData.userId, 'notifications'), {
       userId: txData.userId,
+      senderId: approvedByUserId,
       type: 'fund_approved',
       title: '繳款已核准',
       message: msg,
@@ -527,6 +532,7 @@ export const rejectTransaction = async (
 
     await addDoc(collection(db, 'users', txData.userId, 'notifications'), {
       userId: txData.userId,
+      senderId: rejectedByUserId,
       type: 'fund_rejected',
       title: notifTitle,
       message: msg,

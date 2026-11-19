@@ -228,6 +228,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       for (const res of notificationPreview.results) {
         await setDoc(doc(collection(db, 'users', res.userId, 'notifications')), {
           userId: res.userId,
+          senderId: user.uid,
           type: 'ledger_expense_update',
           title: '溢收款已轉入餘額',
           message: `由於收款重新分攤，您的溢繳金額 ${res.overflow} 元已轉入您的帳本餘額。（備註：${recalcNote}）`,

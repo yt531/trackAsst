@@ -263,6 +263,7 @@ export const createFundCollection = async (ledgerId: string, data: FundCollectio
     if (memberId !== data.createdBy && ledger) {
       notifications.push({
         userId: memberId,
+        senderId: adminUserId,
         type: 'collection_notice',
         title: '發起新收款',
         message: autoDeducted > 0

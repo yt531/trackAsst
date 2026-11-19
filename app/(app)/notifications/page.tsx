@@ -27,7 +27,11 @@ export default function NotificationsPage() {
         orderBy('createdAt', 'desc')
       );
       const snap = await getDocs(q);
-      setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification)));
+      setNotifications(
+        snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as AppNotification))
+          .filter(n => !n.deleted)
+      );
     } catch (err) {
       console.error('Error fetching notifications:', err);
     } finally {
@@ -156,6 +160,7 @@ export default function NotificationsPage() {
               <div className="flex-1">
                 <h4 className={`text-sm font-bold ${!n.isRead ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300'}`}>
                   {n.title}
+                  {n.edited && <span className="ml-2 text-xs font-normal text-zinc-400">已編輯</span>}
                 </h4>
                 <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
                   {n.message}

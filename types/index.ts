@@ -263,7 +263,8 @@ export type NotificationType = 'split_assigned'  | 'ledger_expense_update'
   | 'fund_rejected'
   | 'large_expense'
   | 'transaction_delete_pending'
-  | 'transaction_update_pending';
+  | 'transaction_update_pending'
+  | 'admin_notice';
 
 export interface AppNotification {
   id: string;
@@ -274,12 +275,33 @@ export interface AppNotification {
   link?: string;
   isRead: boolean;
   createdAt: number;
+  senderId: string; // 發送者 uid，Firestore 規則會驗證等於登入者，防止冒名
+  noticeId?: string; // type 為 admin_notice 時，對應 ledgers/{id}/notices 的文件
+  ledgerId?: string;
+  edited?: boolean;
+  deleted?: boolean;
   rejectionReason?: string;
   rejectedAt?: number;
   rejectedByNickname?: string;
   payerNickname?: string;
   submitterNickname?: string;
   txId?: string;
+}
+
+// 管理員手動發佈的通知，存於 ledgers/{ledgerId}/notices
+export interface LedgerNotice {
+  id: string;
+  ledgerId: string;
+  authorId: string;
+  content: string;
+  mentionAll: boolean;
+  mentionedIds: string[]; // 被標註的成員（@all 時為發出當下的全體成員）
+  viewerIds: string[]; // 可閱讀者：被標註者 + 當下所有管理員 + 發佈人
+  createdAt: number;
+  updatedAt?: number; // 有值代表已編輯
+  deleted?: boolean; // 軟刪除，保留紀錄
+  deletedAt?: number;
+  deletedBy?: string;
 }
 
 export type ActivityType = 'transaction_created' | 'transaction_updated' | 'transaction_deleted' | 'member_joined' | 'member_left' | 'settlement';

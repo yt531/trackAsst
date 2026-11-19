@@ -7,8 +7,17 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
       match /notifications/{notificationId} {
-        allow create: if request.auth != null;
-        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+        // 發送者必須是本人（防冒名）；管理員通知僅帳本管理員可建立
+        allow create: if request.auth != null
+          && request.resource.data.senderId == request.auth.uid
+          && (request.resource.data.type != 'admin_notice'
+              || isLedgerManager(request.resource.data.ledgerId));
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+        // 收件人可更新自己的通知；管理員通知的發佈管理員可同步編輯／刪除已送出的副本
+        allow update: if request.auth != null && (
+          request.auth.uid == userId
+          || (resource.data.type == 'admin_notice'
+              && isLedgerManager(resource.data.ledgerId)));
       }
 
       match /{document=**} {
@@ -25,6 +34,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid)).data.role == 'admin';
     }
     
+    // 管理員 = admin 或 vice_admin
+    function isLedgerManager(ledgerId) {
+      return get(/databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid)).data.role in ['admin', 'vice_admin'];
+    }
+
     // Allow collectionGroup('members') queries
     match /{path=**}/members/{memberId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
@@ -56,6 +70,14 @@ service cloud.firestore {
         allow read, write: if isLedgerMember(ledgerId);
       }
       
+      // 管理員通知：僅 viewerIds 內的人與管理員可讀；只能軟刪除（不可真刪）
+      match /notices/{noticeId} {
+        allow read: if isLedgerManager(ledgerId) || request.auth.uid in resource.data.viewerIds;
+        allow create: if isLedgerManager(ledgerId) && request.resource.data.authorId == request.auth.uid;
+        allow update: if isLedgerManager(ledgerId) && request.resource.data.authorId == resource.data.authorId;
+        allow delete: if false;
+      }
+
       match /collections/{collectionId} {
         allow read, write: if isLedgerMember(ledgerId);
       }
