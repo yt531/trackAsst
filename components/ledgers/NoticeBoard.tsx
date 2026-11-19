@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Megaphone, Pencil, Search, Trash2, X } from 'lucide-react';
+import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { LedgerMember, LedgerNotice } from '@/types';
 import { deleteNotice, editNotice, fetchNotices, isLedgerManagerRole, sendNotice } from '@/lib/notices';
 
@@ -18,7 +19,6 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
 
   const [notices, setNotices] = useState<LedgerNotice[]>([]);
   const [keyword, setKeyword] = useState('');
-  const [showDeleted, setShowDeleted] = useState(false);
   const [composing, setComposing] = useState<LedgerNotice | 'new' | null>(null);
 
   const nameOf = useCallback((uid: string) => {
@@ -38,14 +38,16 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
     if (members.length > 0) load();
   }, [load, members.length]);
 
+  // 已刪除的通知（僅管理員讀得到）移到「歷史通知」頁，這裡只顯示有效通知
+  const activeNotices = useMemo(() => notices.filter(n => !n.deleted), [notices]);
+
   const visible = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    return notices.filter(n => {
-      if (n.deleted && !showDeleted) return false;
-      if (!kw) return true;
-      return n.content.toLowerCase().includes(kw) || nameOf(n.authorId).toLowerCase().includes(kw);
-    });
-  }, [notices, keyword, showDeleted, nameOf]);
+    if (!kw) return activeNotices;
+    return activeNotices.filter(n =>
+      n.content.toLowerCase().includes(kw) || nameOf(n.authorId).toLowerCase().includes(kw)
+    );
+  }, [activeNotices, keyword, nameOf]);
 
   const handleDelete = async (notice: LedgerNotice) => {
     if (!confirm('確定要刪除這則通知嗎？紀錄會保留，但對方將不再看到。')) return;
@@ -59,7 +61,7 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
   };
 
   // 一般成員且沒有任何可見通知時不佔版面
-  if (!isManager && notices.length === 0) return null;
+  if (!isManager && activeNotices.length === 0) return null;
 
   return (
     <section className="space-y-3">
@@ -69,16 +71,21 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
           管理員通知
         </h2>
         {isManager && (
-          <button
-            onClick={() => setComposing('new')}
-            className="rounded-full bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            發通知
-          </button>
+          <div className="flex items-center gap-3">
+            <Link href={`/ledgers/detail/notices/history?id=${ledgerId}`} className="text-sm font-medium text-blue-600 dark:text-blue-400">
+              歷史通知
+            </Link>
+            <button
+              onClick={() => setComposing('new')}
+              className="rounded-full bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              發通知
+            </button>
+          </div>
         )}
       </div>
 
-      {notices.length > 0 && (
+      {activeNotices.length > 0 && (
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -89,12 +96,6 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
               className="w-full rounded-lg border border-zinc-300 bg-white py-2 pl-9 pr-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
           </div>
-          {isManager && (
-            <label className="flex shrink-0 items-center gap-1 text-xs text-zinc-500">
-              <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} />
-              含已刪除
-            </label>
-          )}
         </div>
       )}
 
@@ -102,23 +103,18 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
         {visible.map(n => (
           <div
             key={n.id}
-            className={`rounded-xl border p-4 shadow-sm ${
-              n.deleted
-                ? 'border-zinc-200 bg-zinc-50 opacity-60 dark:border-zinc-700 dark:bg-zinc-800/50'
-                : 'border-blue-200 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10'
-            }`}
+            className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/30 dark:bg-blue-900/10"
           >
             <p className="whitespace-pre-wrap break-words text-sm text-zinc-900 dark:text-zinc-100">{n.content}</p>
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
               <span>{nameOf(n.authorId)}</span>
               <span>{new Date(n.createdAt).toLocaleString()}</span>
               {n.updatedAt && <span>已編輯 {new Date(n.updatedAt).toLocaleString()}</span>}
-              {n.deleted && <span className="text-rose-500">已刪除</span>}
             </div>
             <div className="mt-1 text-xs text-zinc-500 break-words">
               對象：{n.mentionAll ? '@全體' : n.mentionedIds.map(id => `@${nameOf(id)}`).join(' ')}
             </div>
-            {isManager && !n.deleted && (
+            {isManager && (
               <div className="mt-2 flex gap-3">
                 <button onClick={() => setComposing(n)} className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400">
                   <Pencil className="h-3 w-3" />修改
@@ -130,7 +126,7 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
             )}
           </div>
         ))}
-        {visible.length === 0 && notices.length > 0 && (
+        {visible.length === 0 && activeNotices.length > 0 && (
           <p className="py-4 text-center text-sm text-zinc-500">找不到符合的通知</p>
         )}
       </div>

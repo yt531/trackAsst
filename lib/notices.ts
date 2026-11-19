@@ -96,5 +96,6 @@ export const fetchNotices = async (ledgerId: string, uid: string, isManager: boo
   const snap = await getDocs(q);
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() } as LedgerNotice))
+    .filter(n => isManager || !n.deleted) // 已刪除的通知只有管理員看得到紀錄
     .sort((a, b) => b.createdAt - a.createdAt);
 };
