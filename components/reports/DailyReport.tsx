@@ -25,7 +25,8 @@ export function DailyReport({ transactions, previousTransactions, categoriesMap 
         <ul className="divide-y divide-zinc-100 dark:divide-zinc-700">
           {list.map(tx => {
             const isExpense = tx.type === 'expense';
-            const note = tx.details || tx.notes;
+            const itemNames = tx.items?.map(i => i.name).filter(Boolean).join('、');
+            const note = itemNames || tx.details || tx.notes;
             return (
               <li key={tx.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
