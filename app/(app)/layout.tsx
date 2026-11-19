@@ -9,7 +9,7 @@ import { usePrivacy } from '@/components/PrivacyProvider';
 import { PrivacyDropdown } from '@/components/PrivacyDropdown';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { showLocalNotification } from '@/lib/local-notify';
+import { recordNotifyDebug, showLocalNotification } from '@/lib/local-notify';
 import type { AppNotification } from '@/types';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -37,14 +37,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (!snapshot.metadata.fromCache) baselineReady = true;
         return;
       }
-      // App 在前景時鈴鐺紅點已足夠，只有背景才彈系統通知
-      if (document.visibilityState === 'visible') return;
-
       const added = snapshot.docChanges()
         .filter(change => change.type === 'added')
         .map(change => ({ id: change.doc.id, ...change.doc.data() } as AppNotification))
         .filter(n => !n.deleted);
       if (added.length === 0) return;
+
+      recordNotifyDebug({ event: { at: Date.now(), visibility: document.visibilityState, count: added.length } });
+      // App 在前景時鈴鐺紅點已足夠，只有背景才彈系統通知
+      if (document.visibilityState === 'visible') return;
 
       if (added.length > 3) {
         showLocalNotification('輕鬆記', `您有 ${added.length} 則新通知`, { link: '/notifications', tag: 'notifications-summary' });
