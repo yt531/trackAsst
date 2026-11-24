@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { showToast } from '@/lib/toast';
 import { ItemsTable, type UIItem } from '@/components/transactions/ItemsTable';
 import { ScanResultsSummary } from '@/components/transactions/ScanResultsSummary';
+import { PickerModal } from '@/components/transactions/PickerModal';
 
 function TransactionForm() {
   const { user } = useAuth();
@@ -718,218 +719,64 @@ function TransactionForm() {
 
       {/* Tags Modal */}
       {isTagModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
-            <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
-              <h2 className="text-lg font-bold">選擇標籤</h2>
-              <button
-                onClick={() => setIsTagModalOpen(false)}
-                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="h-4 w-4 text-zinc-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="搜尋標籤..."
-                  value={tagSearchQuery}
-                  onChange={(e) => setTagSearchQuery(e.target.value)}
-                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
-              {tags.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">
-                  目前沒有任何標籤。<br/>請至設定頁面新增標籤。
-                </div>
-              ) : filteredTags.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">找不到符合的標籤。</div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {filteredTags.map((tag) => {
-                    const isSelected = selectedTags.includes(tag.id);
-                    return (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedTags(selectedTags.filter((id) => id !== tag.id));
-                          } else {
-                            setSelectedTags([...selectedTags, tag.id]);
-                          }
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors ${
-                          isSelected
-                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        <span className="font-medium text-sm">{tag.name}</span>
-                        {isSelected && (
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            
-            <div className="border-t border-zinc-100 p-4 dark:border-zinc-800">
-              <button
-                onClick={() => setIsTagModalOpen(false)}
-                className="w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                完成
-              </button>
-            </div>
-          </div>
-        </div>
+        <PickerModal
+          title="選擇標籤"
+          searchPlaceholder="搜尋標籤..."
+          searchQuery={tagSearchQuery}
+          onSearchChange={setTagSearchQuery}
+          items={filteredTags}
+          isSelected={(id) => selectedTags.includes(id)}
+          onSelect={(id) => {
+            if (selectedTags.includes(id)) {
+              setSelectedTags(selectedTags.filter((tagId) => tagId !== id));
+            } else {
+              setSelectedTags([...selectedTags, id]);
+            }
+          }}
+          emptyContent={
+            tags.length === 0 ? (
+              <>目前沒有任何標籤。<br/>請至設定頁面新增標籤。</>
+            ) : '找不到符合的標籤。'
+          }
+          onClose={() => setIsTagModalOpen(false)}
+          showDoneButton
+        />
       )}
 
       {/* Category Modal */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
-            <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
-              <h2 className="text-lg font-bold">選擇分類</h2>
-              <button
-                onClick={() => setIsCategoryModalOpen(false)}
-                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="h-4 w-4 text-zinc-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="搜尋分類..."
-                  value={categorySearchQuery}
-                  onChange={(e) => setCategorySearchQuery(e.target.value)}
-                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
-              {filteredCategories.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">找不到符合的分類。</div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {filteredCategories.map((cat) => {
-                    const isSelected = categoryId === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          setCategoryId(cat.id);
-                          setIsCategoryModalOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors ${
-                          isSelected
-                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        <span className="font-medium text-sm">{cat.name}</span>
-                        {isSelected && (
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <PickerModal
+          title="選擇分類"
+          searchPlaceholder="搜尋分類..."
+          searchQuery={categorySearchQuery}
+          onSearchChange={setCategorySearchQuery}
+          items={filteredCategories}
+          isSelected={(id) => categoryId === id}
+          onSelect={(id) => {
+            setCategoryId(id);
+            setIsCategoryModalOpen(false);
+          }}
+          emptyContent="找不到符合的分類。"
+          onClose={() => setIsCategoryModalOpen(false)}
+        />
       )}
 
       {/* Payment Method Modal */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
-            <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
-              <h2 className="text-lg font-bold">{type === 'expense' ? '選擇支付方式' : '選擇收款方式'}</h2>
-              <button
-                onClick={() => setIsPaymentModalOpen(false)}
-                className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="h-4 w-4 text-zinc-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder={type === 'expense' ? '搜尋支付方式...' : '搜尋收款方式...'}
-                  value={paymentSearchQuery}
-                  onChange={(e) => setPaymentSearchQuery(e.target.value)}
-                  className="block w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 pb-24 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
-              {filteredPaymentMethods.length === 0 ? (
-                <div className="text-center text-sm text-zinc-500 dark:text-zinc-400 py-8">
-                  {type === 'expense' ? '找不到符合的支付方式。' : '找不到符合的收款方式。'}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {filteredPaymentMethods.map((pm) => {
-                    const isSelected = paymentMethodId === pm.id;
-                    return (
-                      <button
-                        key={pm.id}
-                        type="button"
-                        onClick={() => {
-                          setPaymentMethodId(pm.id);
-                          setIsPaymentModalOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors ${
-                          isSelected
-                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        <span className="font-medium text-sm">{pm.name}</span>
-                        {isSelected && (
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <PickerModal
+          title={type === 'expense' ? '選擇支付方式' : '選擇收款方式'}
+          searchPlaceholder={type === 'expense' ? '搜尋支付方式...' : '搜尋收款方式...'}
+          searchQuery={paymentSearchQuery}
+          onSearchChange={setPaymentSearchQuery}
+          items={filteredPaymentMethods}
+          isSelected={(id) => paymentMethodId === id}
+          onSelect={(id) => {
+            setPaymentMethodId(id);
+            setIsPaymentModalOpen(false);
+          }}
+          emptyContent={type === 'expense' ? '找不到符合的支付方式。' : '找不到符合的收款方式。'}
+          onClose={() => setIsPaymentModalOpen(false)}
+        />
       )}
     </div>
   );
