@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useLedger } from '@/components/LedgerProvider';
 import { useAuth } from '@/components/AuthProvider';
 import { ArrowLeft, MoreVertical, Trash2, ShieldAlert, Search } from 'lucide-react';
@@ -111,7 +112,7 @@ export default function MembersListPage() {
       return;
     }
 
-    if (!confirm('確定要移除此成員嗎？')) return;
+    if (!(await confirmAsync('確定要移除此成員嗎？'))) return;
 
     try {
       await removeLedgerMember(activeLedgerId, targetUserId);

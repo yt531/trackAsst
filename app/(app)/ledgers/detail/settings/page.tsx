@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useLedger } from '@/components/LedgerProvider';
 import { useAuth } from '@/components/AuthProvider';
 import { Settings as SettingsIcon, Users, Key, User as UserIcon, Bell } from 'lucide-react';
@@ -122,7 +123,7 @@ export default function LedgersSettingsPage() {
   const activeMembers = members.filter(m => m.status === 'active');
   const otherActiveMembers = activeMembers.filter(m => m.userId !== user?.uid).sort((a, b) => a.joinedAt - b.joinedAt);
 
-  const handleLeaveClick = () => {
+  const handleLeaveClick = async () => {
     if (!currentUserMember || !user) return;
     
     const adminsCount = activeMembers.filter(m => m.role === 'admin').length;
@@ -136,7 +137,7 @@ export default function LedgersSettingsPage() {
       setTransferTargetId(otherActiveMembers[0].userId);
       setShowLeaveDialog(true);
     } else {
-      if (confirm('確定要退出此共享帳本嗎？退出後您將無法再查看或新增交易，但您的歷史紀錄仍會被保留。')) {
+      if (await confirmAsync('確定要退出此共享帳本嗎？退出後您將無法再查看或新增交易，但您的歷史紀錄仍會被保留。')) {
         executeLeave();
       }
     }

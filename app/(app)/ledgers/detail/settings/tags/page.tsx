@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
@@ -249,7 +250,7 @@ export default function SharedTagsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user || !activeLedgerId || !canEdit || !confirm('確定要刪除此標籤嗎？')) return;
+    if (!user || !activeLedgerId || !canEdit || !(await confirmAsync('確定要刪除此標籤嗎？'))) return;
     try {
       await deleteLedgerTag(activeLedgerId, id);
       setTags(tags.filter(t => t.id !== id));

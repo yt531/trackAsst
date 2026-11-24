@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { Ledger, Transaction, LedgerMember, Category } from '@/types';
 import { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/firebase';
@@ -261,7 +262,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
   };
 
   const handleCloseCollection = async (id: string) => {
-    if (!confirm('確定要關閉此收款期數嗎？關閉後成員將無法再繳交此期款項。')) return;
+    if (!(await confirmAsync('確定要關閉此收款期數嗎？關閉後成員將無法再繳交此期款項。'))) return;
     try {
       await updateFundCollection(ledger.id, id, { status: 'closed' });
       window.location.reload();
@@ -272,7 +273,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
 
   const handleApproveTransaction = async (txId: string) => {
     if (!user) return;
-    if (!confirm('確定收到款項並核准嗎？')) return;
+    if (!(await confirmAsync('確定收到款項並核准嗎？'))) return;
     try {
       await approveTransaction(ledger.id, txId, user.uid, user.uid);
       window.location.reload();

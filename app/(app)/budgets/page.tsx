@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { getBudgetsByMonth, saveBudget, deleteBudget, updateBudgetOrders } from '@/lib/budget';
@@ -515,7 +516,7 @@ export default function BudgetsPage() {
   };
 
   const handleDeleteBudget = async (budgetId: string) => {
-    if (!user || !confirm('確定要刪除這個預算嗎？')) return;
+    if (!user || !(await confirmAsync('確定要刪除這個預算嗎？'))) return;
     try {
       await deleteBudget(user.uid, budgetId);
       setBudgets(prev => prev.filter(b => b.id !== budgetId));

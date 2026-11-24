@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ChevronDown, Pencil, Pin, X } from 'lucide-react';
@@ -50,7 +51,7 @@ export function AnnouncementBoard({ ledgerId, userId, members }: AnnouncementBoa
   const [first, ...rest] = active;
 
   const handleCancel = async (a: Announcement) => {
-    if (!confirm('確定要取消這則公告嗎？公告會移到歷史公告，紀錄不會刪除。')) return;
+    if (!(await confirmAsync('確定要取消這則公告嗎？公告會移到歷史公告，紀錄不會刪除。'))) return;
     try {
       await cancelAnnouncement(a, userId);
       await load();

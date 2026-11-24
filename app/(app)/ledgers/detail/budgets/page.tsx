@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { getLedgerBudgetsByMonth, saveLedgerBudget, deleteLedgerBudget, updateLedgerBudgetOrders } from '@/lib/ledgerBudget';
@@ -508,7 +509,7 @@ export default function LedgerBudgetsPage() {
   };
 
   const handleDeleteBudget = async (budgetId: string) => {
-    if (!ledgerId || !confirm('確定要刪除這個預算嗎？')) return;
+    if (!ledgerId || !(await confirmAsync('確定要刪除這個預算嗎？'))) return;
     try {
       await deleteLedgerBudget(ledgerId, budgetId);
       setBudgets(prev => prev.filter(b => b.id !== budgetId));

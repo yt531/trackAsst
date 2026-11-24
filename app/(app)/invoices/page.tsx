@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
@@ -102,7 +103,7 @@ function InvoicesContent() {
   };
 
   const handleDelete = async () => {
-    if (!user || !selectedInvoice || !confirm('確定要刪除這筆發票嗎？')) return;
+    if (!user || !selectedInvoice || !(await confirmAsync('確定要刪除這筆發票嗎？'))) return;
     setIsSaving(true);
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'invoices', selectedInvoice.id));

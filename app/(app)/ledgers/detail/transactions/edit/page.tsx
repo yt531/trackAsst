@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
@@ -118,7 +119,7 @@ function SharedTransactionForm() {
         alert('請先至設定指派至少一位副管理員，才可修改審核通過的交易');
         return;
       }
-      if (!confirm('修改已通過的交易後需要重新送審，確定要繼續修改嗎？')) return;
+      if (!(await confirmAsync('修改已通過的交易後需要重新送審，確定要繼續修改嗎？'))) return;
     }
 
     setIsSubmitting(true);

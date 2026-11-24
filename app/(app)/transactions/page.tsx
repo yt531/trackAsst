@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { usePrivacy, PrivacyContext } from '@/components/PrivacyProvider';
@@ -204,7 +205,7 @@ function TransactionsList() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user || !confirm('確定要刪除這筆交易紀錄嗎？')) return;
+    if (!user || !(await confirmAsync('確定要刪除這筆交易紀錄嗎？'))) return;
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'transactions', id));
       const deletedTx = transactions.find(t => t.id === id);

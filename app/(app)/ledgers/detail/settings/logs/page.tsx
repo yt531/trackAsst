@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
@@ -166,7 +167,7 @@ export default function AuditLogsPage() {
     selectedDate.setHours(23, 59, 59, 999);
     const hiddenUntil = selectedDate.getTime();
 
-    const confirmClear = window.confirm(`確定要隱藏 ${clearDate} (含) 以前的前台動態時報嗎？\n管理員仍可在此頁面查看歷史紀錄。`);
+    const confirmClear = (await confirmAsync(`確定要隱藏 ${clearDate} (含) 以前的前台動態時報嗎？\n管理員仍可在此頁面查看歷史紀錄。`));
     if (!confirmClear) return;
 
     setIsClearing(true);

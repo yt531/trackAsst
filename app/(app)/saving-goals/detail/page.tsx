@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -109,7 +110,7 @@ function SavingGoalDetailContent() {
   };
 
   const handleDelete = async () => {
-    if (!user || !goal || !confirm('確定要刪除此存錢目標嗎？這將會同時刪除所有相關紀錄。')) return;
+    if (!user || !goal || !(await confirmAsync('確定要刪除此存錢目標嗎？這將會同時刪除所有相關紀錄。'))) return;
     try {
       await deleteSavingGoal(user.uid, goal.id);
       router.push('/saving-goals');
@@ -120,7 +121,7 @@ function SavingGoalDetailContent() {
   };
 
   const handleDeleteRecord = async (record: SavingRecord) => {
-    if (!user || !goalId || !confirm('確定要刪除這筆紀錄嗎？這會扣除已存入的金額。')) return;
+    if (!user || !goalId || !(await confirmAsync('確定要刪除這筆紀錄嗎？這會扣除已存入的金額。'))) return;
     try {
       await deleteSavingRecord(user.uid, goalId, record.id, record.amount);
       await loadData();

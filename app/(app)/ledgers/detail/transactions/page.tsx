@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
@@ -111,11 +112,11 @@ function LedgerTransactionsList() {
         alert('請先至設定指派至少一位副管理員，才可刪除審核通過的交易');
         return;
       }
-      if (!confirm('刪除已通過的交易需要經過審核，確定要提出刪除申請嗎？')) return;
+      if (!(await confirmAsync('刪除已通過的交易需要經過審核，確定要提出刪除申請嗎？'))) return;
     } else if (tx.approvalStatus === 'pending') {
-      if (!confirm('確定要取消這筆申請嗎？')) return;
+      if (!(await confirmAsync('確定要取消這筆申請嗎？'))) return;
     } else {
-      if (!confirm('確定要刪除這筆共享交易嗎？')) return;
+      if (!(await confirmAsync('確定要刪除這筆共享交易嗎？'))) return;
     }
     
     try {

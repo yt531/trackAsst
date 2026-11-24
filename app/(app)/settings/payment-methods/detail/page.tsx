@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
@@ -137,7 +138,7 @@ function PaymentMethodDetail() {
   };
 
   const handleDelete = async () => {
-    if (!user || !paymentMethod || !confirm('確定要刪除此支付方式嗎？這會將相關的支出紀錄設為「未設定支付方式」。')) return;
+    if (!user || !paymentMethod || !(await confirmAsync('確定要刪除此支付方式嗎？這會將相關的支出紀錄設為「未設定支付方式」。'))) return;
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'paymentMethods', paymentMethod.id));
       const txQuery = query(collection(db, 'users', user.uid, 'transactions'), where('paymentMethodId', '==', paymentMethod.id));

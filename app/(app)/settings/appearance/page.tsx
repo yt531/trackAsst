@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useTheme } from 'next-themes';
 import { Monitor, Moon, Sun, ArrowLeft } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
@@ -62,9 +63,9 @@ export default function AppearancePage() {
     }, 300);
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (hasChanges) {
-      if (confirm('尚有未儲存的修改，確定要放棄修改並返回嗎？')) {
+      if (await confirmAsync('尚有未儲存的修改，確定要放棄修改並返回嗎？')) {
         if (initialTheme.current) {
           setTheme(initialTheme.current);
         }

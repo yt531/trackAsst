@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
@@ -129,7 +130,7 @@ function CategoryDetail() {
   };
 
   const handleDelete = async () => {
-    if (!user || !category || !confirm('確定要刪除此分類嗎？相關的交易紀錄不會被刪除，但可能會無法顯示正確分類名稱。')) return;
+    if (!user || !category || !(await confirmAsync('確定要刪除此分類嗎？相關的交易紀錄不會被刪除，但可能會無法顯示正確分類名稱。'))) return;
     try {
       if (category.isCustom) {
         await deleteDoc(doc(db, 'users', user.uid, 'categories', category.id));

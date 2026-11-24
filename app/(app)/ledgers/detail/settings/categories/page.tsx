@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
@@ -199,7 +200,7 @@ export default function SharedCategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user || !activeLedgerId || !canEdit || !confirm('確定要刪除此分類嗎？')) return;
+    if (!user || !activeLedgerId || !canEdit || !(await confirmAsync('確定要刪除此分類嗎？'))) return;
     try {
       await deleteLedgerCategory(activeLedgerId, id);
       setCategories(categories.filter(c => c.id !== id));

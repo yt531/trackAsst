@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Megaphone, Pencil, Search, Trash2, X } from 'lucide-react';
 import { HiddenLink as Link } from '@/components/ui/HiddenLink';
@@ -51,7 +52,7 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
   }, [activeNotices, keyword, nameOf]);
 
   const handleDelete = async (notice: LedgerNotice) => {
-    if (!confirm('確定要刪除這則通知嗎？紀錄會保留，但對方將不再看到。')) return;
+    if (!(await confirmAsync('確定要刪除這則通知嗎？紀錄會保留，但對方將不再看到。'))) return;
     try {
       await deleteNotice(notice, userId);
       await load();

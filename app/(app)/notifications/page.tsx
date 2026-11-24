@@ -11,6 +11,7 @@ import { AppNotification } from '@/types';
 import { Bell, Check, CheckCheck, BellRing, ChevronRight, Undo2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
+import { confirmAsync } from '@/lib/confirm';
 
 const PAGE_SIZE = 50; // 「全部」分頁每次載入的數量
 const BATCH_SIZE = 400; // Firestore 單一批次上限 500 筆，保留餘裕
@@ -117,10 +118,10 @@ export default function NotificationsPage() {
     }
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
     if (unreadItems.length === 0) return;
-    if (!confirm(`確定要將 ${unreadItems.length} 則未讀通知全部標示為已讀嗎？`)) return;
-    runAction(async () => {
+    if (!(await confirmAsync(`確定要將 ${unreadItems.length} 則未讀通知全部標示為已讀嗎？`))) return;
+    await runAction(async () => {
       // 重新查詢一次，確保包含載入頁面之後才收到的未讀
       const snap = await getDocs(query(notificationsRef(), where('isRead', '==', false)));
       await setReadState(snap.docs.map(d => d.id), true);
@@ -228,7 +229,7 @@ export default function NotificationsPage() {
             className="flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-40 dark:bg-blue-900/30 dark:text-blue-400"
           >
             <CheckCheck className="h-4 w-4" />
-            全部已讀
+            {busy ? '處理中...' : '全部已讀'}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { getSavingGoals, saveSavingGoal, updateSavingGoalAmount, deleteSavingGoal, updateSavingGoalsOrder } from '@/lib/savingGoals';
@@ -218,7 +219,7 @@ export default function SavingGoalsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user || !confirm('確定要刪除此存錢目標嗎？')) return;
+    if (!user || !(await confirmAsync('確定要刪除此存錢目標嗎？'))) return;
     try {
       await deleteSavingGoal(user.uid, id);
       await loadGoals();

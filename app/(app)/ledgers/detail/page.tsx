@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmAsync } from '@/lib/confirm';
 import { useLedger } from '@/components/LedgerProvider';
 import { useAuth } from '@/components/AuthProvider';
 import { Scale, CheckCircle2, ArrowRight } from 'lucide-react';
@@ -61,7 +62,7 @@ export default function LedgerBalancesPage() {
 
   const handleSettle = async (plan: SettlementPlan) => {
     if (!user || !activeLedger) return;
-    if (!confirm(`確定要記錄這筆還款嗎？\n金額: ${plan.amount}`)) return;
+    if (!(await confirmAsync(`確定要記錄這筆還款嗎？\n金額: ${plan.amount}`))) return;
 
     setIsSettling(true);
     try {
