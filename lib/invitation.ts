@@ -66,7 +66,8 @@ export const verifyAndJoinLedger = async (
         status: 'active',
         role: invitation.defaultRole as LedgerRole,
         joinedAt: Date.now(),
-        nickname: nickname
+        nickname: nickname,
+        inviteCode: inviteCode
       });
       // Restore userMembership
       const userMembershipRef = doc(db, 'users', userId, 'ledgerMemberships', invitation.ledgerId);
@@ -85,6 +86,7 @@ export const verifyAndJoinLedger = async (
         role: invitation.defaultRole as LedgerRole,
         joinedAt: Date.now(),
         status: 'active',
+        inviteCode: inviteCode,
         nickname: nickname,
         notificationPreferences: {
           all: true,

@@ -26,17 +26,36 @@ service cloud.firestore {
     }
     
     // Shared Ledger rules
+    // 已退出（status == 'left'）的成員不再享有成員／管理權限；舊資料缺 status 視為 active
+    function isActiveMemberDoc(m) {
+      return m.get('status', 'active') == 'active';
+    }
+
     function isLedgerMember(ledgerId) {
-      return exists(/databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid));
+      let path = /databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid);
+      return exists(path) && isActiveMemberDoc(get(path).data);
     }
-    
+
     function isLedgerAdmin(ledgerId) {
-      return get(/databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid)).data.role == 'admin';
+      let path = /databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid);
+      return exists(path) && isActiveMemberDoc(get(path).data) && get(path).data.role == 'admin';
     }
-    
+
     // 管理員 = admin 或 vice_admin
     function isLedgerManager(ledgerId) {
-      return get(/databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid)).data.role in ['admin', 'vice_admin'];
+      let path = /databases/$(database)/documents/ledgers/$(ledgerId)/members/$(request.auth.uid);
+      return exists(path) && isActiveMemberDoc(get(path).data) && get(path).data.role in ['admin', 'vice_admin'];
+    }
+
+    // 邀請碼是否可用來以 role 加入 ledgerId（加入者須在成員文件寫入 inviteCode）
+    function isValidInvite(ledgerId, inviteCode, role) {
+      let inv = get(/databases/$(database)/documents/ledgerInvitations/$(inviteCode)).data;
+      return inv.ledgerId == ledgerId
+        && inv.status == 'active'
+        && inv.expiresAt > request.time.toMillis()
+        && inv.defaultRole == role
+        && (!('targetEmailOrId' in inv) || inv.targetEmailOrId == null
+            || inv.targetEmailOrId.lower() == request.auth.token.email.lower());
     }
 
     // Allow collectionGroup('members') queries
@@ -45,13 +64,37 @@ service cloud.firestore {
     }
     
     match /ledgers/{ledgerId} {
-      allow create: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
       allow read: if isLedgerMember(ledgerId);
       allow update, delete: if isLedgerAdmin(ledgerId);
       
       match /members/{memberId} {
         allow read: if request.auth != null;
-        allow write: if isLedgerAdmin(ledgerId) || request.auth.uid == memberId;
+        allow create: if isLedgerAdmin(ledgerId) || (
+          request.auth.uid == memberId
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.status == 'active'
+          && (
+            // 帳本建立者建立自己為第一位管理員
+            (get(/databases/$(database)/documents/ledgers/$(ledgerId)).data.createdBy == request.auth.uid
+              && request.resource.data.role == 'admin')
+            // 或憑有效邀請碼以邀請指定的角色加入
+            || isValidInvite(ledgerId, request.resource.data.inviteCode, request.resource.data.role)
+          )
+        );
+        allow update: if isLedgerAdmin(ledgerId) || (
+          request.auth.uid == memberId && (
+            // 本人只能改暱稱、通知偏好，或把自己標為退出，不可改 role
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname', 'notificationPreferences', 'status'])
+              && request.resource.data.status in [resource.data.status, 'left'])
+            // 已退出者憑有效邀請碼重新加入
+            || (resource.data.status == 'left'
+              && request.resource.data.status == 'active'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'role', 'joinedAt', 'nickname', 'inviteCode'])
+              && isValidInvite(ledgerId, request.resource.data.inviteCode, request.resource.data.role))
+          )
+        );
+        allow delete: if isLedgerAdmin(ledgerId) || request.auth.uid == memberId;
       }
       
       match /transactions/{transactionId} {
@@ -99,8 +142,17 @@ service cloud.firestore {
     }
     
     match /ledgerInvitations/{inviteId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      // 只能憑邀請碼單筆讀取，不可列舉全部邀請
+      allow get: if request.auth != null;
+      allow create: if isLedgerAdmin(request.resource.data.ledgerId)
+        && request.resource.data.createdBy == request.auth.uid;
+      // 管理員可任意更新（如撤銷）；加入者只能把使用次數 +1（並標記已用完）
+      allow update: if isLedgerAdmin(resource.data.ledgerId)
+        || (isLedgerMember(resource.data.ledgerId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'usageCount'])
+            && request.resource.data.usageCount == resource.data.usageCount + 1
+            && request.resource.data.status in ['active', 'used']);
+      allow delete: if isLedgerAdmin(resource.data.ledgerId);
     }
   }
 }
