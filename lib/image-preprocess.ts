@@ -134,13 +134,16 @@ export async function preprocessImageForOCR(file: File): Promise<HTMLCanvasEleme
   // Step 4: Scale up 2x for better OCR accuracy
   const scaledCanvas = document.createElement('canvas');
   const scaledCtx = scaledCanvas.getContext('2d')!;
-  scaledCanvas.width = width * 2;
-  scaledCanvas.height = height * 2;
-  
+  // 手機截圖寬約 1000px、字高已約 35–40px，已落在 Tesseract 理想範圍；
+  // 再放大 2 倍只會讓字過大、辨識變慢且筆畫鋸齒更明顯。只有小圖才放大。
+  const scale = width < 800 ? 2 : 1;
+  scaledCanvas.width = width * scale;
+  scaledCanvas.height = height * scale;
+
   // Use high-quality scaling
   scaledCtx.imageSmoothingEnabled = true;
   scaledCtx.imageSmoothingQuality = 'high';
-  scaledCtx.drawImage(canvas, 0, 0, width * 2, height * 2);
+  scaledCtx.drawImage(canvas, 0, 0, width * scale, height * scale);
 
   console.log('[OCR Preprocess]', {
     originalSize: `${width}x${height}`,

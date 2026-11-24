@@ -60,10 +60,16 @@ function normalizeNegative(text: string): string {
   return text.replace(/[−—–一―]/g, (ch) => NEG_MAP[ch] || ch);
 }
 
-/** Parse a quantity string like "x2", "X1", "×3" into a number */
+/** Parse a quantity string like "x2", "X1", "×3" into a number.
+ *  Tolerates common OCR confusions after the x (l / I / i → 1, O / o → 0) and full-width x. */
 function parseQuantity(text: string): number | null {
-  const m = text.trim().match(/^[xX×]\s*(\d+)$/);
-  return m ? parseInt(m[1], 10) : null;
+  const m = text.trim().match(/^[xXｘＸ×*]\s*([0-9０-９lIiOo]+)$/);
+  if (!m) return null;
+  const digits = m[1]
+    .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .replace(/[lIi]/g, '1')
+    .replace(/[Oo]/g, '0');
+  return parseInt(digits, 10);
 }
 
 /** Parse a number string (possibly negative) */
@@ -85,7 +91,8 @@ function groupWordsIntoRows(words: OcrWord[]): WordRow[] {
   // Filter out empty/whitespace-only words and low confidence
   const filtered = words.filter(w => {
     const text = w.text.trim();
-    return text.length > 0 && w.confidence > 30;
+    // 單獨的負號信心度常偏低，但丟掉會讓折扣金額變成正數，所以一律保留
+    return text.length > 0 && (w.confidence > 30 || /^[-−—–一―]$/.test(text));
   });
 
   if (filtered.length === 0) return [];
@@ -279,13 +286,14 @@ export function parseReceiptFromWords(words: OcrWord[]): ScannedReceiptResult {
     let qtyHeaderX: number | null = null;
     let subHeaderX: number | null = null;
 
+    // OCR 常把表頭讀成 "品名數量小計" 一個詞，所以依字元位置在 bbox 內插出每個欄名的 X
+    const charX = (w: OcrWord, ch: string) => {
+      const t = w.text.trim();
+      return w.bbox.x0 + (t.indexOf(ch) / t.length) * (w.bbox.x1 - w.bbox.x0);
+    };
     for (const w of headerRow.words) {
-      if (w.text.includes('數') || w.text.includes('數量')) {
-        qtyHeaderX = w.bbox.x0;
-      }
-      if (w.text.includes('小') || w.text.includes('小計')) {
-        subHeaderX = w.bbox.x0;
-      }
+      if (w.text.includes('數')) qtyHeaderX = charX(w, '數');
+      if (w.text.includes('小')) subHeaderX = charX(w, '小');
     }
 
     console.log('[OCR Parser] Column positions:', { qtyHeaderX, subHeaderX });
@@ -299,6 +307,8 @@ export function parseReceiptFromWords(words: OcrWord[]): ScannedReceiptResult {
         const nameWords: string[] = [];
         let quantity: number | null = null;
         let subtotal: number | null = null;
+        const qtyTexts: string[] = [];
+        const subTexts: string[] = [];
 
         for (const w of row.words) {
           const wordCenterX = (w.bbox.x0 + w.bbox.x1) / 2;
@@ -306,10 +316,19 @@ export function parseReceiptFromWords(words: OcrWord[]): ScannedReceiptResult {
 
           if (wordCenterX >= subHeaderX - 20) {
             // Subtotal column (rightmost)
-            const num = parseNumber(text);
+            // 表頭位置不準時 "x1" 可能落在這欄，依內容判斷
+            const q = parseQuantity(text);
+            if (q !== null) {
+              quantity = q;
+              continue;
+            }
+            subTexts.push(text);
+            // 負號常被讀成 “ ” ' ~ 等符號，先去掉開頭的雜符號；符號變正數的情況由加總驗證補回
+            const num = parseNumber(text.replace(/^[“”"'‘’~¯_.,:;|`^*]+/, ''));
             if (num !== null) subtotal = num;
           } else if (wordCenterX >= qtyHeaderX - 20) {
             // Quantity column
+            qtyTexts.push(text);
             const qty = parseQuantity(text);
             if (qty !== null) {
               quantity = qty;
@@ -324,6 +343,16 @@ export function parseReceiptFromWords(words: OcrWord[]): ScannedReceiptResult {
             // Product name column
             nameWords.push(text);
           }
+        }
+
+        // OCR 常把 "-6" 拆成 "-" 與 "6"、"x1" 拆成 "x" 與 "1"：整欄串起來再解析一次
+        if (subTexts.length > 1) {
+          const joined = parseNumber(subTexts.join(''));
+          if (joined !== null) subtotal = joined;
+        }
+        if (qtyTexts.length > 1) {
+          const joined = parseQuantity(qtyTexts.join(''));
+          if (joined !== null) quantity = joined;
         }
 
         const name = cjkJoin(nameWords.join(' ')).trim();
@@ -347,6 +376,21 @@ export function parseReceiptFromWords(words: OcrWord[]): ScannedReceiptResult {
       if (expectedItemCount !== undefined && items.length !== expectedItemCount) {
         console.warn(`[OCR Parser] Item count mismatch: expected ${expectedItemCount}, got ${items.length}`);
         errors.push(`品項數不符（預期 ${expectedItemCount}，辨識到 ${items.length}）`);
+      }
+
+      // Validate amounts: 小計加總應等於合計。折扣列的負號最容易被 OCR 漏掉，
+      // 若恰好只有一個品項翻成負數就能對上，才自動修正；否則提示使用者檢查。
+      if (totalAmount !== undefined && items.length > 0) {
+        const sum = items.reduce((s, it) => s + it.subtotal, 0);
+        if (sum !== totalAmount) {
+          const candidates = items.filter(it => it.subtotal > 0 && sum - 2 * it.subtotal === totalAmount);
+          if (candidates.length === 1) {
+            console.warn('[OCR Parser] Restored dropped minus sign on:', candidates[0].name);
+            candidates[0].subtotal = -candidates[0].subtotal;
+          } else {
+            errors.push(`小計加總（${sum}）與合計（${totalAmount}）不符`);
+          }
+        }
       }
     } else {
       console.warn('[OCR Parser] Could not determine column positions from header');
