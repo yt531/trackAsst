@@ -5,14 +5,15 @@ import { Ledger, Transaction, LedgerMember, Category } from '@/types';
 import { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { Settings2, Wallet, Users, CheckCircle2, AlertCircle, PieChart as PieChartIcon, Plus, X, Check } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Settings2, Users, CheckCircle2, AlertCircle, Plus, X, Check } from 'lucide-react';
 import { updateLedger, getFundCollections, createFundCollection, updateFundCollection, recalculateCollection } from '@/lib/ledger';
 import { MemberSelector } from '@/components/ui/MemberSelector';
 import { approveTransaction, rejectTransaction } from '@/lib/transactions';
 import type { FundCollection, AppNotification } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 import { showToast } from '@/lib/toast';
+import { ReimbursementList } from '@/components/ledgers/ReimbursementList';
+import { ExpenseBreakdownChart } from '@/components/ledgers/ExpenseBreakdownChart';
 
 interface FundDashboardProps {
   ledger: Ledger;
@@ -325,7 +326,6 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
   const selectedCollection = collections.find(c => c.id === selectedCollectionId);
   const memberTarget = selectedCollection?.targetAmount || 0;
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   const showWarning = totalBalance <= 0 && (currentUserRole === 'admin' || currentUserRole === 'editor' || currentUserRole === 'vice_admin');
 
@@ -511,88 +511,14 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
           </section>
         )}
 
-        {/* Reimbursements */}
-        <section className="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center gap-2 mb-4">
-            <Wallet className="w-5 h-5 text-amber-500" />
-            <h3 className="text-lg font-bold">代墊待撥款 ({reimbursements.length})</h3>
-          </div>
-          {reimbursements.length === 0 ? (
-            <div className="text-center py-8 text-zinc-500 text-sm">
-              目前沒有待撥款的代墊項目
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {reimbursements.map(tx => (
-                <div key={tx.id} className="flex flex-col gap-3 p-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/30 dark:bg-amber-900/10">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium text-zinc-900 dark:text-zinc-100">{tx.details}</div>
-                      <div className="text-xs text-zinc-500">代墊人: User {tx.userId.slice(0,4)}</div>
-                    </div>
-                    <div className="font-bold text-amber-600 dark:text-amber-400">
-                      ${tx.amount.toLocaleString()}
-                    </div>
-                  </div>
-                  {(currentUserRole === 'admin' || currentUserRole === 'vice_admin') ? (
-                    <button 
-                      onClick={() => onSettleReimbursement(tx)}
-                      className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors mt-2"
-                    >
-                      核准並撥款
-                    </button>
-                  ) : (
-                    <div className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center py-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                      等待管理員核准
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <ReimbursementList
+          reimbursements={reimbursements}
+          canSettle={currentUserRole === 'admin' || currentUserRole === 'vice_admin'}
+          onSettle={onSettleReimbursement}
+        />
       </div>
 
-      {/* Category Breakdown */}
-      {categoryData.length > 0 && (
-        <section className="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center gap-2 mb-4">
-            <PieChartIcon className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-bold">支出分佈</h3>
-          </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: any) => typeof value === 'number' ? `$${value.toLocaleString()}` : `$${value}`}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap gap-3 mt-4 justify-center">
-            {categoryData.map((cat, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                <span>{cat.name} (${cat.value.toLocaleString()})</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <ExpenseBreakdownChart categoryData={categoryData} />
 
       {/* Start/Edit Collection Modal */}
       {isStartCollectionModalOpen && (
