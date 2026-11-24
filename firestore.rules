@@ -82,7 +82,11 @@ service cloud.firestore {
             || isValidInvite(ledgerId, request.resource.data.inviteCode, request.resource.data.role)
           )
         );
-        allow update: if isLedgerAdmin(ledgerId) || (
+        allow update: if isLedgerAdmin(ledgerId)
+          // 副管理員核准繳款時需扣抵成員餘額，但只能動 balance，不可改 role 等其他欄位
+          || (isLedgerManager(ledgerId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance']))
+          || (
           request.auth.uid == memberId && (
             // 本人只能改暱稱、通知偏好，或把自己標為退出，不可改 role
             (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname', 'notificationPreferences', 'status'])
@@ -138,6 +142,17 @@ service cloud.firestore {
       
       match /budgets/{budgetId} {
         allow read, write: if isLedgerMember(ledgerId);
+      }
+
+      // 成員餘額（溢收款）異動紀錄：僅管理員（含副管理員）可建立且須為本人操作；
+      // 成員只能讀自己的，管理員可讀全部；屬稽核紀錄，不可修改或刪除
+      match /balanceLogs/{logId} {
+        allow read: if isLedgerManager(ledgerId)
+          || (isLedgerMember(ledgerId) && resource.data.userId == request.auth.uid);
+        allow create: if isLedgerManager(ledgerId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.ledgerId == ledgerId;
+        allow update, delete: if false;
       }
     }
     
