@@ -215,6 +215,7 @@ export interface LedgerMember {
   joinedAt: number;
   status: 'active' | 'invited' | 'declined' | 'left';
   inviteCode?: string; // 憑邀請碼加入時寫入，供 Firestore 規則驗證角色
+  balanceTxId?: string; // 核准繳款扣抵餘額時寫入該筆交易 ID，供 Firestore 規則核對
   nickname?: string;
   email?: string;
   balance?: number; // Member's available overpayment balance

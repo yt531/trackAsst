@@ -58,6 +58,44 @@ service cloud.firestore {
             || inv.targetEmailOrId.lower() == request.auth.token.email.lower());
     }
 
+    // 核准待審交易（同一批次內該筆交易由 pending 變 approved，核准人為本人且非送審人，
+    // 並有使用餘額折抵）。用來讓「核准人」在核准批次中扣抵繳款人餘額、寫入餘額紀錄
+    function isApprovingTx(ledgerId, txId) {
+      let txPath = /databases/$(database)/documents/ledgers/$(ledgerId)/transactions/$(txId);
+      return exists(txPath) && existsAfter(txPath)
+        && get(txPath).data.approvalStatus == 'pending'
+        && getAfter(txPath).data.approvalStatus == 'approved'
+        && getAfter(txPath).data.approvedBy == request.auth.uid
+        && get(txPath).data.userId != request.auth.uid
+        && getAfter(txPath).data.get('usedBalance', 0) > 0;
+    }
+
+    // 成員文件的餘額異動：必須是該筆交易的繳款人，且新餘額 = 原餘額 − min(折抵金額, 原餘額)
+    function isApprovalDeduction(ledgerId, memberId) {
+      let txId = request.resource.data.balanceTxId;
+      let txPath = /databases/$(database)/documents/ledgers/$(ledgerId)/transactions/$(txId);
+      let used = getAfter(txPath).data.get('usedBalance', 0);
+      let bal = resource.data.get('balance', 0);
+      return isLedgerMember(ledgerId)
+        && isApprovingTx(ledgerId, txId)
+        && getAfter(txPath).data.payerId == memberId
+        && request.resource.data.balance == bal - (used < bal ? used : bal);
+    }
+
+    // 餘額紀錄：必須對應同一批次的核准，且繳款人與金額與實際扣抵一致
+    function isApprovalLog(ledgerId) {
+      let txId = request.resource.data.relatedTransactionId;
+      let txPath = /databases/$(database)/documents/ledgers/$(ledgerId)/transactions/$(txId);
+      let payerId = getAfter(txPath).data.payerId;
+      let payerPath = /databases/$(database)/documents/ledgers/$(ledgerId)/members/$(payerId);
+      let used = getAfter(txPath).data.get('usedBalance', 0);
+      let bal = get(payerPath).data.get('balance', 0);
+      return isLedgerMember(ledgerId)
+        && isApprovingTx(ledgerId, txId)
+        && request.resource.data.userId == payerId
+        && request.resource.data.amount == (used < bal ? used : bal);
+    }
+
     // Allow collectionGroup('members') queries
     match /{path=**}/members/{memberId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
@@ -86,6 +124,10 @@ service cloud.firestore {
           // 副管理員核准繳款時需扣抵成員餘額，但只能動 balance，不可改 role 等其他欄位
           || (isLedgerManager(ledgerId)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance']))
+          // 核准繳款的人（可能只是一般成員）扣抵繳款人餘額：須與同一批次的核准交易相符
+          || ('balanceTxId' in request.resource.data
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance', 'balanceTxId'])
+            && isApprovalDeduction(ledgerId, memberId))
           || (
           request.auth.uid == memberId && (
             // 本人只能改暱稱、通知偏好，或把自己標為退出，不可改 role
@@ -149,9 +191,15 @@ service cloud.firestore {
       match /balanceLogs/{logId} {
         allow read: if isLedgerManager(ledgerId)
           || (isLedgerMember(ledgerId) && resource.data.userId == request.auth.uid);
-        allow create: if isLedgerManager(ledgerId)
-          && request.resource.data.createdBy == request.auth.uid
-          && request.resource.data.ledgerId == ledgerId;
+        allow create: if (isLedgerManager(ledgerId)
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.ledgerId == ledgerId)
+          // 核准繳款時的自動餘額折抵紀錄（核准人可為一般成員）
+          || (request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.ledgerId == ledgerId
+            && request.resource.data.type == 'overpayment_deduct'
+            && 'relatedTransactionId' in request.resource.data
+            && isApprovalLog(ledgerId));
         allow update, delete: if false;
       }
     }

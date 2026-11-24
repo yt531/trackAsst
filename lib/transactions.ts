@@ -433,8 +433,9 @@ export const approveTransaction = async (
       const deductAmount = Math.min(txData.usedBalance, payerBalance);
       
       if (deductAmount > 0) {
-        batch.update(payerRef, { balance: payerBalance - deductAmount });
-        
+        // balanceTxId / relatedTransactionId 讓 Firestore 規則能核對「這次扣抵確實來自該筆待審交易的核准」
+        batch.update(payerRef, { balance: payerBalance - deductAmount, balanceTxId: txId });
+
         const logRef = doc(collection(db, 'ledgers', ledgerId, 'balanceLogs'));
         batch.set(logRef, {
           id: logRef.id,
@@ -443,6 +444,7 @@ export const approveTransaction = async (
           amount: deductAmount,
           type: 'overpayment_deduct',
           note: `自動折抵繳款：${txData.details}`,
+          relatedTransactionId: txId,
           createdAt: Date.now(),
           createdBy: approvedByUserId
         });
