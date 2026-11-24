@@ -45,11 +45,6 @@ function SavingGoalDetailContent() {
   const [addRecordDate, setAddRecordDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [addRecordNote, setAddRecordNote] = useState('');
 
-  useEffect(() => {
-    if (!user || !goalId) return;
-    loadData();
-  }, [user, goalId]);
-
   const loadData = async () => {
     if (!user || !goalId) return;
     setLoading(true);
@@ -68,6 +63,11 @@ function SavingGoalDetailContent() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || !goalId) return;
+    loadData();
+  }, [user, goalId]);
 
   const openEditForm = () => {
     if (!goal) return;

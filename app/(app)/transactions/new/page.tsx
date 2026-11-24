@@ -66,12 +66,6 @@ function TransactionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
-
   const loadData = async () => {
     if (!user) return;
     setLoadingInitial(true);
@@ -187,6 +181,12 @@ function TransactionForm() {
       setLoadingInitial(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -25,12 +25,6 @@ export default function DashboardPage() {
   const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
   const [categoriesMap, setCategoriesMap] = useState<Record<string, any>>({});
 
-  useEffect(() => {
-    if (user) {
-      loadDashboardData();
-    }
-  }, [user]);
-
   const loadDashboardData = async () => {
     if (!user) return;
     setLoading(true);
@@ -92,6 +86,12 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
 
   return (
     <div className="space-y-6">

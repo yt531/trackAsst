@@ -51,12 +51,6 @@ function InvoicesContent() {
   const [editNotes, setEditNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadInvoices();
-    }
-  }, [user, filterMode, filterDate, activeTab]);
-
   const loadInvoices = async () => {
     if (!user) return;
     setLoading(true);
@@ -88,6 +82,12 @@ function InvoicesContent() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadInvoices();
+    }
+  }, [user, filterMode, filterDate, activeTab]);
 
   const handlePrev = () => {
     setFilterDate(prev => filterMode === 'month' ? subMonths(prev, 1) : subDays(prev, 1));

@@ -31,12 +31,6 @@ export default function ReportsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categoriesMap, setCategoriesMap] = useState<Record<string, Category>>({});
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user, currentDate]);
-
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
@@ -67,6 +61,12 @@ export default function ReportsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user, currentDate]);
 
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const handleNextMonth = () => setCurrentDate(subMonths(currentDate, -1));

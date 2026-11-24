@@ -112,10 +112,6 @@ export default function PaymentMethodsPage() {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
 
-  useEffect(() => {
-    if (user) loadMethods();
-  }, [user]);
-
   const loadMethods = async () => {
     if (!user) return;
     try {
@@ -146,6 +142,10 @@ export default function PaymentMethodsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) loadMethods();
+  }, [user]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

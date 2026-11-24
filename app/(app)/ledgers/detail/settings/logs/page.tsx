@@ -37,6 +37,29 @@ export default function AuditLogsPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [clearDate, setClearDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
 
+  const loadLogs = async (date: Date, mode: 'month' | 'day') => {
+    if (!activeLedgerId) return;
+    setLoading(true);
+    try {
+      const start = mode === 'month' ? startOfMonth(date).getTime() : startOfDay(date).getTime();
+      const end = mode === 'month' ? endOfMonth(date).getTime() : endOfDay(date).getTime();
+
+      const q = query(
+        collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
+        where('timestamp', '>=', start),
+        where('timestamp', '<=', end),
+        orderBy('timestamp', 'desc')
+      );
+      
+      const snap = await getDocs(q);
+      setLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem)));
+    } catch (err) {
+      console.error('Error fetching logs:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const checkAuthAndLoad = async () => {
       if (!activeLedgerId || !user) return;
@@ -63,29 +86,6 @@ export default function AuditLogsPage() {
 
     checkAuthAndLoad();
   }, [activeLedgerId, user, viewDate, viewMode, router]);
-
-  const loadLogs = async (date: Date, mode: 'month' | 'day') => {
-    if (!activeLedgerId) return;
-    setLoading(true);
-    try {
-      const start = mode === 'month' ? startOfMonth(date).getTime() : startOfDay(date).getTime();
-      const end = mode === 'month' ? endOfMonth(date).getTime() : endOfDay(date).getTime();
-
-      const q = query(
-        collection(db, 'ledgers', activeLedgerId, 'activityFeed'),
-        where('timestamp', '>=', start),
-        where('timestamp', '<=', end),
-        orderBy('timestamp', 'desc')
-      );
-      
-      const snap = await getDocs(q);
-      setLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem)));
-    } catch (err) {
-      console.error('Error fetching logs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getActorName = (actorId: string) => {
     if (actorId === user?.uid) return '您';

@@ -178,14 +178,6 @@ export default function SharedTagsPage() {
     })
   );
 
-  useEffect(() => {
-    if (user && activeLedgerId) {
-      loadData();
-    } else if (!activeLedgerId) {
-      router.push('/ledgers');
-    }
-  }, [user, activeLedgerId]);
-
   const loadData = async () => {
     if (!activeLedgerId || !user) return;
     try {
@@ -217,6 +209,14 @@ export default function SharedTagsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && activeLedgerId) {
+      loadData();
+    } else if (!activeLedgerId) {
+      router.push('/ledgers');
+    }
+  }, [user, activeLedgerId]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();

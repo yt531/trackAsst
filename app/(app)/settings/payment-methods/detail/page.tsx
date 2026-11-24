@@ -38,12 +38,6 @@ function PaymentMethodDetail() {
   const [filterDate, setFilterDate] = useState<Date>(new Date());
   const [totals, setTotals] = useState({ income: 0, expense: 0 });
 
-  useEffect(() => {
-    if (user && paymentMethodId) {
-      loadData();
-    }
-  }, [user, filterMode, filterDate, paymentMethodId]);
-
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
@@ -112,6 +106,12 @@ function PaymentMethodDetail() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && paymentMethodId) {
+      loadData();
+    }
+  }, [user, filterMode, filterDate, paymentMethodId]);
 
   const handlePrev = () => {
     setFilterDate(prev => {

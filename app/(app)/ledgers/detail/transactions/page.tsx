@@ -38,12 +38,6 @@ function LedgerTransactionsList() {
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(initialCategoryId);
   const [totals, setTotals] = useState({ income: 0, expense: 0 });
 
-  useEffect(() => {
-    if (user && activeLedgerId) {
-      loadData();
-    }
-  }, [user, activeLedgerId, filterMode, filterDate, filterCategoryId]);
-
   const loadData = async () => {
     if (!user || !activeLedgerId) return;
     setLoading(true);
@@ -103,6 +97,12 @@ function LedgerTransactionsList() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && activeLedgerId) {
+      loadData();
+    }
+  }, [user, activeLedgerId, filterMode, filterDate, filterCategoryId]);
 
   const handleDelete = async (tx: Transaction) => {
     if (!user || !activeLedgerId) return;

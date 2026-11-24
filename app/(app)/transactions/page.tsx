@@ -141,12 +141,6 @@ function TransactionsList() {
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(initialCategoryId);
   const [totals, setTotals] = useState({ income: 0, expense: 0 });
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user, filterMode, filterDate, filterCategoryId]);
-
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
@@ -203,6 +197,12 @@ function TransactionsList() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user, filterMode, filterDate, filterCategoryId]);
 
   const handleDelete = async (id: string) => {
     if (!user || !(await confirmAsync('確定要刪除這筆交易紀錄嗎？'))) return;

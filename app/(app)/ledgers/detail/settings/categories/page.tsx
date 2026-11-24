@@ -110,14 +110,6 @@ export default function SharedCategoriesPage() {
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [name, setName] = useState('');
 
-  useEffect(() => {
-    if (user && activeLedgerId) {
-      loadData();
-    } else if (!activeLedgerId) {
-      router.push('/ledgers');
-    }
-  }, [user, activeLedgerId]);
-
   const loadData = async () => {
     if (!activeLedgerId || !user) return;
     try {
@@ -142,6 +134,14 @@ export default function SharedCategoriesPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && activeLedgerId) {
+      loadData();
+    } else if (!activeLedgerId) {
+      router.push('/ledgers');
+    }
+  }, [user, activeLedgerId]);
 
   const expenseCategories = categories.filter(c => c.type === 'expense').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const incomeCategories = categories.filter(c => c.type === 'income').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

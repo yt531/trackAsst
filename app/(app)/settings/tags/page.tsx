@@ -175,10 +175,6 @@ export default function TagsPage() {
     })
   );
 
-  useEffect(() => {
-    if (user) loadTags();
-  }, [user]);
-
   const loadTags = async () => {
     if (!user) return;
     try {
@@ -200,6 +196,10 @@ export default function TagsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) loadTags();
+  }, [user]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();

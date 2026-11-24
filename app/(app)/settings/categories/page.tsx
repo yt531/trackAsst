@@ -100,10 +100,6 @@ export default function CategoriesPage() {
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [name, setName] = useState('');
 
-  useEffect(() => {
-    if (user) loadCategories();
-  }, [user]);
-
   const loadCategories = async () => {
     if (!user) return;
     try {
@@ -117,6 +113,10 @@ export default function CategoriesPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) loadCategories();
+  }, [user]);
 
   const allCategories = mergeCategories(DEFAULT_CATEGORIES, customCategories);
   

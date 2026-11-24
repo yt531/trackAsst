@@ -148,11 +148,6 @@ export default function SavingGoalsPage() {
   const [isFixedAmount, setIsFixedAmount] = useState(false);
   const [fixedAmountValue, setFixedAmountValue] = useState('');
 
-  useEffect(() => {
-    if (!user) return;
-    loadGoals();
-  }, [user]);
-
   const loadGoals = async () => {
     if (!user) return;
     setLoading(true);
@@ -165,6 +160,11 @@ export default function SavingGoalsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user) return;
+    loadGoals();
+  }, [user]);
 
   const resetForm = () => {
     setIsFormOpen(false);

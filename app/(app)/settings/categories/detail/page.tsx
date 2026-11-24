@@ -36,12 +36,6 @@ function CategoryDetail() {
   const [filterDate, setFilterDate] = useState<Date>(new Date());
   const [totals, setTotals] = useState({ income: 0, expense: 0 });
 
-  useEffect(() => {
-    if (user && categoryId) {
-      loadData();
-    }
-  }, [user, filterMode, filterDate, categoryId]);
-
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
@@ -106,6 +100,12 @@ function CategoryDetail() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && categoryId) {
+      loadData();
+    }
+  }, [user, filterMode, filterDate, categoryId]);
 
   const handlePrev = () => {
     setFilterDate(prev => {

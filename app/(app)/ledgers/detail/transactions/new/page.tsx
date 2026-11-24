@@ -55,31 +55,6 @@ function SharedTransactionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
-  useEffect(() => {
-    if (user && activeLedgerId) {
-      loadData();
-    } else if (!activeLedgerId) {
-      router.push('/transactions/new');
-    }
-  }, [user, activeLedgerId]);
-
-  useEffect(() => {
-    // Check for settlement auto-fill
-    const settleId = searchParams.get('settleReimbursement');
-    if (settleId) {
-      setSettledTransactionId(settleId);
-      const settleAmount = searchParams.get('amount');
-      const settleDate = searchParams.get('date'); // Original date for notes
-      const settleDetails = searchParams.get('details');
-      
-      if (settleAmount) setAmount(settleAmount);
-      if (settleDetails && settleDate) {
-        setDetails(`代墊核銷：${settleDetails}`);
-        setNotes(`[代墊核銷] 原日期: ${format(new Date(Number(settleDate)), 'yyyy-MM-dd')}, 項目: ${settleDetails}, 金額: ${settleAmount}`);
-      }
-    }
-  }, [searchParams]);
-
   const loadData = async () => {
     if (!user || !activeLedgerId) return;
     setLoadingInitial(true);
@@ -122,6 +97,31 @@ function SharedTransactionForm() {
       setLoadingInitial(false);
     }
   };
+
+  useEffect(() => {
+    if (user && activeLedgerId) {
+      loadData();
+    } else if (!activeLedgerId) {
+      router.push('/transactions/new');
+    }
+  }, [user, activeLedgerId]);
+
+  useEffect(() => {
+    // Check for settlement auto-fill
+    const settleId = searchParams.get('settleReimbursement');
+    if (settleId) {
+      setSettledTransactionId(settleId);
+      const settleAmount = searchParams.get('amount');
+      const settleDate = searchParams.get('date'); // Original date for notes
+      const settleDetails = searchParams.get('details');
+      
+      if (settleAmount) setAmount(settleAmount);
+      if (settleDetails && settleDate) {
+        setDetails(`代墊核銷：${settleDetails}`);
+        setNotes(`[代墊核銷] 原日期: ${format(new Date(Number(settleDate)), 'yyyy-MM-dd')}, 項目: ${settleDetails}, 金額: ${settleAmount}`);
+      }
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -47,14 +47,6 @@ function SharedTransactionForm() {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [originalTx, setOriginalTx] = useState<Transaction | null>(null);
 
-  useEffect(() => {
-    if (user && activeLedgerId) {
-      loadData();
-    } else if (!activeLedgerId) {
-      router.push('/transactions/new');
-    }
-  }, [user, activeLedgerId]);
-
   const loadData = async () => {
     if (!user || !activeLedgerId || !txId) return;
     setLoadingInitial(true);
@@ -104,6 +96,14 @@ function SharedTransactionForm() {
       setLoadingInitial(false);
     }
   };
+
+  useEffect(() => {
+    if (user && activeLedgerId) {
+      loadData();
+    } else if (!activeLedgerId) {
+      router.push('/transactions/new');
+    }
+  }, [user, activeLedgerId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
