@@ -12,7 +12,9 @@ export default function AppearancePage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   
+  // ref 供卸載時還原與事件處理使用；渲染時判斷是否有變更則讀 state（渲染中不可讀 ref）
   const initialTheme = useRef<string | undefined>(undefined);
+  const [initialThemeValue, setInitialThemeValue] = useState<string | undefined>(undefined);
   const [selectedTheme, setSelectedTheme] = useState<string>('system');
   const [isSaving, setIsSaving] = useState(false);
   const isSavingRef = useRef(false);
@@ -21,6 +23,7 @@ export default function AppearancePage() {
     setMounted(true);
     if (theme && !initialTheme.current) {
       initialTheme.current = theme;
+      setInitialThemeValue(theme);
       setSelectedTheme(theme);
     }
   }, [theme]);
@@ -47,7 +50,7 @@ export default function AppearancePage() {
     return null; // Prevent hydration mismatch
   }
 
-  const hasChanges = initialTheme.current ? selectedTheme !== initialTheme.current : false;
+  const hasChanges = initialThemeValue ? selectedTheme !== initialThemeValue : false;
 
   const handleThemeSelect = (newTheme: string) => {
     setSelectedTheme(newTheme);
@@ -58,6 +61,7 @@ export default function AppearancePage() {
     isSavingRef.current = true;
     setIsSaving(true);
     initialTheme.current = selectedTheme; // Update initial to prevent reverting
+    setInitialThemeValue(selectedTheme);
     setTimeout(() => {
       router.push('/settings');
     }, 300);

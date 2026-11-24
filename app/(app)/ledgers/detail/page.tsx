@@ -79,6 +79,8 @@ export default function LedgerBalancesPage() {
         exchangeRate: 1,
         categoryId: 'settlement',
         paymentMethodId: 'cash',
+        // 這是按下按鈕後才執行的事件處理函式，不是渲染期間，purity 規則在此為誤報
+        // eslint-disable-next-line react-hooks/purity
         date: Date.now(),
         details: '結清帳款',
         notes: '',
