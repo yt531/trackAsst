@@ -15,7 +15,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 測試直接以 Node 執行 TypeScript，需要 Node 22.18 以上（建置仍用 Node 20）
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # 目前測試只用到 Node 內建模組，不需安裝依賴；日後測試若引用套件，這裡要加 npm ci
+      - name: Run unit tests
+        run: npm test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
