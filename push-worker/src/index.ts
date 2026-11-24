@@ -319,7 +319,7 @@ const handlePush = async (request: Request, env: Env, json: JsonFn): Promise<Res
   return json(200, { ok: true, sent, failed, cleaned, skipped: devices.length - targets.length, skippedRecipients });
 };
 
-export default {
+const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin') ?? '';
     const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
@@ -350,3 +350,5 @@ export default {
     }
   },
 };
+
+export default worker;

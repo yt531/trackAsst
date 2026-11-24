@@ -47,6 +47,8 @@ export function ScanResultsSummary({
               {/* Thumbnail */}
               {previews[idx] && (
                 <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+                  {/* 預覽圖是使用者剛選的本機圖片（blob／data URL），不適用 next/image 的最佳化 */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={previews[idx]}
                     alt={`截圖 ${idx + 1}`}

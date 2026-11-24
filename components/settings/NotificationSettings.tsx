@@ -47,7 +47,6 @@ export function NotificationSettings() {
       // 手機沒有主控台可看，直接把實際錯誤顯示在診斷區
       setPushError(`${err?.code ?? err?.name ?? 'Error'}: ${String(err?.message ?? err).slice(0, 300)}`);
     }).finally(refreshPushDiagnostics);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
