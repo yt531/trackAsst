@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, orderBy, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -51,7 +51,7 @@ function InvoicesContent() {
   const [editNotes, setEditNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const loadInvoices = async () => {
+  const loadInvoices = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
@@ -81,13 +81,13 @@ function InvoicesContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, filterDate, filterMode, user]);
 
   useEffect(() => {
     if (user) {
       loadInvoices();
     }
-  }, [user, filterMode, filterDate, activeTab]);
+  }, [user, filterMode, filterDate, activeTab, loadInvoices]);
 
   const handlePrev = () => {
     setFilterDate(prev => filterMode === 'month' ? subMonths(prev, 1) : subDays(prev, 1));

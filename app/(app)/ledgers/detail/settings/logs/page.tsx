@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { useRouter } from 'next/navigation';
@@ -37,7 +37,7 @@ export default function AuditLogsPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [clearDate, setClearDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
 
-  const loadLogs = async (date: Date, mode: 'month' | 'day') => {
+  const loadLogs = useCallback(async (date: Date, mode: 'month' | 'day') => {
     if (!activeLedgerId) return;
     setLoading(true);
     try {
@@ -58,7 +58,7 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeLedgerId]);
 
   useEffect(() => {
     const checkAuthAndLoad = async () => {
@@ -85,7 +85,7 @@ export default function AuditLogsPage() {
     };
 
     checkAuthAndLoad();
-  }, [activeLedgerId, user, viewDate, viewMode, router]);
+  }, [activeLedgerId, user, viewDate, viewMode, router, loadLogs]);
 
   const getActorName = (actorId: string) => {
     if (actorId === user?.uid) return '您';

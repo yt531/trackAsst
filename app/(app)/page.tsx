@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { PrivacyText } from '@/components/PrivacyProvider';
 import { db } from '@/lib/firebase';
@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
   const [categoriesMap, setCategoriesMap] = useState<Record<string, any>>({});
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
@@ -85,13 +85,13 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
       loadDashboardData();
     }
-  }, [user]);
+  }, [user, loadDashboardData]);
 
   return (
     <div className="space-y-6">

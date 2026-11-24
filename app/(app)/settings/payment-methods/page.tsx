@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc, where } from 'firebase/firestore';
@@ -112,7 +112,7 @@ export default function PaymentMethodsPage() {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
 
-  const loadMethods = async () => {
+  const loadMethods = useCallback(async () => {
     if (!user) return;
     try {
       const q = query(collection(db, 'users', user.uid, 'paymentMethods'));
@@ -141,11 +141,11 @@ export default function PaymentMethodsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) loadMethods();
-  }, [user]);
+  }, [user, loadMethods]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

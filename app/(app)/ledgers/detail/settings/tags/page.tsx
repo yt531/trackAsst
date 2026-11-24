@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { getLedgerTags, createLedgerTag, updateLedgerTag, deleteLedgerTag, getLedgerMembers } from '@/lib/ledger';
@@ -178,7 +178,7 @@ export default function SharedTagsPage() {
     })
   );
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!activeLedgerId || !user) return;
     try {
       setLoading(true);
@@ -208,7 +208,7 @@ export default function SharedTagsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeLedgerId, user]);
 
   useEffect(() => {
     if (user && activeLedgerId) {
@@ -216,7 +216,7 @@ export default function SharedTagsPage() {
     } else if (!activeLedgerId) {
       router.push('/ledgers');
     }
-  }, [user, activeLedgerId]);
+  }, [user, activeLedgerId, loadData, router]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();

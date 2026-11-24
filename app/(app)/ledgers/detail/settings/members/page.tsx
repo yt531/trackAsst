@@ -4,7 +4,7 @@ import { confirmAsync } from '@/lib/confirm';
 import { useLedger } from '@/components/LedgerProvider';
 import { useAuth } from '@/components/AuthProvider';
 import { ArrowLeft, MoreVertical, Trash2, ShieldAlert, Search } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getLedgerMembers, updateLedgerMember, removeLedgerMember } from '@/lib/ledger';
 import { LedgerMember, LedgerRole } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -24,17 +24,17 @@ export default function MembersListPage() {
   const [viewSearchQuery, setViewSearchQuery] = useState('');
   const [editSearchQuery, setEditSearchQuery] = useState('');
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     if (!activeLedgerId) return;
     setLoading(true);
     const m = await getLedgerMembers(activeLedgerId);
     setMembers(m);
     setLoading(false);
-  };
+  }, [activeLedgerId]);
 
   useEffect(() => {
     loadMembers();
-  }, [activeLedgerId]);
+  }, [activeLedgerId, loadMembers]);
 
   // Close dropdown on click outside
   useEffect(() => {

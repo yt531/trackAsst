@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -55,7 +55,7 @@ function SharedTransactionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user || !activeLedgerId) return;
     setLoadingInitial(true);
     try {
@@ -96,7 +96,7 @@ function SharedTransactionForm() {
     } finally {
       setLoadingInitial(false);
     }
-  };
+  }, [activeLedgerId, user]);
 
   useEffect(() => {
     if (user && activeLedgerId) {
@@ -104,7 +104,7 @@ function SharedTransactionForm() {
     } else if (!activeLedgerId) {
       router.push('/transactions/new');
     }
-  }, [user, activeLedgerId]);
+  }, [user, activeLedgerId, loadData, router]);
 
   useEffect(() => {
     // Check for settlement auto-fill

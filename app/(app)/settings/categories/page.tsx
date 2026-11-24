@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, query, getDocs, addDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
@@ -100,7 +100,7 @@ export default function CategoriesPage() {
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [name, setName] = useState('');
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     if (!user) return;
     try {
       const q = query(collection(db, 'users', user.uid, 'categories'));
@@ -112,11 +112,11 @@ export default function CategoriesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) loadCategories();
-  }, [user]);
+  }, [user, loadCategories]);
 
   const allCategories = mergeCategories(DEFAULT_CATEGORIES, customCategories);
   

@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useLedger } from '@/components/LedgerProvider';
 import { getLedgerCategories, createLedgerCategory, updateLedgerCategory, deleteLedgerCategory, getLedgerMembers } from '@/lib/ledger';
@@ -110,7 +110,7 @@ export default function SharedCategoriesPage() {
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [name, setName] = useState('');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!activeLedgerId || !user) return;
     try {
       setLoading(true);
@@ -133,7 +133,7 @@ export default function SharedCategoriesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeLedgerId, user]);
 
   useEffect(() => {
     if (user && activeLedgerId) {
@@ -141,7 +141,7 @@ export default function SharedCategoriesPage() {
     } else if (!activeLedgerId) {
       router.push('/ledgers');
     }
-  }, [user, activeLedgerId]);
+  }, [user, activeLedgerId, loadData, router]);
 
   const expenseCategories = categories.filter(c => c.type === 'expense').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const incomeCategories = categories.filter(c => c.type === 'income').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

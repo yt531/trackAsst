@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { getSavingGoals, saveSavingGoal, updateSavingGoalAmount, deleteSavingGoal, updateSavingGoalsOrder } from '@/lib/savingGoals';
 import type { SavingGoal } from '@/types';
@@ -148,7 +148,7 @@ export default function SavingGoalsPage() {
   const [isFixedAmount, setIsFixedAmount] = useState(false);
   const [fixedAmountValue, setFixedAmountValue] = useState('');
 
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
@@ -159,12 +159,12 @@ export default function SavingGoalsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
     loadGoals();
-  }, [user]);
+  }, [user, loadGoals]);
 
   const resetForm = () => {
     setIsFormOpen(false);

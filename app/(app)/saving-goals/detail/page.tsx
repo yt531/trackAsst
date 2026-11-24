@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getSavingGoal, getSavingRecords, saveSavingGoal, deleteSavingGoal, updateSavingRecord, deleteSavingRecord, updateSavingGoalAmount } from '@/lib/savingGoals';
@@ -45,7 +45,7 @@ function SavingGoalDetailContent() {
   const [addRecordDate, setAddRecordDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [addRecordNote, setAddRecordNote] = useState('');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user || !goalId) return;
     setLoading(true);
     try {
@@ -62,12 +62,12 @@ function SavingGoalDetailContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [goalId, router, user]);
 
   useEffect(() => {
     if (!user || !goalId) return;
     loadData();
-  }, [user, goalId]);
+  }, [user, goalId, loadData]);
 
   const openEditForm = () => {
     if (!goal) return;

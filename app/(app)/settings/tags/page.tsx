@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmAsync } from '@/lib/confirm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, writeBatch } from 'firebase/firestore';
@@ -175,7 +175,7 @@ export default function TagsPage() {
     })
   );
 
-  const loadTags = async () => {
+  const loadTags = useCallback(async () => {
     if (!user) return;
     try {
       const snapshot = await getDocs(collection(db, 'users', user.uid, 'tags'));
@@ -195,11 +195,11 @@ export default function TagsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) loadTags();
-  }, [user]);
+  }, [user, loadTags]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
