@@ -9,6 +9,7 @@ import { mergeCategories } from '@/lib/utils';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { showToast } from '@/lib/toast';
 
 export function DataExportImport() {
   const { user } = useAuth();
@@ -48,7 +49,7 @@ export function DataExportImport() {
       }
 
       if (transactions.length === 0) {
-        alert('在此日期範圍內沒有交易紀錄');
+        showToast('在此日期範圍內沒有交易紀錄');
         setIsExporting(false);
         return;
       }
@@ -107,7 +108,7 @@ export function DataExportImport() {
 
     } catch (e) {
       console.error(e);
-      alert('匯出失敗');
+      showToast('匯出失敗');
     } finally {
       setIsExporting(false);
     }

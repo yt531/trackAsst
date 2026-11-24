@@ -7,6 +7,7 @@ import { auth, googleProvider } from '@/lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
 import { setSecuritySettings } from '@/lib/db';
 import { deleteField } from 'firebase/firestore';
+import { showToast } from '@/lib/toast';
 
 interface UnlockScreenProps {
   onUnlock: (pin?: string) => void;
@@ -50,7 +51,7 @@ export default function UnlockScreen({
 
   const handleForgotPin = async () => {
     if (!auth.currentUser) {
-      alert('無法取得登入資訊，請重新整理頁面。');
+      showToast('無法取得登入資訊，請重新整理頁面。');
       return;
     }
     try {
@@ -67,11 +68,11 @@ export default function UnlockScreen({
       localStorage.removeItem('pinHash');
       localStorage.removeItem('lockScope'); // Also reset lock scope
       
-      alert('已成功清除 PIN 碼，請重新設定。');
+      await showToast('已成功清除 PIN 碼，請重新設定。', 1500);
       window.location.href = '/settings/security?setup=true';
     } catch (e) {
       console.error('Failed to reset PIN', e);
-      alert('驗證失敗，無法重設密碼');
+      showToast('驗證失敗，無法重設密碼');
     } finally {
       setIsAuthenticating(false);
     }

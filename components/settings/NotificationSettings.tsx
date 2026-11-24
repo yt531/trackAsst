@@ -5,6 +5,7 @@ import { Bell } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { readNotifyDebug, showLocalNotification, type NotifyDebug } from '@/lib/local-notify';
 import { getPushSubscriptionStatus, readSwDebug, registerPushDevice, type PushRegisterResult, type SwDebug } from '@/lib/push';
+import { showToast } from '@/lib/toast';
 
 const PUSH_STATUS_TEXT: Record<PushRegisterResult | 'checking' | 'error', string> = {
   checking: '檢查中...',
@@ -78,7 +79,7 @@ export function NotificationSettings() {
       if (p === 'granted') {
         const result = await registerPushDevice(user.uid);
         setPushStatus(result);
-        alert(
+        showToast(
           result === 'ok'
             ? '通知已啟用！這台裝置會收到管理員通知與公告的推播（App 關閉也會收到）。'
             : `通知權限已允許，但背景推播尚未啟用：${PUSH_STATUS_TEXT[result]}。App 開啟時仍會顯示通知。`
@@ -86,7 +87,7 @@ export function NotificationSettings() {
       }
     } catch (error) {
       console.error('Error enabling notifications:', error);
-      alert('無法啟用通知，請檢查瀏覽器設定。');
+      showToast('無法啟用通知，請檢查瀏覽器設定。');
     } finally {
       setLoading(false);
     }

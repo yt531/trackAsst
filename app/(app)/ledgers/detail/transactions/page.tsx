@@ -17,6 +17,7 @@ import { useSearchParams } from 'next/navigation';
 import { startOfYear, endOfYear, addYears, subYears } from 'date-fns';
 import { getLedgerMembers } from '@/lib/ledger';
 import { deleteTransaction } from '@/lib/transactions';
+import { showToast } from '@/lib/toast';
 
 function LedgerTransactionsList() {
   const { user } = useAuth();
@@ -109,7 +110,7 @@ function LedgerTransactionsList() {
     if (tx.approvalStatus === 'approved') {
       const membersList = Object.values(members);
       if (membersList.length > 2 && !membersList.some(m => m.role === 'vice_admin')) {
-        alert('請先至設定指派至少一位副管理員，才可刪除審核通過的交易');
+        showToast('請先至設定指派至少一位副管理員，才可刪除審核通過的交易');
         return;
       }
       if (!(await confirmAsync('刪除已通過的交易需要經過審核，確定要提出刪除申請嗎？'))) return;

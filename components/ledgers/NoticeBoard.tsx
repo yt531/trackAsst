@@ -7,6 +7,7 @@ import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { LedgerMember, LedgerNotice } from '@/types';
 import { deleteNotice, editNotice, fetchNotices, isLedgerManagerRole, sendNotice } from '@/lib/notices';
 import { requestPush } from '@/lib/push';
+import { showToast } from '@/lib/toast';
 
 interface NoticeBoardProps {
   ledgerId: string;
@@ -58,7 +59,7 @@ export function NoticeBoard({ ledgerId, ledgerName, userId, members }: NoticeBoa
       await load();
     } catch (err) {
       console.error('Failed to delete notice', err);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -185,7 +186,7 @@ function NoticeComposer({ ledgerId, ledgerName, userId, members, editing, nameOf
       onDone();
     } catch (err) {
       console.error('Failed to submit notice', err);
-      alert(editing ? '修改失敗' : '發送失敗');
+      showToast(editing ? '修改失敗' : '發送失敗');
       setSubmitting(false);
     }
   };

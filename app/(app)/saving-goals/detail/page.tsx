@@ -12,6 +12,7 @@ import { HiddenLink as Link } from '@/components/ui/HiddenLink';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 function SavingGoalDetailContent() {
   const { user } = useAuth();
@@ -105,7 +106,7 @@ function SavingGoalDetailContent() {
       await loadData();
     } catch (e) {
       console.error(e);
-      alert('儲存失敗');
+      showToast('儲存失敗');
     }
   };
 
@@ -116,7 +117,7 @@ function SavingGoalDetailContent() {
       router.push('/saving-goals');
     } catch (e) {
       console.error(e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -127,7 +128,7 @@ function SavingGoalDetailContent() {
       await loadData();
     } catch (e) {
       console.error(e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -159,7 +160,7 @@ function SavingGoalDetailContent() {
       await loadData();
     } catch (error) {
       console.error(error);
-      alert('更新失敗');
+      showToast('更新失敗');
     }
   };
 
@@ -187,7 +188,7 @@ function SavingGoalDetailContent() {
       await loadData();
     } catch (error) {
       console.error(error);
-      alert('更新失敗');
+      showToast('更新失敗');
     }
   };
 

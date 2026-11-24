@@ -27,6 +27,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { showToast } from '@/lib/toast';
 
 interface SortableTagItemProps {
   tag: Tag;
@@ -223,7 +224,7 @@ export default function TagsPage() {
       setName('');
     } catch (e) {
       console.error(e);
-      alert('新增失敗');
+      showToast('新增失敗');
     } finally {
       setIsSaving(false);
     }
@@ -236,7 +237,7 @@ export default function TagsPage() {
       setTags(tags.filter(t => t.id !== id));
     } catch (e) {
       console.error(e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -250,7 +251,7 @@ export default function TagsPage() {
       setEditingId(null);
     } catch (e) {
       console.error(e);
-      alert('更新失敗');
+      showToast('更新失敗');
     }
   };
 
@@ -294,7 +295,7 @@ export default function TagsPage() {
         <button
           onClick={() => {
             if (isAdding) {
-              alert('請先取消新增才能使用排序功能');
+              showToast('請先取消新增才能使用排序功能');
               return;
             }
             setIsReorderMode(!isReorderMode);
@@ -312,7 +313,7 @@ export default function TagsPage() {
       <button
         onClick={() => {
           if (isReorderMode) {
-            alert('請先取消排序才能使用新增功能');
+            showToast('請先取消排序才能使用新增功能');
             return;
           }
           setIsAdding(true);

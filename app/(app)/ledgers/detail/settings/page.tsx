@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getLedgerMembers, updateLedger, checkNicknameExists, updateLedgerMember, leaveLedger } from '@/lib/ledger';
 import { LedgerMember, LedgerRole, LedgerMode } from '@/types';
+import { showToast } from '@/lib/toast';
 
 export default function LedgersSettingsPage() {
   const { activeLedger, activeLedgerId, refreshLedgers } = useLedger();
@@ -54,7 +55,7 @@ export default function LedgersSettingsPage() {
       await refreshLedgers();
     } catch (e) {
       console.error(e);
-      alert('設定更新失敗');
+      showToast('設定更新失敗');
     }
   };
 
@@ -72,11 +73,11 @@ export default function LedgersSettingsPage() {
   const handleSaveInfo = async () => {
     if (!activeLedgerId || !activeLedger) return;
     if (!editName.trim()) {
-      alert('請輸入帳本名稱');
+      showToast('請輸入帳本名稱');
       return;
     }
     if (!editCurrency.trim()) {
-      alert('請輸入主幣別');
+      showToast('請輸入主幣別');
       return;
     }
     
@@ -90,14 +91,14 @@ export default function LedgersSettingsPage() {
       setIsEditingInfo(false);
     } catch (e) {
       console.error(e);
-      alert('設定更新失敗');
+      showToast('設定更新失敗');
     }
   };
 
   const handleSaveProfile = async () => {
     if (!activeLedgerId || !user) return;
     if (!editNickname.trim()) {
-      alert('請輸入暱稱');
+      showToast('請輸入暱稱');
       return;
     }
     
@@ -105,7 +106,7 @@ export default function LedgersSettingsPage() {
     try {
       const exists = await checkNicknameExists(activeLedgerId, editNickname.trim(), user.uid);
       if (exists) {
-        alert('此暱稱已被帳本中其他成員使用，請換一個');
+        showToast('此暱稱已被帳本中其他成員使用，請換一個');
         return;
       }
       await updateLedgerMember(activeLedgerId, user.uid, { nickname: editNickname.trim() });
@@ -114,7 +115,7 @@ export default function LedgersSettingsPage() {
       setIsEditingProfile(false);
     } catch (e) {
       console.error(e);
-      alert('儲存失敗');
+      showToast('儲存失敗');
     } finally {
       setProfileLoading(false);
     }
@@ -131,7 +132,7 @@ export default function LedgersSettingsPage() {
 
     if (isSoleAdmin) {
       if (otherActiveMembers.length === 0) {
-        alert('您是唯一的活躍成員，無法轉移權限並退出。如果不再使用，請選擇刪除此帳本。');
+        showToast('您是唯一的活躍成員，無法轉移權限並退出。如果不再使用，請選擇刪除此帳本。');
         return;
       }
       setTransferTargetId(otherActiveMembers[0].userId);
@@ -165,7 +166,7 @@ export default function LedgersSettingsPage() {
       router.push('/ledgers');
     } catch (err) {
       console.error(err);
-      alert('退出失敗，請稍後再試');
+      showToast('退出失敗，請稍後再試');
       setLeaving(false);
       setShowLeaveDialog(false);
     }
@@ -375,7 +376,7 @@ export default function LedgersSettingsPage() {
                           } : m));
                         } catch (err) {
                           console.error(err);
-                          alert('通知設定更新失敗');
+                          showToast('通知設定更新失敗');
                         }
                       }}
                     />
@@ -413,7 +414,7 @@ export default function LedgersSettingsPage() {
                             } : m));
                           } catch (err) {
                             console.error(err);
-                            alert('通知設定更新失敗');
+                            showToast('通知設定更新失敗');
                           }
                         }}
                       />
@@ -452,7 +453,7 @@ export default function LedgersSettingsPage() {
                             } : m));
                           } catch (err) {
                             console.error(err);
-                            alert('通知設定更新失敗');
+                            showToast('通知設定更新失敗');
                           }
                         }}
                       />

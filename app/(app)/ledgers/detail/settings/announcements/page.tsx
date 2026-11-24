@@ -8,6 +8,7 @@ import { Announcement, LedgerMember } from '@/types';
 import { getLedgerMembers } from '@/lib/ledger';
 import { isLedgerManagerRole } from '@/lib/notices';
 import { fetchAnnouncements, getMemberName, isAnnouncementActive, reorderAnnouncements } from '@/lib/announcements';
+import { showToast } from '@/lib/toast';
 
 export default function AnnouncementOrderPage() {
   const { activeLedgerId } = useLedger();
@@ -47,7 +48,7 @@ export default function AnnouncementOrderPage() {
       await reorderAnnouncements(activeLedgerId, next.map(a => a.id));
     } catch (err) {
       console.error('Failed to reorder announcements', err);
-      alert('排序儲存失敗');
+      showToast('排序儲存失敗');
       await load();
     } finally {
       setSaving(false);

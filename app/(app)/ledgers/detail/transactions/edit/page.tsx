@@ -15,6 +15,7 @@ import { updateTransaction } from '@/lib/transactions';
 import { MemberSelector } from '@/components/ui/MemberSelector';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { showToast } from '@/lib/toast';
 
 function SharedTransactionForm() {
   const { user } = useAuth();
@@ -110,13 +111,13 @@ function SharedTransactionForm() {
     
     // Validate splits if split mode
     if (activeLedger?.mode === 'split' && splitWithIds.length === 0) {
-      alert('請至少選擇一位分攤對象');
+      showToast('請至少選擇一位分攤對象');
       return;
     }
 
     if (originalTx?.approvalStatus === 'approved') {
       if (members.length > 2 && !members.some(m => m.role === 'vice_admin')) {
-        alert('請先至設定指派至少一位副管理員，才可修改審核通過的交易');
+        showToast('請先至設定指派至少一位副管理員，才可修改審核通過的交易');
         return;
       }
       if (!(await confirmAsync('修改已通過的交易後需要重新送審，確定要繼續修改嗎？'))) return;
@@ -159,7 +160,7 @@ function SharedTransactionForm() {
       router.push(`/ledgers/detail/transactions?id=${activeLedgerId}`);
     } catch (error) {
       console.error('Error saving transaction', error);
-      alert('儲存交易失敗');
+      showToast('儲存交易失敗');
     } finally {
       setIsSubmitting(false);
     }

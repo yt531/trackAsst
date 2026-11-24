@@ -8,6 +8,7 @@ import { getUserSettings, setUserSettings } from '@/lib/db';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 type PermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'loading';
 
@@ -104,7 +105,7 @@ export default function PermissionsPage() {
       }
     } catch (error: any) {
       console.error('Error linking calendar:', error);
-      alert('授權失敗，請稍後再試！');
+      showToast('授權失敗，請稍後再試！');
     } finally {
       setCalendarLoading(false);
     }
@@ -185,7 +186,7 @@ export default function PermissionsPage() {
                   <button 
                     onClick={() => {
                       if (cameraState === 'granted' || cameraState === 'denied') {
-                        alert('網頁無法直接更改權限狀態。請前往您的瀏覽器設定或手機系統設定中，手動開啟或關閉相機權限。');
+                        showToast('網頁無法直接更改權限狀態。請前往您的瀏覽器設定或手機系統設定中，手動開啟或關閉相機權限。');
                       } else if (cameraState === 'prompt') {
                         navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
                           stream.getTracks().forEach(track => track.stop());
@@ -223,7 +224,7 @@ export default function PermissionsPage() {
                       if (notificationState === 'prompt') {
                         requestNotificationPermission();
                       } else {
-                        alert('網頁無法直接更改權限狀態。請前往您的瀏覽器設定或手機系統設定中，手動開啟或關閉通知權限。');
+                        showToast('網頁無法直接更改權限狀態。請前往您的瀏覽器設定或手機系統設定中，手動開啟或關閉通知權限。');
                       }
                     }}
                     className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600 transition-colors"

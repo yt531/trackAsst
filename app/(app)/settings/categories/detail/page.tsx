@@ -14,6 +14,7 @@ import { ArrowLeft, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, Pen
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfYear, endOfYear, addMonths, subMonths, addDays, subDays, addYears, subYears } from 'date-fns';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 function CategoryDetail() {
   const { user } = useAuth();
@@ -142,7 +143,7 @@ function CategoryDetail() {
       router.refresh();
     } catch (e) {
       console.error(e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -160,7 +161,7 @@ function CategoryDetail() {
       router.refresh();
     } catch (e) {
       console.error(e);
-      alert('儲存失敗');
+      showToast('儲存失敗');
     } finally {
       setIsSaving(false);
     }

@@ -8,6 +8,7 @@ import { UserInteractionLock } from '@/components/UserInteractionLock';
 import { PrivacyProvider } from '@/components/PrivacyProvider';
 import { LedgerProvider } from '@/components/LedgerProvider';
 import { ConfirmHost } from '@/components/ConfirmHost';
+import { ToastHost } from '@/components/ToastHost';
 
 export const metadata: Metadata = {
   title: '輕鬆記 (FinTrack) - 輕鬆記、不忘記',
@@ -32,6 +33,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
                   {children}
                 </LedgerProvider>
                 <ConfirmHost />
+                <ToastHost />
               </PrivacyProvider>
             </LockProvider>
           </AuthProvider>

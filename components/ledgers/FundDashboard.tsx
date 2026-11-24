@@ -12,6 +12,7 @@ import { MemberSelector } from '@/components/ui/MemberSelector';
 import { approveTransaction, rejectTransaction } from '@/lib/transactions';
 import type { FundCollection, AppNotification } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
+import { showToast } from '@/lib/toast';
 
 interface FundDashboardProps {
   ledger: Ledger;
@@ -145,12 +146,12 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
     
     const numAmount = Number(newCollectionAmount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      alert('請輸入有效的金額');
+      showToast('請輸入有效的金額');
       return;
     }
 
     if (members.length > 2 && !members.some(m => m.role === 'vice_admin')) {
-      alert('請先至設定指派至少一位副管理員，才可發起收款');
+      showToast('請先至設定指派至少一位副管理員，才可發起收款');
       return;
     }
 
@@ -187,7 +188,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       }
     } catch (err) {
       console.error(err);
-      alert(isEditMode ? '重新計算失敗' : '發起收款失敗');
+      showToast(isEditMode ? '重新計算失敗' : '發起收款失敗');
     } finally {
       setIsStartingCollection(false);
     }
@@ -213,12 +214,12 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       if (results.length > 0) {
         setNotificationPreview({ isOpen: true, results });
       } else {
-        alert('重新計算完成，本次無溢收款產生。');
+        await showToast('重新計算完成，本次無溢收款產生。', 1500);
         window.location.reload();
       }
     } catch (error) {
       console.error(error);
-      alert('重新計算失敗');
+      showToast('重新計算失敗');
     } finally {
       setIsRecalculating(false);
     }
@@ -267,7 +268,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       await updateFundCollection(ledger.id, id, { status: 'closed' });
       window.location.reload();
     } catch (err) {
-      alert('關閉失敗');
+      showToast('關閉失敗');
     }
   };
 
@@ -278,7 +279,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       await approveTransaction(ledger.id, txId, user.uid, user.uid);
       window.location.reload();
     } catch (err) {
-      alert('核准失敗');
+      showToast('核准失敗');
     }
   };
 
@@ -287,7 +288,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
     const reason = window.prompt('請輸入退回說明（必填）：');
     if (reason === null) return; // user cancelled
     if (reason.trim() === '') {
-      alert('退回說明不能為空');
+      showToast('退回說明不能為空');
       return;
     }
     
@@ -295,7 +296,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       await rejectTransaction(ledger.id, txId, user.uid, user.uid, reason);
       window.location.reload();
     } catch (err) {
-      alert('退回失敗');
+      showToast('退回失敗');
     }
   };
 

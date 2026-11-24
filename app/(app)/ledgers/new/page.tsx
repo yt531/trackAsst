@@ -10,6 +10,7 @@ import { createLedger, addLedgerMember, createLedgerCategory } from '@/lib/ledge
 import { Ledger, LedgerMode, LedgerMember } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 export default function NewLedgerPage() {
   const { user } = useAuth();
@@ -74,7 +75,7 @@ export default function NewLedgerPage() {
       router.push(`/ledgers/detail?id=${newLedgerId}`);
     } catch (error) {
       console.error('Error creating ledger:', error);
-      alert('建立帳本時發生錯誤');
+      showToast('建立帳本時發生錯誤');
     } finally {
       setIsSubmitting(false);
     }

@@ -33,6 +33,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { showToast } from '@/lib/toast';
 
 interface SortableBudgetCardProps {
   budget: Budget;
@@ -446,7 +447,7 @@ export default function BudgetsPage() {
       setConfigBudgetId(null);
     } catch (e) {
       console.error(e);
-      alert('儲存失敗');
+      showToast('儲存失敗');
     }
   };
 
@@ -463,7 +464,7 @@ export default function BudgetsPage() {
     );
 
     if (isDuplicate) {
-      alert('該預算類型已經存在相同的預算週期設定，請直接修改現有預算。');
+      showToast('該預算類型已經存在相同的預算週期設定，請直接修改現有預算。');
       return;
     }
 
@@ -511,7 +512,7 @@ export default function BudgetsPage() {
       setEditingBudgetId(null);
     } catch (error) {
       console.error('Error saving budget:', error);
-      alert('儲存失敗');
+      showToast('儲存失敗');
     }
   };
 
@@ -522,7 +523,7 @@ export default function BudgetsPage() {
       setBudgets(prev => prev.filter(b => b.id !== budgetId));
     } catch (e) {
       console.error(e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -547,7 +548,7 @@ export default function BudgetsPage() {
         <button
           onClick={() => {
             if (isFormOpen) {
-              alert('請先取消新增才能使用排序功能');
+              showToast('請先取消新增才能使用排序功能');
               return;
             }
             setIsReorderMode(!isReorderMode);
@@ -565,7 +566,7 @@ export default function BudgetsPage() {
       <button
         onClick={() => {
           if (isReorderMode) {
-            alert('請先取消排序才能使用新增功能');
+            showToast('請先取消排序才能使用新增功能');
             return;
           }
           handleOpenForm();
@@ -751,7 +752,7 @@ export default function BudgetsPage() {
                         setTempVisiblePeriods([...tempVisiblePeriods, mode]);
                       } else {
                         if (tempVisiblePeriods.length <= 1) {
-                          alert('至少需保留一個預算週期');
+                          showToast('至少需保留一個預算週期');
                           return;
                         }
                         setTempVisiblePeriods(tempVisiblePeriods.filter(p => p !== mode));
@@ -787,7 +788,7 @@ export default function BudgetsPage() {
                     setIsSettingsOpen(false);
                   } catch (e) {
                     console.error(e);
-                    alert('儲存失敗');
+                    showToast('儲存失敗');
                   }
                 }}
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"

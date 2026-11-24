@@ -28,6 +28,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { showToast } from '@/lib/toast';
 
 interface SortablePaymentMethodItemProps {
   method: PaymentMethod;
@@ -176,7 +177,7 @@ export default function PaymentMethodsPage() {
       router.refresh();
     } catch (e) {
       console.error(e);
-      alert('儲存失敗');
+      showToast('儲存失敗');
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +209,7 @@ export default function PaymentMethodsPage() {
       router.refresh();
     } catch (e) {
       console.error(e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -262,7 +263,7 @@ export default function PaymentMethodsPage() {
         <button
           onClick={() => {
             if (editingId) {
-              alert('請先取消新增才能使用排序功能');
+              showToast('請先取消新增才能使用排序功能');
               return;
             }
             setIsReorderMode(!isReorderMode);
@@ -280,7 +281,7 @@ export default function PaymentMethodsPage() {
       <button
         onClick={() => {
           if (isReorderMode) {
-            alert('請先取消排序才能使用新增功能');
+            showToast('請先取消排序才能使用新增功能');
             return;
           }
           setEditingId('new');

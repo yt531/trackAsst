@@ -32,6 +32,7 @@ import Tesseract from 'tesseract.js';
 import { parseReceiptFromWords, ScannedReceiptResult, type OcrWord } from '@/lib/receipt-parser';
 import { preprocessImageForOCR } from '@/lib/image-preprocess';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 interface UIItem extends TransactionItem {
   id: string;
@@ -328,7 +329,7 @@ function TransactionForm() {
       
     } catch (err) {
       console.error('OCR Error:', err);
-      alert('辨識過程發生錯誤，請稍後再試。');
+      showToast('辨識過程發生錯誤，請稍後再試。');
       newPreviews.forEach(url => URL.revokeObjectURL(url));
     } finally {
       setIsScanning(false);
@@ -417,8 +418,8 @@ function TransactionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!categoryId) { alert('請選擇分類'); return; }
-    if (!paymentMethodId) { alert(type === 'expense' ? '請選擇支付方式' : '請選擇收款方式'); return; }
+    if (!categoryId) { showToast('請選擇分類'); return; }
+    if (!paymentMethodId) { showToast(type === 'expense' ? '請選擇支付方式' : '請選擇收款方式'); return; }
     if (!user || !amount) return;
     setIsSubmitting(true);
 
@@ -505,7 +506,7 @@ function TransactionForm() {
       router.refresh();
     } catch (error) {
       console.error('Error saving transaction', error);
-      alert('儲存交易失敗');
+      showToast('儲存交易失敗');
     } finally {
       setIsSubmitting(false);
     }

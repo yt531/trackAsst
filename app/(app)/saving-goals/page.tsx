@@ -27,6 +27,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { showToast } from '@/lib/toast';
 
 function SortableGoalCard({ 
   goal, 
@@ -214,7 +215,7 @@ export default function SavingGoalsPage() {
       resetForm();
     } catch (e) {
       console.error(e);
-      alert('儲存失敗');
+      showToast('儲存失敗');
     }
   };
 
@@ -225,7 +226,7 @@ export default function SavingGoalsPage() {
       await loadGoals();
     } catch (e) {
       console.error(e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     }
   };
 
@@ -277,7 +278,7 @@ export default function SavingGoalsPage() {
         <button
           onClick={() => {
             if (isFormOpen) {
-              alert('請先取消新增才能使用排序功能');
+              showToast('請先取消新增才能使用排序功能');
               return;
             }
             setIsReorderMode(!isReorderMode);
@@ -295,7 +296,7 @@ export default function SavingGoalsPage() {
       <button
         onClick={() => {
           if (isReorderMode) {
-            alert('請先取消排序才能使用新增功能');
+            showToast('請先取消排序才能使用新增功能');
             return;
           }
           resetForm();

@@ -12,6 +12,7 @@ import {
 } from '@/lib/announcements';
 import { isLedgerManagerRole } from '@/lib/notices';
 import { requestPush } from '@/lib/push';
+import { showToast } from '@/lib/toast';
 
 interface AnnouncementBoardProps {
   ledgerId: string;
@@ -57,7 +58,7 @@ export function AnnouncementBoard({ ledgerId, userId, members }: AnnouncementBoa
       await load();
     } catch (err) {
       console.error('Failed to cancel announcement', err);
-      alert('取消公告失敗');
+      showToast('取消公告失敗');
     }
   };
 
@@ -156,7 +157,7 @@ function AnnouncementComposer({ ledgerId, userId, editing, onClose, onDone }: Co
     if (!content.trim() || submitting) return;
     const expiresAt = expires ? new Date(expires).getTime() : null;
     if (expiresAt !== null && expiresAt <= Date.now()) {
-      alert('到期時間必須晚於現在');
+      showToast('到期時間必須晚於現在');
       return;
     }
     setSubmitting(true);
@@ -170,7 +171,7 @@ function AnnouncementComposer({ ledgerId, userId, editing, onClose, onDone }: Co
       onDone();
     } catch (err) {
       console.error('Failed to submit announcement', err);
-      alert(editing ? '修改失敗' : '發佈失敗');
+      showToast(editing ? '修改失敗' : '發佈失敗');
       setSubmitting(false);
     }
   };

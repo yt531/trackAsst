@@ -10,6 +10,7 @@ import { LedgerMember, LedgerRole, LedgerInvitation } from '@/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 export default function InviteMemberPage() {
   const { activeLedger, activeLedgerId } = useLedger();
@@ -45,7 +46,7 @@ export default function InviteMemberPage() {
   // Prevent non-admins from viewing this page
   useEffect(() => {
     if (members.length > 0 && !isAdmin) {
-      alert('您沒有權限邀請成員');
+      showToast('您沒有權限邀請成員');
       router.push(`/ledgers/detail/settings?id=${activeLedgerId}`);
     }
   }, [members, isAdmin, router, activeLedgerId]);
@@ -53,7 +54,7 @@ export default function InviteMemberPage() {
   const handleGenerateInvite = async () => {
     if (!activeLedgerId || !user) return;
     if (inviteMode === 'single' && !inviteEmail) {
-      alert('請輸入受邀者 Email');
+      showToast('請輸入受邀者 Email');
       return;
     }
     
@@ -79,7 +80,7 @@ export default function InviteMemberPage() {
       setGeneratedInvite(newInvitation);
     } catch (error) {
       console.error('Failed to generate invite:', error);
-      alert('產生邀請碼失敗，請稍後再試。');
+      showToast('產生邀請碼失敗，請稍後再試。');
     } finally {
       setInviteLoading(false);
     }

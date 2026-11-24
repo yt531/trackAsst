@@ -13,6 +13,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { Dialog } from '@/components/ui/dialog';
 import { PageHeader } from '@/components/PageHeader';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { showToast } from '@/lib/toast';
 
 function InvoicesContent() {
   const { user } = useAuth();
@@ -111,7 +112,7 @@ function InvoicesContent() {
       setSelectedInvoice(null);
     } catch (e) {
       console.error('Failed to delete invoice', e);
-      alert('刪除失敗');
+      showToast('刪除失敗');
     } finally {
       setIsSaving(false);
     }
@@ -129,7 +130,7 @@ function InvoicesContent() {
       setIsEditing(false);
     } catch (e) {
       console.error('Failed to update invoice notes', e);
-      alert('更新失敗');
+      showToast('更新失敗');
     } finally {
       setIsSaving(false);
     }

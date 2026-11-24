@@ -9,6 +9,7 @@ import { getLedgerMembers, updateLedgerMember, removeLedgerMember } from '@/lib/
 import { LedgerMember, LedgerRole } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 export default function MembersListPage() {
   const { activeLedger, activeLedgerId } = useLedger();
@@ -83,7 +84,7 @@ export default function MembersListPage() {
     if (newRole !== 'admin') {
       const targetMember = members.find(m => m.userId === targetUserId);
       if (targetMember?.role === 'admin' && adminCount <= 1) {
-        alert('無法修改權限：帳本必須至少保留一位管理員。');
+        showToast('無法修改權限：帳本必須至少保留一位管理員。');
         return;
       }
     }
@@ -93,7 +94,7 @@ export default function MembersListPage() {
       await loadMembers();
     } catch (e) {
       console.error(e);
-      alert('更新權限失敗');
+      showToast('更新權限失敗');
     }
   };
 
@@ -102,13 +103,13 @@ export default function MembersListPage() {
     setOpenDropdownId(null);
 
     if (targetUserId === user?.uid) {
-      alert('您不能在此刪除自己，請使用「退出帳本」功能。');
+      showToast('您不能在此刪除自己，請使用「退出帳本」功能。');
       return;
     }
 
     const targetMember = members.find(m => m.userId === targetUserId);
     if (targetMember?.role === 'admin' && adminCount <= 1) {
-      alert('無法刪除：帳本必須至少保留一位管理員。');
+      showToast('無法刪除：帳本必須至少保留一位管理員。');
       return;
     }
 
@@ -119,7 +120,7 @@ export default function MembersListPage() {
       await loadMembers();
     } catch (e) {
       console.error(e);
-      alert('移除成員失敗');
+      showToast('移除成員失敗');
     }
   };
 

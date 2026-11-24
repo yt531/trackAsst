@@ -13,6 +13,7 @@ import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, subMonths, addM
 import { ChevronLeft, ChevronRight, Download, Trash2, ShieldAlert, ArrowUpDown } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { showToast } from '@/lib/toast';
 
 export default function AuditLogsPage() {
   const { user } = useAuth();
@@ -45,7 +46,7 @@ export default function AuditLogsPage() {
       const currentUserMember = ledgerMembers.find(m => m.userId === user.uid);
       
       if (currentUserMember?.role !== 'admin') {
-        alert('無權限存取此頁面');
+        showToast('無權限存取此頁面');
         router.push(`/ledgers/detail/settings?id=${activeLedgerId}`);
         return;
       }
@@ -124,7 +125,7 @@ export default function AuditLogsPage() {
       const exportLogs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityFeedItem));
 
       if (exportLogs.length === 0) {
-        alert('此月份無任何紀錄可匯出');
+        showToast('此月份無任何紀錄可匯出');
         return;
       }
 
@@ -154,7 +155,7 @@ export default function AuditLogsPage() {
       XLSX.writeFile(wb, `系統日誌_${timeStr}.xlsx`);
     } catch (err) {
       console.error('Export failed', err);
-      alert('匯出失敗');
+      showToast('匯出失敗');
     } finally {
       setIsExporting(false);
     }
@@ -175,10 +176,10 @@ export default function AuditLogsPage() {
       await updateLedger(activeLedgerId, {
         feedHiddenUntil: hiddenUntil
       });
-      alert(`已成功隱藏 ${clearDate} 以前的前台動態時報顯示！`);
+      showToast(`已成功隱藏 ${clearDate} 以前的前台動態時報顯示！`);
     } catch (err) {
       console.error('Clear feed failed', err);
-      alert('清除失敗');
+      showToast('清除失敗');
     } finally {
       setIsClearing(false);
     }

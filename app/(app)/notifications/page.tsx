@@ -12,6 +12,7 @@ import { Bell, Check, CheckCheck, BellRing, ChevronRight, Undo2 } from 'lucide-r
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 import { confirmAsync } from '@/lib/confirm';
+import { showToast } from '@/lib/toast';
 
 const PAGE_SIZE = 50; // 「全部」分頁每次載入的數量
 const BATCH_SIZE = 400; // Firestore 單一批次上限 500 筆，保留餘裕
@@ -112,7 +113,7 @@ export default function NotificationsPage() {
       await action();
     } catch (err) {
       console.error('Notification action failed', err);
-      alert('操作失敗，請稍後再試');
+      showToast('操作失敗，請稍後再試');
     } finally {
       setBusy(false);
     }

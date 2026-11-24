@@ -15,6 +15,7 @@ import { Search, X, Users, User, Info } from 'lucide-react';
 import { getLedgerMembers, getLedgerCategories, getLedgerTags, getFundCollections } from '@/lib/ledger';
 import type { FundCollection } from '@/types';
 import { createTransaction } from '@/lib/transactions';
+import { showToast } from '@/lib/toast';
 
 function SharedTransactionForm() {
   const { user } = useAuth();
@@ -128,15 +129,15 @@ function SharedTransactionForm() {
     
     // Validations
     if (!(type === 'income' && activeLedger?.mode === 'shared_fund' && isFundContribution) && !categoryId) {
-      alert('請選擇分類');
+      showToast('請選擇分類');
       return;
     }
     if (activeLedger?.mode === 'shared_fund' && type === 'income' && isFundContribution && !collectionId) {
-      alert('請選擇要繳交的期數');
+      showToast('請選擇要繳交的期數');
       return;
     }
     if (activeLedger?.mode === 'split' && splitWithIds.length === 0) {
-      alert('請至少選擇一位分攤對象');
+      showToast('請至少選擇一位分攤對象');
       return;
     }
 
@@ -218,7 +219,7 @@ function SharedTransactionForm() {
       router.push(`/ledgers/detail?id=${activeLedgerId}`);
     } catch (error) {
       console.error('Error saving transaction', error);
-      alert('儲存交易失敗');
+      showToast('儲存交易失敗');
     } finally {
       setIsSubmitting(false);
     }

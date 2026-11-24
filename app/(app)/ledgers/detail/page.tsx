@@ -13,6 +13,7 @@ import { calculateBalances, calculateSettlements, UserBalance, SettlementPlan } 
 import { createTransaction } from '@/lib/transactions';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { showToast } from '@/lib/toast';
 const FundDashboard = dynamic(() => import('@/components/ledgers/FundDashboard'), { ssr: false });
 export default function LedgerBalancesPage() {
   const { activeLedger, activeLedgerId } = useLedger();
@@ -84,12 +85,12 @@ export default function LedgerBalancesPage() {
         splits: [{ userId: plan.toUser, paidAmount: 0, owedAmount: plan.amount }]
       }, true);
 
-      alert('結清紀錄已新增！');
+      await showToast('結清紀錄已新增！', 1500);
       // Reload the page to refresh balances
       window.location.reload();
     } catch (err) {
       console.error('Error settling up', err);
-      alert('結清失敗');
+      showToast('結清失敗');
     } finally {
       setIsSettling(false);
     }

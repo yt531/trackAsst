@@ -11,6 +11,7 @@ import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@/components/ui/dialog';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 export default function InvoiceScanPage() {
   const { user } = useAuth();
@@ -103,7 +104,7 @@ export default function InvoiceScanPage() {
       
     } catch (e) {
       console.error(e);
-      alert('發票儲存失敗');
+      showToast('發票儲存失敗');
     } finally {
       setIsSaving(false);
     }

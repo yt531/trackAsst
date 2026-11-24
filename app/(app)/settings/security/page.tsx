@@ -13,6 +13,7 @@ import { setSecuritySettings, getUserSettings, setUserSettings } from '@/lib/db'
 import { deleteField } from 'firebase/firestore';
 import { Eye, EyeOff } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { showToast } from '@/lib/toast';
 
 export default function SecurityPage() {
   const router = useRouter();
@@ -136,7 +137,7 @@ export default function SecurityPage() {
 
   const handleForgotPin = async () => {
     if (!auth.currentUser) {
-      alert('無法取得登入資訊，請重新整理頁面。');
+      showToast('無法取得登入資訊，請重新整理頁面。');
       return;
     }
     try {
@@ -149,11 +150,11 @@ export default function SecurityPage() {
       localStorage.removeItem('pinHash');
       localStorage.removeItem('lockScope');
 
-      alert('已成功清除 PIN 碼，請重新設定。');
+      showToast('已成功清除 PIN 碼，請重新設定。');
       setIsPinSetupOpen(true);
     } catch (e) {
       console.error('Failed to reset PIN', e);
-      alert('驗證失敗，無法重設密碼');
+      showToast('驗證失敗，無法重設密碼');
     }
   };
 
