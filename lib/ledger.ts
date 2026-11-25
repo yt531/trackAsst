@@ -9,7 +9,9 @@ import {
   where,
   deleteDoc,
   updateDoc,
+  deleteField,
 } from 'firebase/firestore';
+import { withoutUndefined } from './firestore-data';
 import type {
   Ledger,
   LedgerMember,
@@ -278,10 +280,11 @@ export const createFundCollection = async (ledgerId: string, data: FundCollectio
 
   // 4. Create FundCollection
   const docRef = doc(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections', data.id);
-  const collectionData = {
+  // 每人固定金額模式沒有 totalAmount（undefined），Firestore 不接受 undefined，需先移除
+  const collectionData = withoutUndefined({
     ...data,
     paidAmount: totalPaidAmount
-  };
+  });
   batch.set(docRef, collectionData);
 
   // 5. Send notifications
@@ -314,7 +317,8 @@ export const recalculateCollection = async (
   await updateDoc(collRef, {
     targetAmount: newTargetAmount,
     memberIds: newMemberIds,
-    totalAmount: newTotalAmount
+    // 改成每人固定金額（沒有總額）時把舊的 totalAmount 欄位刪掉，否則重新開啟編輯會被判成固定總額模式
+    totalAmount: newTotalAmount === undefined ? deleteField() : newTotalAmount
   });
 
   // 2. Fetch all income transactions for this collection
