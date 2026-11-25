@@ -424,7 +424,11 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                     </div>
                     <div>
                       <div className="font-medium text-sm dark:text-zinc-200">{member.nickname || `User ${member.userId.slice(0,4)}`}</div>
-                      <div className="text-xs text-zinc-500">已繳: ${paid.toLocaleString()}</div>
+                      <div className="text-xs text-zinc-500">
+                        已繳: ${paid.toLocaleString()}
+                        <span className="mx-1">·</span>
+                        個人餘額: ${(member.balance || 0).toLocaleString()}
+                      </div>
                     </div>
                   </div>
                   {memberTarget > 0 && (
