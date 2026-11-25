@@ -12,7 +12,7 @@ import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
 import { Search, X, Users, User, Info } from 'lucide-react';
-import { getLedgerMembers, getLedgerCategories, getLedgerTags, getFundCollections } from '@/lib/ledger';
+import { getLedgerMembers, getLedgerCategories, getLedgerTags, getFundCollections, checkContributionLimit } from '@/lib/ledger';
 import type { FundCollection } from '@/types';
 import { createTransaction } from '@/lib/transactions';
 import { showToast } from '@/lib/toast';
@@ -186,6 +186,20 @@ function SharedTransactionForm() {
       } else {
         // Shared Fund Mode
         const payers = fundPayerIds;
+
+        // 成員不能多繳：繳款金額不可超過這一期還欠的金額（含待審中的繳款）
+        if (type === 'income' && isFundContribution && collectionId) {
+          const limitError = await checkContributionLimit(
+            activeLedgerId,
+            collectionId,
+            payers.map(id => ({ userId: id, name: members.find(m => m.userId === id)?.nickname || '該成員' })),
+            numAmount
+          );
+          if (limitError) {
+            showToast(limitError);
+            return;
+          }
+        }
 
         for (const pId of payers) {
           // 繳款時使用個人餘額折抵：核准時才真的扣除（核准當下會再檢查一次餘額）

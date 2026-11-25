@@ -13,7 +13,8 @@ import type { FundCollection, AppNotification } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 import { showToast } from '@/lib/toast';
 import { ReimbursementList } from '@/components/ledgers/ReimbursementList';
-import { isIncomeCounted } from '@/lib/approval';
+import { summarizeFund } from '@/lib/fundSummary';
+import { findOverpaidWhenLowering } from '@/lib/collectionBalance';
 import { ExpenseBreakdownChart } from '@/components/ledgers/ExpenseBreakdownChart';
 
 interface FundDashboardProps {
@@ -71,70 +72,19 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
     fetchData();
   }, [ledger.id, ledger.mode]);
 
-    const {
-    totalBalance,
+  const {
     availableBalance,
+    totalCash,
     totalMemberBalance,
     totalSpent,
     reimbursements,
     pendingApprovals,
     categoryData,
     memberStats
-  } = useMemo(() => {
-    let balance = 0;
-    let spent = 0;
-    const reimbursementsList: Transaction[] = [];
-    const pendingList: Transaction[] = [];
-    const categoryTotals: Record<string, number> = {};
-    const memberPayments: Record<string, number> = {}; // Tracks payments for the SELECTED collection
-
-    transactions.forEach(tx => {
-      if (tx.type === 'income') {
-        if (tx.approvalStatus === 'pending') {
-          pendingList.push(tx);
-        } else if (isIncomeCounted(tx.approvalStatus)) {
-          // 被退回（rejected）、已取消（cancelled）的收入不算進餘額與已繳金額
-          balance += tx.amount;
-          if (tx.collectionId === selectedCollectionId) {
-            memberPayments[tx.userId] = (memberPayments[tx.userId] || 0) + tx.amount;
-          }
-        }
-      } else if (tx.type === 'expense') {
-        const isReimbursement = tx.isAdvancePayment && tx.advancePaymentStatus === 'unsettled';
-        
-        if (isReimbursement) {
-          reimbursementsList.push(tx);
-        } else {
-          balance -= tx.amount;
-          spent += tx.amount;
-          categoryTotals[tx.categoryId] = (categoryTotals[tx.categoryId] || 0) + tx.amount;
-        }
-      } else if (tx.type === 'settlement') {
-        balance -= tx.amount;
-      }
-    });
-
-    const catData = Object.keys(categoryTotals).map(catId => ({
-      name: catId, 
-      value: categoryTotals[catId]
-    })).sort((a, b) => b.value - a.value);
-
-    let totalMemberBalance = 0;
-    members.forEach(m => {
-      totalMemberBalance += (m.balance || 0);
-    });
-
-    return {
-      totalBalance: balance,
-      availableBalance: balance - totalMemberBalance,
-      totalMemberBalance,
-      totalSpent: spent,
-      reimbursements: reimbursementsList,
-      pendingApprovals: pendingList,
-      categoryData: catData,
-      memberStats: memberPayments
-    };
-  }, [transactions, selectedCollectionId, members]);
+  } = useMemo(
+    () => summarizeFund(transactions, members, selectedCollectionId),
+    [transactions, selectedCollectionId, members]
+  );
 
   const handleSaveSettings = async () => {
     // Deprecated for memberTargetAmount, but keeping for future settings
@@ -164,7 +114,15 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
         // Edit mode means Recalculate
         const newTargetAmount = collectionMode === 'per_person' ? numAmount : numAmount / selectedMemberIds.length;
         const newTotalAmount = collectionMode === 'total' ? numAmount : undefined;
-        
+
+        // 不允許把應繳「調低」到比任何人已繳（含待審）的還低，否則會產生溢繳
+        const overpaid = findOverpaidWhenLowering(transactions, selectedCollectionId, collections.find(c => c.id === selectedCollectionId)?.targetAmount ?? 0, newTargetAmount);
+        if (overpaid) {
+          const name = members.find(m => m.userId === overpaid.payerId)?.nickname || '有成員';
+          showToast(`無法調低：${name} 已繳 $${overpaid.paid.toLocaleString()}（含待審），超過新的應繳 $${newTargetAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
+          return;
+        }
+
         setPendingRecalcData({
           collectionId: selectedCollectionId,
           newTargetAmount,
@@ -329,7 +287,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
   const memberTarget = selectedCollection?.targetAmount || 0;
 
 
-  const showWarning = totalBalance <= 0 && (currentUserRole === 'admin' || currentUserRole === 'editor' || currentUserRole === 'vice_admin');
+  const showWarning = availableBalance <= 0 && (currentUserRole === 'admin' || currentUserRole === 'editor' || currentUserRole === 'vice_admin');
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -351,7 +309,7 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
             <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">${availableBalance.toLocaleString()}</div>
             {totalMemberBalance > 0 && (
               <div className="text-xs text-zinc-500 mt-2">
-                總現金: ${totalBalance.toLocaleString()} (含成員溢繳餘額: ${totalMemberBalance.toLocaleString()})
+                總現金: ${totalCash.toLocaleString()} (含成員溢繳餘額: ${totalMemberBalance.toLocaleString()})
               </div>
             )}
           </div>

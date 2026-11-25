@@ -10,7 +10,7 @@ import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { format } from 'date-fns';
 import { Search, X, Users, User } from 'lucide-react';
-import { getLedgerMembers, getLedgerCategories, getLedgerTags } from '@/lib/ledger';
+import { getLedgerMembers, getLedgerCategories, getLedgerTags, checkContributionLimit } from '@/lib/ledger';
 import { updateTransaction } from '@/lib/transactions';
 import { MemberSelector } from '@/components/ui/MemberSelector';
 import { doc, getDoc } from 'firebase/firestore';
@@ -127,6 +127,21 @@ function SharedTransactionForm() {
     try {
       const numAmount = parseFloat(amount);
       const baseAmount = numAmount; // Simplification
+
+      // 公積金繳款：改完的金額不可超過這一期還欠的金額（成員不能多繳）
+      if (type === 'income' && originalTx?.collectionId) {
+        const limitError = await checkContributionLimit(
+          activeLedgerId,
+          originalTx.collectionId,
+          [{ userId: originalTx.payerId || originalTx.userId, name: members.find(m => m.userId === (originalTx.payerId || originalTx.userId))?.nickname || '該成員' }],
+          numAmount,
+          txId
+        );
+        if (limitError) {
+          showToast(limitError);
+          return;
+        }
+      }
 
       let splits: TransactionSplit[] | undefined = undefined;
 

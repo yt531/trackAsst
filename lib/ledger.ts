@@ -12,6 +12,7 @@ import {
   deleteField,
 } from 'firebase/firestore';
 import { withoutUndefined } from './firestore-data';
+import { remainingToPay, exceedsRemaining } from './collectionBalance';
 import type {
   Ledger,
   LedgerMember,
@@ -198,6 +199,37 @@ export const getFundCollections = async (ledgerId: string): Promise<FundCollecti
   const collectionsRef = collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'collections');
   const snap = await getDocs(collectionsRef);
   return snap.docs.map(doc => doc.data() as FundCollection).sort((a, b) => b.createdAt - a.createdAt);
+};
+
+// 檢查繳款金額是否超過各繳款人這一期還能繳的金額（應繳 − 已繳，含待審）。
+// 成員不能多繳，才不會產生溢繳（個人餘額）。有問題回傳要顯示的訊息，沒問題回傳 null。
+// 編輯既有繳款時傳入 excludeTxId，把這筆本身排除在已繳之外。
+export const checkContributionLimit = async (
+  ledgerId: string,
+  collectionId: string,
+  payers: { userId: string; name: string }[],
+  amount: number,
+  excludeTxId?: string
+): Promise<string | null> => {
+  const collections = await getFundCollections(ledgerId);
+  const target = collections.find(c => c.id === collectionId)?.targetAmount;
+  if (target === undefined) return null;
+
+  const snap = await getDocs(collection(db, LEDGER_COLLECTIONS.LEDGERS, ledgerId, 'transactions'));
+  const txs = snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Transaction))
+    .filter(t => t.id !== excludeTxId);
+
+  const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  for (const payer of payers) {
+    const remaining = remainingToPay(txs, collectionId, payer.userId, target);
+    if (exceedsRemaining(amount, remaining)) {
+      return remaining > 0
+        ? `${payer.name} 這一期最多還能繳 $${fmt(remaining)}`
+        : `${payer.name} 這一期已繳清（含待審中的繳款），不需要再繳`;
+    }
+  }
+  return null;
 };
 
 export const createFundCollection = async (ledgerId: string, data: FundCollection, members: LedgerMember[], adminUserId: string) => {
