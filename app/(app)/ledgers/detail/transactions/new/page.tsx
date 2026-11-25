@@ -16,6 +16,7 @@ import { getLedgerMembers, getLedgerCategories, getLedgerTags, getFundCollection
 import type { FundCollection } from '@/types';
 import { createTransaction } from '@/lib/transactions';
 import { showToast } from '@/lib/toast';
+import { calcBalanceOffset } from '@/lib/balanceOffset';
 
 function SharedTransactionForm() {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ function SharedTransactionForm() {
   const [splitWithIds, setSplitWithIds] = useState<string[]>([]);
   const [isSubmitOnBehalfSingle, setIsSubmitOnBehalfSingle] = useState(false);
   const [isBatchPayment, setIsBatchPayment] = useState(false);
+  const [useBalance, setUseBalance] = useState(true); // 繳款時是否使用個人餘額折抵（有餘額時預設開啟）
   const [selectedPayerIds, setSelectedPayerIds] = useState<string[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,6 +125,11 @@ function SharedTransactionForm() {
     }
   }, [searchParams]);
 
+  // 這次繳款實際的繳款人：一般是自己；代為送出或批次繳費時為所選成員
+  const fundPayerIds = (type === 'income' && isFundContribution && (isSubmitOnBehalfSingle || isBatchPayment))
+    ? (selectedPayerIds.length > 0 ? selectedPayerIds : (user ? [user.uid] : []))
+    : (user ? [user.uid] : []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !activeLedgerId || !amount || !payerId) return;
@@ -178,17 +185,20 @@ function SharedTransactionForm() {
         }, true);
       } else {
         // Shared Fund Mode
-        const payers = (type === 'income' && isFundContribution && (isSubmitOnBehalfSingle || isBatchPayment))
-          ? (selectedPayerIds.length > 0 ? selectedPayerIds : [user.uid])
-          : [user.uid];
+        const payers = fundPayerIds;
 
         for (const pId of payers) {
+          // 繳款時使用個人餘額折抵：核准時才真的扣除（核准當下會再檢查一次餘額）
+          const offset = (type === 'income' && isFundContribution && useBalance)
+            ? calcBalanceOffset(numAmount, members.find(m => m.userId === pId)?.balance)
+            : 0;
           await createTransaction(user.uid, {
             userId: user.uid,
             ledgerId: activeLedgerId,
             type,
             amount: numAmount,
             baseAmount,
+            usedBalance: offset > 0 ? offset : undefined,
             currency: activeLedger?.currency || 'TWD',
             exchangeRate: 1,
             paymentMethodId: 'cash',
@@ -233,6 +243,15 @@ function SharedTransactionForm() {
   
   const currentUserMember = members.find(m => m.userId === user?.uid);
   const isAdminOrVice = currentUserMember?.role === 'admin' || currentUserMember?.role === 'vice_admin';
+  // 帳本只有兩位成員時，另一位成員自己就能送出繳款，不需要「代為送出審核」
+  const canSubmitOnBehalf = members.filter(m => m.status === 'active').length > 2;
+
+  // 餘額折抵：繳款人有個人餘額時才顯示勾選框
+  const offsetAmount = parseFloat(amount);
+  const offsetAvailable = fundPayerIds.reduce((sum, id) => sum + Math.max(0, members.find(m => m.userId === id)?.balance || 0), 0);
+  const offsetUsed = fundPayerIds.reduce((sum, id) => sum + calcBalanceOffset(offsetAmount, members.find(m => m.userId === id)?.balance), 0);
+  const showBalanceOffset = activeLedger?.mode === 'shared_fund' && type === 'income' && isFundContribution && offsetAvailable > 0;
+  const money = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (
     <div className="mx-auto max-w-lg space-y-6 pb-20">
@@ -418,26 +437,28 @@ function SharedTransactionForm() {
           )}
 
           {/* Submit on Behalf Field (Shared Fund) */}
-          {activeLedger?.mode === 'shared_fund' && type === 'income' && (
+          {activeLedger?.mode === 'shared_fund' && type === 'income' && (canSubmitOnBehalf || isAdminOrVice) && (
             <div className="space-y-3 p-4 rounded-xl border border-blue-100 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
               <div className="flex flex-col gap-3">
-                <label className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
-                  <input 
-                    type="checkbox"
-                    checked={isSubmitOnBehalfSingle}
-                    onChange={(e) => {
-                      setIsSubmitOnBehalfSingle(e.target.checked);
-                      if (e.target.checked) {
-                        setIsBatchPayment(false);
-                        setSelectedPayerIds(user ? [user.uid] : []);
-                      } else {
-                        setSelectedPayerIds([]);
-                      }
-                    }}
-                    className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  代為送出審核
-                </label>
+                {canSubmitOnBehalf && (
+                  <label className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+                    <input 
+                      type="checkbox"
+                      checked={isSubmitOnBehalfSingle}
+                      onChange={(e) => {
+                        setIsSubmitOnBehalfSingle(e.target.checked);
+                        if (e.target.checked) {
+                          setIsBatchPayment(false);
+                          setSelectedPayerIds(user ? [user.uid] : []);
+                        } else {
+                          setSelectedPayerIds([]);
+                        }
+                      }}
+                      className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    代為送出審核
+                  </label>
+                )}
 
                 {isAdminOrVice && (
                   <label className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
@@ -472,6 +493,23 @@ function SharedTransactionForm() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Balance Offset (Shared Fund contribution) */}
+          {showBalanceOffset && (
+            <label className="flex items-start gap-2 p-4 rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-900/10">
+              <input
+                type="checkbox"
+                checked={useBalance}
+                onChange={(e) => setUseBalance(e.target.checked)}
+                className="mt-0.5 w-5 h-5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="text-sm font-medium text-emerald-900 dark:text-emerald-200">
+                使用個人餘額折抵（{fundPayerIds.length > 1 ? '可用餘額合計' : '可用'} ${money(offsetAvailable)}
+                {useBalance && offsetUsed > 0 ? `，本次折抵 $${money(offsetUsed)}` : ''}）
+                <span className="mt-0.5 block text-xs font-normal opacity-80">核准後才會從餘額扣除；被退回不會扣。</span>
+              </span>
+            </label>
           )}
 
           {/* Notes */}
