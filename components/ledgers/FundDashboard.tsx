@@ -13,6 +13,7 @@ import type { FundCollection, AppNotification } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 import { showToast } from '@/lib/toast';
 import { ReimbursementList } from '@/components/ledgers/ReimbursementList';
+import { isIncomeCounted } from '@/lib/approval';
 import { ExpenseBreakdownChart } from '@/components/ledgers/ExpenseBreakdownChart';
 
 interface FundDashboardProps {
@@ -91,7 +92,8 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
       if (tx.type === 'income') {
         if (tx.approvalStatus === 'pending') {
           pendingList.push(tx);
-        } else {
+        } else if (isIncomeCounted(tx.approvalStatus)) {
+          // 被退回（rejected）、已取消（cancelled）的收入不算進餘額與已繳金額
           balance += tx.amount;
           if (tx.collectionId === selectedCollectionId) {
             memberPayments[tx.userId] = (memberPayments[tx.userId] || 0) + tx.amount;
