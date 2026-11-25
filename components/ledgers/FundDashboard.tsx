@@ -456,12 +456,17 @@ export function FundDashboard({ ledger, transactions, onSettleReimbursement }: F
                 const submitter = members.find(m => m.userId === tx.userId);
                 const payer = tx.payerId ? members.find(m => m.userId === tx.payerId) : submitter;
                 const isSubmitOnBehalf = tx.payerId && tx.payerId !== tx.userId;
+                // 這筆繳款是繳交哪一期（哪個項目）的公積金
+                const collectionTitle = tx.collectionId
+                  ? (collections.find(c => c.id === tx.collectionId)?.title ?? '（找不到此收款）')
+                  : '未指定';
                 
                 return (
                 <div key={tx.id} className="flex flex-col gap-3 p-3 rounded-xl border border-blue-100 bg-blue-50 dark:border-blue-900/30 dark:bg-blue-900/10">
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-medium text-zinc-900 dark:text-zinc-100">繳款：{tx.details || '無明細'}</div>
+                      <div className="text-xs text-zinc-500 mt-1">繳交項目: {collectionTitle}</div>
                       {isSubmitOnBehalf ? (
                         <div className="text-xs text-zinc-500 mt-1 space-y-0.5">
                           <div>送審人: {submitter?.nickname || `User ${tx.userId.slice(0,4)}`}</div>
